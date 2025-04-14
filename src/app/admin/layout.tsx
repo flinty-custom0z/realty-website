@@ -8,10 +8,10 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
+  // Update this line to await the cookies() function
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
-  
   if (!token) {
     return null;
   }
@@ -36,10 +36,12 @@ export default async function AdminLayout({
 }) {
   const user = await getUserFromCookie();
   
-  // Redirect to login if not authenticated
-  if (!user && !window.location.pathname.includes('/admin/login')) {
-    redirect('/admin/login');
-  }
+  // REMOVE THIS PROBLEMATIC LINE:
+  // if (!user && !window.location.pathname.includes('/admin/login')) {
+  //   redirect('/admin/login');
+  // }
+  
+  // Instead, we'll handle the login redirect at the page level
   
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -79,7 +81,7 @@ export default async function AdminLayout({
         </aside>
       )}
       
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 bg-white">
         {children}
       </main>
     </div>
