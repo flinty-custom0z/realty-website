@@ -24,12 +24,13 @@ async function getListing(id: string) {
   return listing;
 }
 
-export default async function ListingDetailPage({ params }) {
+export default async function ListingDetailPage({ params }: { params: any }) {
   const listing = await getListing(params.id);
   
   if (!listing) {
     notFound();
   }
+  
   
   // Format date
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');

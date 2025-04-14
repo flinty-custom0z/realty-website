@@ -8,8 +8,6 @@ import { notFound } from 'next/navigation';
 
 const prisma = new PrismaClient();
 
-
-
 async function getCategory(slug: string) {
   const category = await prisma.category.findUnique({
     where: { slug },
@@ -77,8 +75,8 @@ async function getListings(
       },
     },
     orderBy: {
-      [sortField]: sortOrder,
-    },
+      [sortField as string]: sortOrder as 'asc' | 'desc',
+    },    
     skip: (page - 1) * limit,
     take: limit,
   });
@@ -93,18 +91,17 @@ async function getListings(
     },
   };
 }
-
-type SearchParamsType = { [key: string]: string | string[] | undefined };
-
-export default async function Page({ params, searchParams }) {
-  const category = await getCategory(params.slug);
+export default async function Page(props: any) {
+  const { params, searchParams = {} } = props;
+  const slug = params.slug;
+  
+  const category = await getCategory(slug);
   
   if (!category) {
     notFound();
   }
   
   const { listings, pagination } = await getListings(category.id, searchParams);
-  
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -162,7 +159,7 @@ export default async function Page({ params, searchParams }) {
                     key={page}
                     href={`/listing-category/${params.slug}?${new URLSearchParams({
                       ...Object.fromEntries(
-                        Object.entries(searchParams).filter(([key]) => key !== 'page')
+                        Object.entries(searchParams || {}).filter(([key]) => key !== 'page')
                       ),
                       page: page.toString(),
                     })}`}
