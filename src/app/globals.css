@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --footer-bg: #ffffff;
+  --card-bg: #ffffff;
 }
 
 @theme inline {
@@ -12,10 +14,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Remove this dark mode section completely or override it to always use light mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Force light mode colors even in dark mode */
+    --background: #ffffff;
+    --foreground: #171717;
   }
 }
 
@@ -23,4 +27,65 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* Force white background on specific elements */
+main {
+  background-color: #ffffff;
+}
+
+footer {
+  background-color: #ffffff !important;
+}
+
+/* If you have a dark section at the bottom, find and remove it */
+.your-dark-section-class {
+  background-color: white !important;
+}
+
+/* Make homepage category cards colorful instead of gray */
+.category-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.category-card-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+}
+
+/* Category-specific background colors */
+.category-apartments {
+  background-color: #90cdf4; /* blue-300 */
+}
+
+.category-houses {
+  background-color: #9ae6b4; /* green-300 */
+}
+
+.category-land {
+  background-color: #fbd38d; /* yellow-300 */
+}
+
+.category-commercial {
+  background-color: #d6bcfa; /* purple-300 */
+}
+
+.category-industrial {
+  background-color: #e2e8f0; /* gray-300 */
 }

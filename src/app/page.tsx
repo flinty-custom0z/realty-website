@@ -4,6 +4,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Map category slugs to their placeholder images
+const categoryImages = {
+  'apartments': '/images/apartment_placeholder.png',
+  'houses': '/images/house_placeholder.png',
+  'land': '/images/land_placeholder.png',
+  'commercial': '/images/commercial_placeholder.png',
+  'industrial': '/images/industrial_placeholder.png'
+};
+
 async function getCategories() {
   const categories = await prisma.category.findMany({
     include: {
@@ -26,11 +35,20 @@ export default async function Home() {
           <Link 
             key={category.id}
             href={`/listing-category/${category.slug}`}
-            className="relative overflow-hidden rounded-lg shadow-md h-64 group"
+            className={`category-card h-64 category-${category.slug}`}
           >
-            <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-40 transition-opacity"></div>
+            {/* Use category placeholder image as background */}
+            <div className="absolute inset-0 w-full h-full">
+              <Image
+                src={categoryImages[category.slug as keyof typeof categoryImages] || '/images/placeholder.jpg'}
+                alt={category.name}
+                fill
+                style={{ objectFit: 'cover' }}
+                priority
+              />
+            </div>
             
-            <div className="relative h-full flex flex-col items-center justify-center text-center p-6 z-10">
+            <div className="category-card-content h-full flex flex-col items-center justify-center text-center p-6">
               <h2 className="text-2xl font-bold text-white mb-2">{category.name}</h2>
               <p className="text-white text-xl">
                 {category._count.listings} {getListingText(category._count.listings)}

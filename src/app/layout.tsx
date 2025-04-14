@@ -40,7 +40,7 @@ export default function RootLayout({
             <SearchForm/>
           </div>
         </header>
-        <main className="flex-1 bg-white">
+  <main className="bg-white min-h-screen">
           {children}
         </main>
         <footer className="bg-white py-6 mt-12 border-t">
