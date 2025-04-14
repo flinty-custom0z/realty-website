@@ -36,7 +36,7 @@ async function main() {
     // Apartments
     {
       title: 'Школьная 1/4',
-      description: 'Просторная квартира в хорошем состоянии',
+      publicDescription: 'Просторная квартира в хорошем состоянии',
       categorySlug: 'apartments',
       district: 'Школьная',
       rooms: 1,
@@ -49,7 +49,7 @@ async function main() {
     },
     {
       title: 'Ставропольская 161',
-      description: 'Уютная квартира в центре города',
+      publicDescription: 'Уютная квартира в центре города',
       categorySlug: 'apartments',
       district: 'Ставропольский',
       rooms: 1, 
@@ -64,7 +64,7 @@ async function main() {
     // Houses
     {
       title: 'Дружелюбный пос.',
-      description: 'Просторный дом для большой семьи',
+      publicDescription: 'Просторный дом для большой семьи',
       categorySlug: 'houses',
       district: 'Дружелюбный',
       rooms: 3,
@@ -78,7 +78,7 @@ async function main() {
     // Land
     {
       title: 'Динской р-он',
-      description: 'Земельный участок для коммерческого использования',
+      publicDescription: 'Земельный участок для коммерческого использования',
       categorySlug: 'land',
       district: 'Динской р-он',
       landArea: 50,
@@ -88,7 +88,7 @@ async function main() {
     // Commercial
     {
       title: 'ЖК Московский',
-      description: 'Коммерческое помещение в новом жилом комплексе',
+      publicDescription: 'Коммерческое помещение в новом жилом комплексе',
       categorySlug: 'commercial',
       district: 'ЗИП-ЖК Московский',
       houseArea: 22,
@@ -100,7 +100,7 @@ async function main() {
     // Industrial
     {
       title: 'Промышленная база',
-      description: 'Производственное помещение с офисом',
+      publicDescription: 'Производственное помещение с офисом',
       categorySlug: 'industrial',
       district: 'Таманский',
       landArea: 130,
@@ -133,7 +133,7 @@ async function main() {
     await prisma.listing.create({
       data: {
         title: listing.title,
-        description: listing.description,
+        publicDescription: listing.publicDescription,
         categoryId: category.id,
         district: listing.district,
         rooms: listing.rooms || null,

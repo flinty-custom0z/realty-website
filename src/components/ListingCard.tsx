@@ -34,7 +34,7 @@ export default function ListingCard({
         <div className="relative h-48 bg-gray-200">
           {imagePath ? (
             <Image
-              src={imagePath}
+              src={imagePath?.startsWith('/images') ? imagePath : `/images/${imagePath}`}
               alt={title}
               fill
               className="object-cover"

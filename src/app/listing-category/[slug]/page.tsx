@@ -30,7 +30,7 @@ async function getListings(
   if (searchParams.q) {
     filter.OR = [
       { title: { contains: searchParams.q as string, mode: 'insensitive' } },
-      { description: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { publicDescription: { contains: searchParams.q, mode: 'insensitive' } },
     ];
   }
   

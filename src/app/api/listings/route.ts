@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     if (searchQuery) {
       filter.OR = [
         { title: { contains: searchQuery, mode: 'insensitive' } },
-        { description: { contains: searchQuery, mode: 'insensitive' } },
+        { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
       ];
     }
 

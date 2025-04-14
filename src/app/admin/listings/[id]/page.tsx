@@ -7,7 +7,8 @@ import Link from 'next/link';
 
 interface ListingFormData {
   title: string;
-  description: string;
+  publicDescription: string,
+  adminComment: string,
   categoryId: string;
   district: string;
   rooms: string;
@@ -76,7 +77,8 @@ export default function EditListingPage() {
   // Form data
   const [formData, setFormData] = useState<ListingFormData>({
     title: '',
-    description: '',
+    publicDescription: '',
+    adminComment: '',
     categoryId: '',
     district: '',
     rooms: '',
@@ -107,7 +109,8 @@ export default function EditListingPage() {
         // Set form data
         setFormData({
           title: listingData.title,
-          description: listingData.description || '',
+          publicDescription: listingData.publicDescription || '',
+          adminComment: listingData.adminComment || '',
           categoryId: listingData.categoryId,
           district: listingData.district || '',
           rooms: listingData.rooms?.toString() || '',
@@ -595,14 +598,26 @@ export default function EditListingPage() {
           </div>
           
           <div className="mt-6">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Описание
+            <label htmlFor="publicDescription" className="block text-sm font-medium text-gray-700 mb-1">
+              Описание (публичное)
             </label>
             <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
+              id="publicDescription"
+              name="publicDescription"
+              value={formData.publicDescription}
+              onChange={(e) => setFormData({ ...formData, publicDescription: e.target.value })}
+              rows={6}
+              className="w-full p-2 border rounded"
+            />
+
+            <label htmlFor="adminComment" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
+              Комментарий администратора (не виден пользователям)
+            </label>
+            <textarea
+              id="adminComment"
+              name="adminComment"
+              value={formData.adminComment}
+              onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
               rows={6}
               className="w-full p-2 border rounded"
             />

@@ -32,7 +32,8 @@ model Category {
 model Listing {
   id              String    @id @default(cuid())
   title           String
-  description     String?
+  publicDescription String?
+  adminComment      String?
   categoryId      String
   category        Category  @relation(fields: [categoryId], references: [id])
   userId          String

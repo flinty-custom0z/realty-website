@@ -33,7 +33,8 @@ async function handleUpdateListing(req: NextRequest, user: any, { params }: { pa
     
     // Extract listing data
     const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
+    const publicDescription = formData.get('publicDescription') as string;
+    const adminComment = formData.get('adminComment') as string;
     const categoryId = formData.get('categoryId') as string;
     const price = parseFloat(formData.get('price') as string);
     const district = formData.get('district') as string;
@@ -53,7 +54,8 @@ async function handleUpdateListing(req: NextRequest, user: any, { params }: { pa
       where: { id: params.id },
       data: {
         title,
-        description,
+        publicDescription,
+        adminComment,
         categoryId,
         district,
         rooms: rooms || null,

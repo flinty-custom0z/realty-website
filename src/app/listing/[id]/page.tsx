@@ -112,12 +112,12 @@ export default async function ListingDetailPage({ params }: { params: any }) {
             </div>
           </div>
           
-          {/* Description */}
-          {listing.description && (
+          {/* Public Description */}
+          {listing.publicDescription && (
             <div className="bg-white shadow rounded-md p-6 mb-6">
               <h2 className="text-xl font-bold mb-4">Комментарий</h2>
               <div className="prose max-w-none">
-                {listing.description.split('\n').map((paragraph, i) => (
+                {listing.publicDescription.split('\n').map((paragraph, i) => (
                   <p key={i} className="mb-4">{paragraph}</p>
                 ))}
               </div>
