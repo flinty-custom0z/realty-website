@@ -5,10 +5,6 @@ import Link from 'next/link';
 
 const prisma = new PrismaClient();
 
-interface PageProps {
-  params: { id: string };
-}
-
 async function getListing(id: string) {
   const listing = await prisma.listing.findUnique({
     where: { id },
@@ -28,7 +24,7 @@ async function getListing(id: string) {
   return listing;
 }
 
-export default async function ListingDetailPage({ params }: PageProps) {
+export default async function ListingDetailPage({ params }) {
   const listing = await getListing(params.id);
   
   if (!listing) {
