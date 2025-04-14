@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     const token = generateToken(user.id);
     
     // Set HTTP-only cookie
-    cookies().set({
+    const cookieStore = await cookies();
+    cookieStore.set({
       name: 'token',
       value: token,
       httpOnly: true,

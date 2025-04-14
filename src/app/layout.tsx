@@ -36,7 +36,7 @@ export default function RootLayout({
             </nav>
           </div>
           <div className="w-full max-w-md mx-auto mt-4">
-            <SearchForm />
+            <SearchForm/>
           </div>
         </header>
         <main>

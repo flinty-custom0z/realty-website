@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, context: { params: any }) {
     const user = await verifyAuth(req);
     if (!user) {
       // Remove comments for non-admin users
-      delete listing.comments;
+      listing.comments = [];
     }
 
     return NextResponse.json(listing);
