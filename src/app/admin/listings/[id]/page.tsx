@@ -51,11 +51,11 @@ interface ListingData extends ListingFormData {
   }[];
 }
 
-interface PageProps {
-  params: { id: string };
-}
+import { useParams } from 'next/navigation';
 
-export default function EditListingPage({ params }: PageProps) {
+export default function EditListingPage() {
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const [listing, setListing] = useState<ListingData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -124,7 +124,7 @@ export default function EditListingPage({ params }: PageProps) {
         });
         
         // Set featured image
-        const featuredImage = listingData.images.find(img => img.isFeatured);
+        const featuredImage = listingData.images.find((img: ImageData) => img.isFeatured);
         if (featuredImage) {
           setFeaturedImageId(featuredImage.id);
         }

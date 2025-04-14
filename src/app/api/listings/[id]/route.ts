@@ -4,10 +4,11 @@ import { verifyAuth } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: any }) {
+  const { id } = context.params;
   try {
     const listing = await prisma.listing.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         user: {

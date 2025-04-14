@@ -6,10 +6,7 @@ import { notFound } from 'next/navigation';
 
 const prisma = new PrismaClient();
 
-interface PageProps {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+
 
 async function getCategory(slug: string) {
   const category = await prisma.category.findUnique({
@@ -21,7 +18,7 @@ async function getCategory(slug: string) {
 
 async function getListings(
   categoryId: string,
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Record<string, string | string[] | undefined>
 ) {
   // Build filter object
   const filter: any = { 
@@ -95,7 +92,9 @@ async function getListings(
   };
 }
 
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+type SearchParamsType = { [key: string]: string | string[] | undefined };
+
+export default async function Page({ params, searchParams }) {
   const category = await getCategory(params.slug);
   
   if (!category) {
@@ -104,6 +103,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   
   const { listings, pagination } = await getListings(category.id, searchParams);
   
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">{category.name}</h1>
