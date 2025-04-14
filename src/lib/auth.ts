@@ -4,15 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable is required in production');
-  } else {
-    console.warn('Warning: Using default JWT_SECRET in development environment');
-    JWT_SECRET = 'dev-only-secret-not-for-production';
-  }
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function authenticateUser(username: string, password: string) {
   const user = await prisma.user.findUnique({
