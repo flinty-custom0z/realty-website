@@ -4,6 +4,8 @@ import ListingCard from '@/components/ListingCard';
 import FilterSidebar from '@/components/FilterSidebar';
 import { notFound } from 'next/navigation';
 
+
+
 const prisma = new PrismaClient();
 
 

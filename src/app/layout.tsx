@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Inter } from 'next/font/google';
+import SearchForm from '@/components/SearchForm';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
