@@ -1,6 +1,5 @@
-// src/middleware.ts (outside app directory)
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   // Skip login page
@@ -14,6 +13,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
     
     if (!token) {
+      console.log('No token found, redirecting to login');
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
     
@@ -21,13 +21,14 @@ export async function middleware(request: NextRequest) {
       // Simple token validation without database check for performance
       // Full validation happens in the getUser function inside the admin layout
       const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+      const { jwtVerify } = await import('jose');
+      const encoder = new TextEncoder();
       
-      // Use a dynamic import for jsonwebtoken to avoid Edge API issues
-      const jwt = await import('jsonwebtoken');
-      jwt.verify(token, JWT_SECRET);
+      await jwtVerify(token, encoder.encode(JWT_SECRET));
       
       return NextResponse.next();
     } catch (error) {
+      console.error('Invalid token:', error);
       // Invalid token, redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
@@ -40,4 +41,4 @@ export async function middleware(request: NextRequest) {
 // Configure matcher for middleware to run only on admin routes
 export const config = {
   matcher: '/admin/:path*',
-}
+};

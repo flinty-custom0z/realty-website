@@ -16,6 +16,8 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
+      console.log('Attempting login with:', { username });
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -24,15 +26,18 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Login failed');
       }
       
-      // Redirect to admin dashboard
-      router.push('/admin');
-      router.refresh();
+      console.log('Login successful, redirecting...');
+      
+      // Force a hard reload to ensure cookie is applied
+      window.location.href = '/admin';
     } catch (error) {
+      console.error('Login error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {

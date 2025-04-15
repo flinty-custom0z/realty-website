@@ -938,7 +938,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export const metadata: Metadata = {
-  title: 'Городские Кварталы - Краснодарская недвижимость',
+  title: 'Вторичный Выбор - Краснодарская недвижимость',
   description: 'Сайт недвижимости в Краснодаре',
 };
 
@@ -954,7 +954,7 @@ export default function RootLayout({
           <div className="container mx-auto py-4 px-4 flex justify-between items-center">
             <Link href="/" className="text-2xl font-bold text-red-600">
               <div className="flex items-center">
-                <span className="text-red-600">ГОРОДСКИЕ КВАРТАЛЫ</span>
+                <span className="text-red-600">ВТОРИЧНЫЙ ВЫБОР</span>
               </div>
               <div className="text-sm text-blue-500">краснодарская недвижимость</div>
             </Link>
