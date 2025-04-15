@@ -31,14 +31,14 @@ export default function ListingCard({
   return (
     <Link href={`/listing/${id}`} className="block group">
       <div className="bg-white shadow rounded-md overflow-hidden transition-shadow hover:shadow-md">
-        <div className="relative aspect-video bg-gray-200">
+      <div className="relative w-full h-64">
           {imagePath ? (
             <Image
               src={imagePath.startsWith('/images') ? imagePath : `/images/${imagePath}`}
               alt={title}
               fill
-              className="object-cover"
-            />
+              className="object-cover rounded-md"
+            />          
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               Нет фото

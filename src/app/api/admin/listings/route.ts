@@ -41,7 +41,7 @@ async function handleCreateListing(req: NextRequest) {
     const noKids = formData.get('noKids') === 'true';
     
     // Generate listing code (e.g., "A-5005")
-    const prefix = categoryId.charAt(0).toUpperCase();
+    const prefix = String(categoryId).charAt(0).toUpperCase();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const listingCode = `${prefix}-${randomNum}`;
 

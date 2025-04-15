@@ -390,31 +390,31 @@ export default function CreateListingPage() {
           </label>
           <input
             type="file"
-            accept="image/*"
             multiple
+            accept="image/*"
             onChange={handleImageChange}
-            className="w-full p-2 border rounded"
+            className="mb-4"
           />
           
           {imagePreviews.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-              {imagePreviews.map((preview, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={preview.url}
-                    alt={`Preview ${index + 1}`}
-                    className="h-24 w-full object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+          <div className="flex space-x-4 overflow-x-auto py-2">
+          {imagePreviews.map((preview, index) => (
+            <div key={index} className="relative group flex-shrink-0">
+              <img
+                src={preview.url}
+                alt={`Preview ${index + 1}`}
+                className="h-32 w-auto rounded-md object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
             </div>
+          ))}
+        </div>        
           )}
         </div>
         

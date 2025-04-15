@@ -54,6 +54,7 @@ export function withAuth(handler: Function) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    return handler(req, user);
+    (req as any).user = user;
+    return handler(req);
   };
 }
