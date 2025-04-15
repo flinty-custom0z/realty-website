@@ -31,10 +31,10 @@ export default function ListingCard({
   return (
     <Link href={`/listing/${id}`} className="block group">
       <div className="bg-white shadow rounded-md overflow-hidden transition-shadow hover:shadow-md">
-        <div className="relative h-48 bg-gray-200">
+        <div className="relative aspect-video bg-gray-200">
           {imagePath ? (
             <Image
-              src={imagePath?.startsWith('/images') ? imagePath : `/images/${imagePath}`}
+              src={imagePath.startsWith('/images') ? imagePath : `/images/${imagePath}`}
               alt={title}
               fill
               className="object-cover"

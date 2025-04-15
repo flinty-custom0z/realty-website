@@ -1,42 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
-import { writeFile, mkdir, unlink } from 'fs/promises';
+import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-const prisma = new PrismaClient();
-
-async function saveImage(image: File): Promise<string> {
-  const bytes = await image.arrayBuffer();
+async function saveImage(file: File) {
+  const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  // Create directory if it doesn't exist
-  const uploadDir = path.join(process.cwd(), 'public/images');
-  await mkdir(uploadDir, { recursive: true });
+  const ext = file.name.split('.').pop();
+  const filename = `${uuidv4()}.${ext}`;
+  const filePath = path.join(process.cwd(), 'public', 'images', filename);
 
-  // Generate unique filename
-  const uniqueId = uuidv4();
-  const extension = image.name.split('.').pop();
-  const filename = `${uniqueId}.${extension}`;
-  const filepath = path.join(uploadDir, filename);
-
-  // Save file
-  await writeFile(filepath, buffer);
+  await writeFile(filePath, buffer);
   return `/images/${filename}`;
 }
 
-// Update listing
-async function handleUpdateListing(req: NextRequest, user: any, { params }: { params: { id: string } }) {
+export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
   try {
     const formData = await req.formData();
-    
-    // Extract listing data
+    const listingId = params.id;
+
+    // Basic fields
     const title = formData.get('title') as string;
-    const publicDescription = formData.get('publicDescription') as string;
-    const adminComment = formData.get('adminComment') as string;
-    const categoryId = formData.get('categoryId') as string;
     const price = parseFloat(formData.get('price') as string);
+    const status = formData.get('status') as string;
     const district = formData.get('district') as string;
     const rooms = parseInt(formData.get('rooms') as string || '0');
     const floor = parseInt(formData.get('floor') as string || '0');
@@ -45,112 +34,102 @@ async function handleUpdateListing(req: NextRequest, user: any, { params }: { pa
     const landArea = parseFloat(formData.get('landArea') as string || '0');
     const condition = formData.get('condition') as string;
     const yearBuilt = parseInt(formData.get('yearBuilt') as string || '0');
+    const categoryId = formData.get('categoryId') as string;
+    const publicDescription = formData.get('publicDescription') as string;
+    const adminComment = formData.get('adminComment') as string;
     const noEncumbrances = formData.get('noEncumbrances') === 'true';
     const noKids = formData.get('noKids') === 'true';
-    const status = formData.get('status') as string || 'active';
-    
-    // Update listing
-    const listing = await prisma.listing.update({
-      where: { id: params.id },
+
+    const imagesToDelete = JSON.parse(formData.get('imagesToDelete') as string || '[]');
+    const featuredImageId = formData.get('featuredImageId') as string;
+
+    // Update listing info
+    await prisma.listing.update({
+      where: { id: listingId },
       data: {
         title,
-        publicDescription,
-        adminComment,
-        categoryId,
-        district,
-        rooms: rooms || null,
-        floor: floor || null,
-        totalFloors: totalFloors || null,
-        houseArea: houseArea || null,
-        landArea: landArea || null,
-        condition,
-        yearBuilt: yearBuilt || null,
-        noEncumbrances,
-        noKids,
         price,
         status,
+        district,
+        rooms,
+        floor,
+        totalFloors,
+        houseArea,
+        landArea,
+        condition,
+        yearBuilt,
+        categoryId,
+        publicDescription,
+        adminComment,
+        noEncumbrances,
+        noKids
       },
     });
 
-    // Handle image uploads
-    const imagesToDelete = JSON.parse(formData.get('imagesToDelete') as string || '[]');
-    const newImages = formData.getAll('newImages') as File[];
-    
-    // Delete images if needed
-    if (imagesToDelete.length > 0) {
-      for (const imageId of imagesToDelete) {
-        const image = await prisma.image.findUnique({
-          where: { id: imageId },
-        });
-        
-        if (image) {
-          // Delete file from filesystem
-          try {
-            const filePath = path.join(process.cwd(), 'public', image.path);
-            await unlink(filePath);
-          } catch (error) {
-            console.error('Error deleting file:', error);
-          }
-          
-          // Delete from database
-          await prisma.image.delete({
-            where: { id: imageId },
-          });
-        }
-      }
-    }
-    
-    // Upload new images
-    if (newImages && newImages.length > 0) {
-      const currentImages = await prisma.image.count({
-        where: { listingId: params.id },
-      });
-      
-      const imagePromises = newImages.map(async (image, index) => {
-        const imagePath = await saveImage(image);
+    // Handle new image uploads
+    const images = formData.getAll('images') as File[];
+
+    if (images.length > 0) {
+      const imagePromises = images.map(async (file) => {
+        const imagePath = await saveImage(file);
         return prisma.image.create({
           data: {
-            listingId: listing.id,
+            listingId,
             path: imagePath,
-            isFeatured: currentImages === 0 && index === 0, // First image is featured if no existing images
+            isFeatured: false,
           },
         });
       });
-
       await Promise.all(imagePromises);
     }
 
-    // Update featured image if indicated
-    const featuredImageId = formData.get('featuredImageId') as string;
+    // Delete images
+    if (imagesToDelete.length > 0) {
+      const oldImages = await prisma.image.findMany({
+        where: { id: { in: imagesToDelete }, listingId },
+      });
+
+      await Promise.all(
+        oldImages.map(async (img) => {
+          const filePath = path.join(process.cwd(), 'public', img.path);
+          await unlink(filePath).catch(() => null);
+        })
+      );
+
+      await prisma.image.deleteMany({
+        where: { id: { in: imagesToDelete }, listingId },
+      });
+    }
+
+    // Set featured image
     if (featuredImageId) {
-      // First, reset all images to non-featured
       await prisma.image.updateMany({
-        where: { listingId: params.id },
+        where: { listingId },
         data: { isFeatured: false },
       });
-      
-      // Then set the selected image as featured
+
       await prisma.image.update({
         where: { id: featuredImageId },
         data: { isFeatured: true },
       });
     }
 
-    return NextResponse.json(listing);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+    const updatedListing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      include: { images: true, comments: true },
+    });
 
-export const PUT = withAuth((req: NextRequest, user: any, params: { params: { id: string } }) => 
-  handleUpdateListing(req, user, params)
-);
+    return NextResponse.json(updatedListing);
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Failed to update listing' }, { status: 500 });
+  }
+});
+
 
 // Delete listing
 async function handleDeleteListing(req: NextRequest, user: any, { params }: { params: { id: string } }) {
   try {
-    // Find the listing to delete (to get images)
     const listing = await prisma.listing.findUnique({
       where: { id: params.id },
       include: { images: true },
@@ -160,28 +139,28 @@ async function handleDeleteListing(req: NextRequest, user: any, { params }: { pa
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
     }
 
-    // Delete images from filesystem
+    // Delete images from disk
     for (const image of listing.images) {
       try {
         const filePath = path.join(process.cwd(), 'public', image.path);
         await unlink(filePath);
       } catch (error) {
-        console.error('Error deleting file:', error);
+        console.warn('File delete warning:', error);
       }
     }
 
-    // Delete listing (will cascade delete images and comments)
+    // Delete the listing (cascades images/comments)
     await prisma.listing.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(error);
+    console.error('Delete failed:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export const DELETE = withAuth((req: NextRequest, user: any, params: { params: { id: string } }) => 
+export const DELETE = withAuth((req: NextRequest, user: any, params: { params: { id: string } }) =>
   handleDeleteListing(req, user, params)
 );

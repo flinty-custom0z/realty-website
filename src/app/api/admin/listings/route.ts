@@ -1,35 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { withAuth } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
+import prisma from '@/lib/prisma';
+import { writeFile } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-const prisma = new PrismaClient();
-
-async function saveImage(image: File): Promise<string> {
-  const bytes = await image.arrayBuffer();
+async function saveImage(file: File) {
+  const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  // Create directory if it doesn't exist
-  const uploadDir = path.join(process.cwd(), 'public/images');
-  await mkdir(uploadDir, { recursive: true });
+  const ext = file.name.split('.').pop();
+  const filename = `${uuidv4()}.${ext}`;
+  const filePath = path.join(process.cwd(), 'public', 'images', filename);
 
-  // Generate unique filename
-  const uniqueId = uuidv4();
-  const extension = image.name.split('.').pop();
-  const filename = `${uniqueId}.${extension}`;
-  const filepath = path.join(uploadDir, filename);
+  await writeFile(filePath, buffer);
 
-  // Save file
-  await writeFile(filepath, buffer);
   return `/images/${filename}`;
 }
 
-// Protected route handler
-async function handleCreateListing(req: NextRequest, user: any) {
+async function handleCreateListing(req: NextRequest) {
   try {
     const formData = await req.formData();
+    const user = (req as any).user;
     
     // Extract listing data
     const title = formData.get('title') as string;
@@ -79,9 +71,9 @@ async function handleCreateListing(req: NextRequest, user: any) {
     // Handle image uploads
     const images = formData.getAll('images') as File[];
     
-    if (images && images.length > 0) {
-      const imagePromises = images.map(async (image, index) => {
-        const imagePath = await saveImage(image);
+    if (images.length > 0) {
+      const imagePromises = images.map(async (file, index) => {
+        const imagePath = await saveImage(file);
         return prisma.image.create({
           data: {
             listingId: listing.id,
@@ -95,8 +87,8 @@ async function handleCreateListing(req: NextRequest, user: any) {
     }
 
     return NextResponse.json(listing, { status: 201 });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
