@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
-  // Update this line to await the cookies() function
+  // In Next.js 15.3.0, cookies() returns a Promise that needs to be awaited
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
@@ -36,12 +36,9 @@ export default async function AdminLayout({
 }) {
   const user = await getUserFromCookie();
   
-  // REMOVE THIS PROBLEMATIC LINE:
-  // if (!user && !window.location.pathname.includes('/admin/login')) {
-  //   redirect('/admin/login');
-  // }
-  
-  // Instead, we'll handle the login redirect at the page level
+  // Check current path - we can't use window in server components
+  // This is a server component, so we need to approach this differently
+  // Using pathname check would need client component with usePathname
   
   return (
     <div className="flex min-h-screen bg-gray-100">

@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 
 // Map category slugs to their placeholder images
 const categoryImages = {
-  'apartments': '/images/apartment_placeholder.png',
-  'houses': '/images/house_placeholder.png',
+  'apartments': '/images/apartments_placeholder.png',
+  'houses': '/images/houses_placeholder.png',
   'land': '/images/land_placeholder.png',
   'commercial': '/images/commercial_placeholder.png',
   'industrial': '/images/industrial_placeholder.png'
@@ -127,7 +127,7 @@ async function main() {
     const user = users[Math.floor(Math.random() * users.length)];
     
     // Get the appropriate placeholder image for this category
-    const imagePath = categoryImages[listing.categorySlug as keyof typeof categoryImages] || '/images/placeholder.jpg';
+    const imagePath = categoryImages[listing.categorySlug as keyof typeof categoryImages] || '/images/placeholder.png';
     
     // Create listing
     await prisma.listing.create({

@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import ClientImage from '@/components/ClientImage';
 
 interface ListingCardProps {
   id: string;
@@ -33,14 +33,18 @@ export default function ListingCard({
       <div className="bg-white shadow rounded-md overflow-hidden transition-shadow hover:shadow-md">
       <div className="relative w-full h-64">
           {imagePath ? (
-            <Image
-              src={imagePath.startsWith('/images') ? imagePath : `/images/${imagePath}`}
+            <div className="relative w-full h-full">
+              <ClientImage
+              src={imagePath}
               alt={title}
               fill
-              className="object-cover rounded-md"
-            />          
+                className="object-cover rounded-md"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              fallbackSrc="/images/placeholder.png"
+              />
+            </div>
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
               Нет фото
             </div>
           )}

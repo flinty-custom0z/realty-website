@@ -47,7 +47,7 @@ export async function verifyAuth(req: NextRequest) {
 }
 
 export function withAuth(handler: Function) {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, ...args: any[]) => {
     const user = await verifyAuth(req);
     
     if (!user) {
@@ -55,6 +55,6 @@ export function withAuth(handler: Function) {
     }
     
     (req as any).user = user;
-    return handler(req);
+    return handler(req, ...args);
   };
 }

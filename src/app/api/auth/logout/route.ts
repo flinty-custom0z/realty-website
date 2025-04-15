@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function POST() {
   try {
+    // Update cookies handling to use await
     const cookieStore = await cookies();
     cookieStore.set({
       name: 'token',

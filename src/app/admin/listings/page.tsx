@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import ClientImage from '@/components/ClientImage';
 
 interface Listing {
   id: string;
@@ -184,20 +184,21 @@ export default function AdminListingsPage() {
                   {listings.map((listing) => (
                     <tr key={listing.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <div className="relative w-12 h-12 bg-gray-200">
-                          {listing.images && listing.images[0] ? (
-                            <Image
+                        <div className="relative w-12 h-12 bg-gray-200 rounded overflow-hidden">
+                            {listing.images && listing.images[0] ? (
+                            <ClientImage
                               src={listing.images[0].path}
                               alt={listing.title}
                               fill
                               sizes="48px"
                               className="object-cover"
+                              fallbackSrc="/images/placeholder.png"
                             />
-                          ) : (
+                            ) : (
                             <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
                               Нет фото
                             </div>
-                          )}
+                            )}
                         </div>
                       </td>
                       <td className="py-3 px-4">

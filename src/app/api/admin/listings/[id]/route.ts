@@ -1,19 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, mkdir, unlink, access } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+async function ensureDirectoryExists(dirPath: string) {
+  try {
+    await access(dirPath);
+  } catch (error) {
+    // Directory doesn't exist, create it
+    await mkdir(dirPath, { recursive: true });
+  }
+}
 
 async function saveImage(file: File) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const ext = file.name.split('.').pop();
+  // Extract original file extension
+  const originalName = file.name;
+  const ext = originalName.split('.').pop()?.toLowerCase() || 'jpg';
+  
+  // Generate unique filename
   const filename = `${uuidv4()}.${ext}`;
-  const filePath = path.join(process.cwd(), 'public', 'images', filename);
+  
+  // Ensure images directory exists
+  const imagesDir = path.join(process.cwd(), 'public', 'images');
+  await ensureDirectoryExists(imagesDir);
 
+  const filePath = path.join(imagesDir, filename);
+
+  // Save the file
   await writeFile(filePath, buffer);
+  
+  // Return path relative to public directory
   return `/images/${filename}`;
 }
 

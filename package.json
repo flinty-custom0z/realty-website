@@ -8,12 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
-    "seed-listings": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-listings.ts"
-
+    "seed-listings": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-listings.ts",
+    "create-placeholders": "node scripts/create-placeholders.js",
+    "prepare": "mkdir -p public/images"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",
     "bcrypt": "^5.1.1",
+    "canvas": "^3.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.2",
     "next": "15.3.0",

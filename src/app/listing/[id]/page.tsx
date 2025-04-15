@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import ClientImage from '@/components/ClientImage';
 
 const prisma = new PrismaClient();
 
@@ -31,7 +31,6 @@ export default async function ListingDetailPage({ params }: { params: any }) {
     notFound();
   }
   
-  
   // Format date
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');
   
@@ -49,12 +48,17 @@ export default async function ListingDetailPage({ params }: { params: any }) {
       <div className="mb-8">
         <div className="relative h-96 bg-gray-200 mb-2 rounded overflow-hidden">
           {listing.images.length > 0 ? (
-            <Image
-              src={listing.images[0].path}
-              alt={listing.title}
-              fill
-              className="object-contain"
-            />
+            <div className="relative h-full w-full">
+              <ClientImage
+                src={listing.images[0].path}
+                alt={listing.title}
+                fill
+                className="object-contain"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                priority={true}
+                fallbackSrc="/images/placeholder.png"
+              />
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400">
               Нет фото
@@ -66,11 +70,13 @@ export default async function ListingDetailPage({ params }: { params: any }) {
           <div className="grid grid-cols-6 gap-2">
             {listing.images.map((image) => (
               <div key={image.id} className="relative h-20 bg-gray-200 rounded overflow-hidden">
-                <Image
+                <ClientImage
                   src={image.path}
                   alt={listing.title}
                   fill
                   className="object-cover cursor-pointer"
+                  sizes="(max-width: 768px) 16vw, 100px"
+                  fallbackSrc="/images/placeholder.png"
                 />
               </div>
             ))}
