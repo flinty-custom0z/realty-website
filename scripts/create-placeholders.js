@@ -19,6 +19,12 @@ if (!fs.existsSync(imagesDir)) {
 
 // Create a default placeholder
 function createDefaultPlaceholder() {
+  const placeholderPath = path.join(imagesDir, 'placeholder.png');
+  if (fs.existsSync(placeholderPath)) {
+    console.log('Default placeholder already exists');
+    return;
+  }
+
   const width = 400;
   const height = 300;
   const canvas = createCanvas(width, height);
@@ -37,7 +43,7 @@ function createDefaultPlaceholder() {
 
   // Save the image
   const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync(path.join(imagesDir, 'placeholder.png'), buffer);
+  fs.writeFileSync(placeholderPath, buffer);
   console.log('Created default placeholder image');
 }
 
@@ -47,6 +53,12 @@ function createCategoryPlaceholders() {
   const height = 300;
 
   categories.forEach(category => {
+    const placeholderPath = path.join(imagesDir, `${category.slug}_placeholder.png`);
+    if (fs.existsSync(placeholderPath)) {
+      console.log(`Placeholder for ${category.slug} already exists`);
+      return;
+    }
+
     const canvas = createCanvas(width, height);
     const context = canvas.getContext('2d');
 
@@ -63,7 +75,7 @@ function createCategoryPlaceholders() {
 
     // Save the image
     const buffer = canvas.toBuffer('image/png');
-    fs.writeFileSync(path.join(imagesDir, `${category.slug}_placeholder.png`), buffer);
+    fs.writeFileSync(placeholderPath, buffer);
     console.log(`Created placeholder for ${category.slug}`);
   });
 }

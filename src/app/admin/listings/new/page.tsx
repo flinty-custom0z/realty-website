@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import ClientImage from '@/components/ClientImage';
 
 interface Category {
   id: string;
@@ -19,6 +20,7 @@ export default function CreateListingPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   
@@ -45,12 +47,14 @@ export default function CreateListingPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        console.log('Fetching categories...');
         const response = await fetch('/api/categories');
         if (!response.ok) {
           throw new Error('Failed to fetch categories');
         }
         
         const data = await response.json();
+        console.log('Categories fetched:', data);
         setCategories(data);
         
         // Set default category
@@ -59,6 +63,7 @@ export default function CreateListingPage() {
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
+        setError('Failed to load categories. Please refresh the page and try again.');
       }
     };
     
@@ -101,8 +106,10 @@ export default function CreateListingPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
     
     try {
+      console.log('Creating new listing...');
       const formDataToSend = new FormData();
       
       // Add all form fields to FormData
@@ -115,20 +122,26 @@ export default function CreateListingPage() {
         formDataToSend.append('images', file);
       });
       
+      console.log('Sending form data...');
       const response = await fetch('/api/admin/listings', {
         method: 'POST',
         body: formDataToSend,
       });
       
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create listing');
+        console.error('Server error response:', responseData);
+        throw new Error(responseData.error || 'Failed to create listing');
       }
       
-      const data = await response.json();
+      console.log('Listing created successfully:', responseData);
+      setSuccess('Объявление успешно создано!');
       
-      // Redirect to edit page
-      router.push(`/admin/listings/${data.id}`);
+      // Wait a moment to show success message before redirecting
+      setTimeout(() => {
+        router.push(`/admin/listings/${responseData.id}`);
+      }, 1500);
     } catch (error) {
       console.error('Error creating listing:', error);
       setError(error instanceof Error ? error.message : 'Ошибка при создании объявления');
@@ -144,6 +157,12 @@ export default function CreateListingPage() {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {success}
         </div>
       )}
       
@@ -176,6 +195,9 @@ export default function CreateListingPage() {
               className="w-full p-2 border rounded"
               required
             >
+              {categories.length === 0 && (
+                <option value="">Загрузка категорий...</option>
+              )}
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -400,7 +422,7 @@ export default function CreateListingPage() {
           <div className="flex space-x-4 overflow-x-auto py-2">
           {imagePreviews.map((preview, index) => (
             <div key={index} className="relative group flex-shrink-0">
-              <img
+              <ClientImage
                 src={preview.url}
                 alt={`Preview ${index + 1}`}
                 className="h-32 w-auto rounded-md object-cover"

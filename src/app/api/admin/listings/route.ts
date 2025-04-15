@@ -1,27 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+async function ensureDirectoryExists(dirPath: string) {
+  try {
+    await mkdir(dirPath, { recursive: true });
+  } catch (error) {
+    // Directory might already exist or other error
+    console.error("Error ensuring directory exists:", error);
+  }
+}
+
 async function saveImage(file: File) {
+  try {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const ext = file.name.split('.').pop();
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const filename = `${uuidv4()}.${ext}`;
-  const filePath = path.join(process.cwd(), 'public', 'images', filename);
 
-  await writeFile(filePath, buffer);
+    // Ensure images directory exists
+    const imagesDir = path.join(process.cwd(), 'public', 'images');
+    await ensureDirectoryExists(imagesDir);
 
+    const filePath = path.join(imagesDir, filename);
+    console.log(`Saving image to: ${filePath}`);
+
+    await writeFile(filePath, buffer);
   return `/images/${filename}`;
+  } catch (error) {
+    console.error("Error saving image:", error);
+    throw new Error(`Failed to save image: ${error}`);
+  }
 }
 
 async function handleCreateListing(req: NextRequest) {
   try {
     const formData = await req.formData();
     const user = (req as any).user;
+    
+    console.log("Creating new listing for user:", user.name);
     
     // Extract listing data
     const title = formData.get('title') as string;
@@ -30,22 +51,33 @@ async function handleCreateListing(req: NextRequest) {
     const categoryId = formData.get('categoryId') as string;
     const price = parseFloat(formData.get('price') as string);
     const district = formData.get('district') as string;
-    const rooms = parseInt(formData.get('rooms') as string || '0');
-    const floor = parseInt(formData.get('floor') as string || '0');
-    const totalFloors = parseInt(formData.get('totalFloors') as string || '0');
-    const houseArea = parseFloat(formData.get('houseArea') as string || '0');
-    const landArea = parseFloat(formData.get('landArea') as string || '0');
+    
+    // Parse numeric values with fallbacks
+    const rooms = formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null;
+    const floor = formData.get('floor') ? parseInt(formData.get('floor') as string) : null;
+    const totalFloors = formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null;
+    const houseArea = formData.get('houseArea') ? parseFloat(formData.get('houseArea') as string) : null;
+    const landArea = formData.get('landArea') ? parseFloat(formData.get('landArea') as string) : null;
+    
     const condition = formData.get('condition') as string;
-    const yearBuilt = parseInt(formData.get('yearBuilt') as string || '0');
+    const yearBuilt = formData.get('yearBuilt') ? parseInt(formData.get('yearBuilt') as string) : null;
     const noEncumbrances = formData.get('noEncumbrances') === 'true';
     const noKids = formData.get('noKids') === 'true';
     
-    // Generate listing code (e.g., "A-5005")
-    const prefix = String(categoryId).charAt(0).toUpperCase();
+    console.log("Extracted form data:", {
+      title,
+      categoryId,
+      price
+    });
+    
+    // Generate listing code
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    const prefix = category ? category.name.charAt(0).toUpperCase() : 'X';
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const listingCode = `${prefix}-${randomNum}`;
 
     // Create listing
+    console.log("Creating listing in database");
     const listing = await prisma.listing.create({
       data: {
         title,
@@ -53,13 +85,13 @@ async function handleCreateListing(req: NextRequest) {
         adminComment,
         categoryId,
         district,
-        rooms: rooms || null,
-        floor: floor || null,
-        totalFloors: totalFloors || null,
-        houseArea: houseArea || null,
-        landArea: landArea || null,
+        rooms,
+        floor,
+        totalFloors,
+        houseArea,
+        landArea,
         condition,
-        yearBuilt: yearBuilt || null,
+        yearBuilt,
         noEncumbrances,
         noKids,
         price,
@@ -67,13 +99,18 @@ async function handleCreateListing(req: NextRequest) {
         userId: user.id,
       },
     });
+    console.log("Listing created with ID:", listing.id);
 
     // Handle image uploads
-    const images = formData.getAll('images') as File[];
+    const images = formData.getAll('images');
+    console.log(`Processing ${images.length} images`);
     
     if (images.length > 0) {
       const imagePromises = images.map(async (file, index) => {
+        if (file instanceof File) {
+          try {
         const imagePath = await saveImage(file);
+            console.log(`Image ${index + 1} saved at path: ${imagePath}`);
         return prisma.image.create({
           data: {
             listingId: listing.id,
@@ -81,15 +118,44 @@ async function handleCreateListing(req: NextRequest) {
             isFeatured: index === 0, // First image is featured
           },
         });
+          } catch (error) {
+            console.error(`Error processing image ${index + 1}:`, error);
+            // Continue with other images even if one fails
+            return null;
+          }
+        } else {
+          console.warn(`Image ${index + 1} is not a file:`, file);
+          return null;
+        }
       });
 
-      await Promise.all(imagePromises);
+      const results = await Promise.all(imagePromises);
+      console.log(`Created ${results.filter(Boolean).length} image records`);
+    } else {
+      // If no images were uploaded, use a placeholder
+      console.log("No images uploaded, using placeholder");
+      await prisma.image.create({
+        data: {
+          listingId: listing.id,
+          path: `/images/${category?.slug || 'placeholder'}_placeholder.png`,
+          isFeatured: true,
+        },
+      });
     }
 
-    return NextResponse.json(listing, { status: 201 });
+    console.log("Listing creation complete, returning response");
+    return NextResponse.json(listing, { 
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error creating listing:", err);
+    return NextResponse.json({ 
+      error: 'Error creating listing', 
+      details: err instanceof Error ? err.message : String(err) 
+    }, { status: 500 });
   }
 }
 
@@ -101,9 +167,28 @@ async function handleGetAllListings(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
+    const categoryFilter = searchParams.get('category');
+    const statusFilter = searchParams.get('status');
+
+    // Build filter
+    const filter: any = {};
+    
+    if (categoryFilter) {
+      const category = await prisma.category.findUnique({
+        where: { slug: categoryFilter },
+      });
+      if (category) {
+        filter.categoryId = category.id;
+      }
+    }
+    
+    if (statusFilter) {
+      filter.status = statusFilter;
+    }
 
     const [listings, total] = await Promise.all([
       prisma.listing.findMany({
+        where: filter,
         include: {
           category: true,
           user: {
@@ -124,7 +209,7 @@ async function handleGetAllListings(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.listing.count(),
+      prisma.listing.count({ where: filter }),
     ]);
 
     return NextResponse.json({
@@ -137,6 +222,7 @@ async function handleGetAllListings(req: NextRequest) {
       },
     });
   } catch (error) {
+    console.error("Error fetching listings:", error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
