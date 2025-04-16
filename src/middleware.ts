@@ -7,8 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow image/static file requests through
-  if (pathname.startsWith('/images/') || pathname.startsWith('/_next/') || pathname === '/favicon.ico') {
+  // Allow all static assets and API routes for images
+  if (
+    pathname.startsWith('/_next/') || 
+    pathname.startsWith('/images/') || 
+    pathname.startsWith('/api/image/') || 
+    pathname === '/favicon.ico'
+  ) {
     return NextResponse.next();
   }
   
@@ -17,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Check admin auth
+  // Check admin auth for admin routes
   if (pathname.startsWith('/admin')) {
     const token = request.cookies.get('token')?.value;
     
@@ -42,9 +47,11 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Only apply to admin routes
+// Update the matcher to be more specific and exclude our API route
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/admin-login',
+    '/((?!api/image|_next/static|_next/image|favicon.ico).*)',
   ],
 };

@@ -43,3 +43,9 @@ next-env.d.ts
 *.zip
 
 /exports
+
+/public
+
+public/images/
+
+exports/

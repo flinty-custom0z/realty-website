@@ -25,50 +25,32 @@ export default function ClientImage({
   const [imgSrc, setImgSrc] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
-    // Reset states when src changes
+    // If the path starts with /images/, convert it to use our API route
+    if (src.startsWith('/images/')) {
+      const imagePath = src.substring(8); // Remove "/images/" prefix
+      setImgSrc(`/api/image/${imagePath}`);
+    } else {
     setImgSrc(src);
+    }
+    
     setError(false);
     setIsLoading(true);
-    setRetryCount(0);
   }, [src]);
   
   const handleError = () => {
-    console.log(`Image error loading: ${imgSrc}, retry count: ${retryCount}`);
+    console.log(`Image error loading: ${imgSrc}`);
     
-    if (retryCount >= 3) {
-      // After 3 retries, use fallback
+    // If fallback also starts with /images/, convert it
+    if (fallbackSrc.startsWith('/images/')) {
+      const fallbackPath = fallbackSrc.substring(8);
+      setImgSrc(`/api/image/${fallbackPath}`);
+    } else {
       setImgSrc(fallbackSrc);
+    }
+    
     setError(true);
-      return;
-    }
-    
-    // Add cache-busting query parameter
-    const timestamp = new Date().getTime();
-    
-    // Try different approaches based on the current source
-    if (imgSrc.includes('/images/')) {
-      // For uploaded images, add cache busting
-      if (!imgSrc.includes('?')) {
-        setImgSrc(`${imgSrc}?t=${timestamp}`);
-      } else if (imgSrc.includes('apartment_')) {
-        // Try alternative naming pattern
-      setImgSrc(imgSrc.replace('apartment_', 'apartments_'));
-    } else if (imgSrc.includes('house_')) {
-      setImgSrc(imgSrc.replace('house_', 'houses_'));
-    } else {
-        // Fall back to placeholder
-        setImgSrc(`${fallbackSrc}?t=${timestamp}`);
-      }
-    } else {
-      // For non-image paths or if everything fails, use fallback
-      setImgSrc(`${fallbackSrc}?t=${timestamp}`);
-    }
-    
-    // Increment retry counter
-    setRetryCount(prev => prev + 1);
   };
   
   const handleLoad = () => {
@@ -83,7 +65,7 @@ export default function ClientImage({
         </div>
       )}
       
-      {imgSrc && (
+      {imgSrc && !error && (
     <Image
       src={imgSrc}
       alt={alt}
@@ -93,7 +75,7 @@ export default function ClientImage({
       priority={priority}
       onError={handleError}
           onLoad={handleLoad}
-          unoptimized={retryCount > 1} // Don't optimize after multiple retries
+          unoptimized={true} // Skip Next.js image optimization to troubleshoot
         />
       )}
       
