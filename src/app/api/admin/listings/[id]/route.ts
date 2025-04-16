@@ -5,15 +5,15 @@ import { writeFile, mkdir, unlink, access } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-// Add GET method to fetch listing details
-// Fix the type signature to match Next.js 15.3.0 expectations
-export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
+// GET method (fixed)
+export async function GET(req: NextRequest) {
   try {
-    const id = context.params.id;
-    console.log(`Fetching listing with ID: ${id}`);
+    const url = new URL(req.url);
+    const id = url.pathname.split('/').pop();
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing ID in request' }, { status: 400 });
+    }
     
     const listing = await prisma.listing.findUnique({
       where: { id },
@@ -31,14 +31,12 @@ export async function GET(
     });
 
     if (!listing) {
-      console.log(`Listing with ID ${id} not found`);
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
     }
 
-    console.log(`Successfully fetched listing: ${listing.title}`);
     return NextResponse.json(listing);
   } catch (error) {
-    console.error(`Error fetching listing:`, error);
+    console.error('GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -46,8 +44,7 @@ export async function GET(
 async function ensureDirectoryExists(dirPath: string) {
   try {
     await access(dirPath);
-  } catch (error) {
-    // Directory doesn't exist, create it
+  } catch {
     await mkdir(dirPath, { recursive: true });
   }
 }
@@ -55,18 +52,11 @@ async function ensureDirectoryExists(dirPath: string) {
 async function saveImage(file: File) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-
-  // Extract original file extension
-  const originalName = file.name;
-  const ext = originalName.split('.').pop()?.toLowerCase() || 'jpg';
-  
-  // Generate unique filename
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const filename = `${uuidv4()}.${ext}`;
-  
-  // Ensure images directory exists
   const imagesDir = path.join(process.cwd(), 'public', 'images');
-  await ensureDirectoryExists(imagesDir);
 
+  await ensureDirectoryExists(imagesDir);
   const filePath = path.join(imagesDir, filename);
 
   // Save the file

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/create-placeholders.js",
+    "prebuild": "node scripts/create-placeholders.js && node scripts/export-code.js",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint",
