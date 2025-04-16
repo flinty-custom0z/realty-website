@@ -13,6 +13,8 @@ interface ListingCardProps {
   condition?: string;
   imagePath?: string;
   listingCode: string;
+  categoryName?: string; // New prop to display category
+  showCategory?: boolean; // Flag to determine if category should be shown
 }
 
 export default function ListingCard({
@@ -27,6 +29,8 @@ export default function ListingCard({
   condition,
   imagePath,
   listingCode,
+  categoryName,
+  showCategory = false,
 }: ListingCardProps) {
   return (
     <Link href={`/listing/${id}`} className="block group">
@@ -46,6 +50,15 @@ export default function ListingCard({
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
               Нет фото
+            </div>
+          )}
+          
+          {/* Category badge - only show when specified */}
+          {showCategory && categoryName && (
+            <div className="absolute top-2 left-2">
+              <span className="bg-blue-500 text-white px-2 py-1 text-xs rounded-full">
+                {categoryName}
+              </span>
             </div>
           )}
         </div>

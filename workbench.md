@@ -31,6 +31,9 @@
 - Choosing district from avaliable
 - When searching across mult. categories show on each result what category it belongs to
 
+
+- Reset search query after refreshing the webpage
+
 ## Later
 
 - Admin login not working when accessing website via IP address (but working via localhost)

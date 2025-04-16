@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react'; // Add useEffect
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 interface Category {
@@ -33,6 +33,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   
   // Initialize state with default values
   const [priceRange, setPriceRange] = useState({
@@ -45,27 +46,72 @@ export default function FilterSidebar({
   const [selectedCondition, setSelectedCondition] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>(categorySlug);
   
+  // Flag to track if filters are active
+  const [filtersActive, setFiltersActive] = useState(false);
+  
+  // State for available districts
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
+  
+  // Fetch available districts
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      setIsLoadingDistricts(true);
+      try {
+        const response = await fetch('/api/districts');
+        if (response.ok) {
+          const districts = await response.json();
+          setAvailableDistricts(districts);
+        }
+      } catch (error) {
+        console.error('Error fetching districts:', error);
+      } finally {
+        setIsLoadingDistricts(false);
+      }
+    };
+    
+    fetchDistricts();
+  }, []);
+  
   // Update state from URL params after component mounts
   useEffect(() => {
     if (searchParams) {
+      const minPriceParam = searchParams.get('minPrice');
+      const maxPriceParam = searchParams.get('maxPrice');
+      const roomsParam = searchParams.getAll('rooms');
+      const districtParam = searchParams.get('district');
+      const conditionParam = searchParams.get('condition');
+      const categoryParam = searchParams.get('category');
+      
+      // Update price range
       setPriceRange({
-    min: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice') as string) : minPrice,
-    max: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice') as string) : maxPrice,
-  });
-  
-      setSelectedRooms(
-    searchParams.get('rooms') ? [parseInt(searchParams.get('rooms') as string)] : []
-  );
-  
-      setSelectedDistrict(searchParams.get('district') || '');
-      setSelectedCondition(searchParams.get('condition') || '');
-      setSelectedCategory(searchParams.get('category') || categorySlug);
+        min: minPriceParam ? parseInt(minPriceParam) : minPrice,
+        max: maxPriceParam ? parseInt(maxPriceParam) : maxPrice,
+      });
+      
+      // Update rooms - now supports multiple selections
+      if (roomsParam.length > 0) {
+        setSelectedRooms(roomsParam.map(r => parseInt(r)));
+      } else {
+        setSelectedRooms([]);
+      }
+      
+      setSelectedDistrict(districtParam || '');
+      setSelectedCondition(conditionParam || '');
+      setSelectedCategory(categoryParam || categorySlug);
+      
+      // Determine if filters are active
+      setFiltersActive(
+        !!minPriceParam || 
+        !!maxPriceParam || 
+        roomsParam.length > 0 || 
+        !!districtParam || 
+        !!conditionParam
+      );
     }
   }, [searchParams, categorySlug, minPrice, maxPrice]);
   
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    
+  const applyFilters = () => {
     // Build query params
     const params = new URLSearchParams();
     
@@ -77,9 +123,10 @@ export default function FilterSidebar({
       params.append('maxPrice', priceRange.max.toString());
     }
     
-    if (selectedRooms.length === 1) {
-      params.append('rooms', selectedRooms[0].toString());
-    }
+    // Support multiple room selections
+    selectedRooms.forEach(room => {
+      params.append('rooms', room.toString());
+    });
     
     if (selectedDistrict) {
       params.append('district', selectedDistrict);
@@ -96,27 +143,45 @@ export default function FilterSidebar({
       params.append('q', searchParams.get('q') as string);
     }
     
-    // If we're on the search page and a category is selected
+    // Navigate based on context
     if (categorySlug === '' && selectedCategory) {
       if (selectedCategory !== 'all') {
-        params.append('category', selectedCategory);
-        // Navigate with filters
-        router.push(`/search?${params.toString()}`);
+        // Navigate to category page with filters
+        router.push(`/listing-category/${selectedCategory}?${params.toString()}`);
       } else {
-        // If "all" is selected, just use regular search
+        // Navigate to search page with filters
         router.push(`/search?${params.toString()}`);
       }
     } else {
-      // Navigate with filters to category page
+      // Navigate with filters to current category page
       router.push(`/listing-category/${categorySlug}?${params.toString()}`);
     }
   };
   
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    applyFilters();
+  };
+  
+  // Auto-apply filters when selections change (with debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Only auto-apply if component has mounted and not the first render
+      if (searchParams) {
+        applyFilters();
+      }
+    }, 800); // 800ms debounce
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceRange, selectedRooms, selectedDistrict, selectedCondition, selectedCategory]);
+  
   const handleRoomToggle = (room: number) => {
+    // Toggle the room in the selection array
     if (selectedRooms.includes(room)) {
       setSelectedRooms(selectedRooms.filter(r => r !== room));
     } else {
-      setSelectedRooms([room]); // Only allow one selection
+      setSelectedRooms([...selectedRooms, room]);
     }
   };
   
@@ -143,10 +208,33 @@ export default function FilterSidebar({
     }
   };
   
+  // Back button - goes back to category page or home
+  const handleBack = () => {
+    if (categorySlug) {
+      router.push(`/listing-category/${categorySlug}`);
+    } else {
+      router.push('/');
+    }
+  };
+  
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-4 rounded-md shadow-sm">
-    <h3 className="text-lg font-medium mb-4">Фильтры</h3>
+    <div className="bg-white p-4 rounded-md shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Фильтры</h3>
     
+        {/* Back button when filters or search are active */}
+        {(filtersActive || searchQuery) && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="text-blue-500 hover:text-blue-700 text-sm font-medium flex items-center"
+          >
+            <span className="mr-1">←</span> Вернуться
+          </button>
+        )}
+      </div>
+    
+      <form onSubmit={handleSubmit}>
     {/* Category dropdown - Only show on search page */}
     {categorySlug === '' && categories.length > 0 && (
       <div className="mb-4">
@@ -208,7 +296,7 @@ export default function FilterSidebar({
     />
     </div>
     
-    {/* Rooms (for apartments/houses) */}
+        {/* Rooms (for apartments/houses) - multi-select enabled */}
     {(categorySlug === 'apartments' || categorySlug === 'houses' || categorySlug === '') && (
       <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">Количество комнат</label>
@@ -231,19 +319,30 @@ export default function FilterSidebar({
       </div>
     )}
     
-    {/* District */}
+        {/* District Dropdown */}
     <div className="mb-4">
     <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
     Район
     </label>
-    <input
-    type="text"
+          {isLoadingDistricts ? (
+            <div className="w-full p-2 text-gray-500 text-sm border rounded">
+              Загрузка районов...
+            </div>
+          ) : (
+            <select
     id="district"
     value={selectedDistrict}
     onChange={(e) => setSelectedDistrict(e.target.value)}
-    placeholder="Введите район"
     className="w-full p-2 border rounded text-sm"
-    />
+            >
+              <option value="">Все районы</option>
+              {availableDistricts.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
+          )}
     </div>
     
     {/* Condition */}
@@ -266,22 +365,19 @@ export default function FilterSidebar({
     </select>
     </div>
     
-    {/* Submit button */}
-    <button
-    type="submit"
-    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-2"
-    >
-    Фильтровать
-    </button>
-    
     {/* Reset button */}
     <button
     type="button"
     onClick={handleReset}
-    className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 transition"
+          className={`w-full mb-2 py-2 rounded transition ${
+            filtersActive 
+              ? 'bg-red-500 text-white hover:bg-red-600' 
+              : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+          }`}
     >
-    Сбросить фильтры
+          {filtersActive ? 'Сбросить фильтры' : 'Очистить'}
     </button>
     </form>
+    </div>
   );
 }

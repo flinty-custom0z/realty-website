@@ -44,8 +44,17 @@ async function getListings(
     filter.price = { ...filter.price, lte: parseFloat(searchParams.maxPrice as string) };
   }
   
-  if (searchParams.rooms) {
-    filter.rooms = parseInt(searchParams.rooms as string);
+  // Multi-room selection support
+  const roomParams = searchParams.rooms;
+  if (roomParams) {
+    // Handle both array and single value cases
+    const roomValues = Array.isArray(roomParams) 
+      ? roomParams.map(r => parseInt(r)) 
+      : [parseInt(roomParams as string)];
+    
+    if (roomValues.length > 0) {
+      filter.rooms = { in: roomValues };
+    }
   }
   
   if (searchParams.district) {
@@ -71,6 +80,7 @@ async function getListings(
   const listings = await prisma.listing.findMany({
     where: filter,
     include: {
+      category: true,  // Include category for reference
       images: {
         where: { isFeatured: true },
         take: 1,
@@ -164,6 +174,8 @@ export default async function Page(props: any) {
                 condition={listing.condition || undefined}
                 imagePath={listing.images[0]?.path}
                 listingCode={listing.listingCode}
+                categoryName={listing.category.name}
+                showCategory={false} // Don't show category on category-specific pages
               />
             ))}
           </div>
