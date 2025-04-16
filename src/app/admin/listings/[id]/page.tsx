@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 
 interface ListingFormData {
@@ -632,22 +632,22 @@ export default function EditListingPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {listing.images.map(image => (
                     <div
-                      key={image.id}
-                      className={`
-                        relative group border-2 rounded p-1
-                        ${featuredImageId === image.id ? 'border-blue-500' : 'border-gray-200'}
-                        ${imagesToDelete.includes(image.id) ? 'opacity-50' : ''}
-                      `}
-                    >
-                      <div className="relative h-32">
-                        <Image
-                          src={image.path}
-                          alt="Listing image"
-                          fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                          className="object-cover rounded"
-                        />
-                      </div>
+                    key={image.id}
+                    className={`
+                      relative group border-2 rounded p-1
+                      ${featuredImageId === image.id ? 'border-blue-500' : 'border-gray-200'}
+                      ${imagesToDelete.includes(image.id) ? 'opacity-50' : ''}
+                    `}
+                  >
+                    <div className="relative h-32">
+                      <ClientImage
+                        src={image.path}
+                        alt="Listing image"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover rounded"
+                      />
+                    </div>
                       
                       <div className="absolute top-2 right-2 flex space-x-1">
                         <button
@@ -702,7 +702,7 @@ export default function EditListingPage() {
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative group">
-                      <img
+                      <ClientImage
                         src={preview.url}
                         alt={`Preview ${index + 1}`}
                         className="h-32 w-full object-cover rounded"
