@@ -8,23 +8,31 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
+  try {
   // In Next.js 15.3.0, cookies() returns a Promise that needs to be awaited
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
   if (!token) {
+      console.log('No token in cookie, returning null');
     return null;
   }
   
-  try {
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, name: true, username: true },
     });
     
+    if (!user) {
+      console.log('User not found for token');
+      return null;
+    }
+    
+    console.log(`User found in layout: ${user.name}`);
     return user;
   } catch (error) {
+    console.error('Error getting user from cookie:', error);
     return null;
   }
 }
@@ -36,13 +44,14 @@ export default async function AdminLayout({
 }) {
   const user = await getUserFromCookie();
   
-  // Check current path - we can't use window in server components
-  // This is a server component, so we need to approach this differently
-  // Using pathname check would need client component with usePathname
+  // If no user is found, redirect to login
+  if (!user) {
+    console.log('No user found in layout, redirecting to login');
+    redirect('/admin/login');
+  }
   
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {user && (
         <aside className="w-64 bg-white shadow-md">
           <div className="p-4 border-b">
             <h2 className="text-xl font-bold">Админ панель</h2>
@@ -76,7 +85,6 @@ export default async function AdminLayout({
             </ul>
           </nav>
         </aside>
-      )}
       
       <main className="flex-1 p-6 bg-white">
         {children}

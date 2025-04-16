@@ -1,17 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove standalone output to work with normal next start
-  // output: 'standalone',
-    
-    // Enable static file serving from the public directory
-    // This is actually the default, but we're being explicit
+  // Images configuration
     images: {
       unoptimized: false, // Let Next.js optimize images
-    },
-    
-  // Fix experimental options - use serverExternalPackages instead
-    experimental: {
-    serverExternalPackages: [], // Updated from serverComponentsExternalPackages
     },
     
     // Add any additional configuration you need

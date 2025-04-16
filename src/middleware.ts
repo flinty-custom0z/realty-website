@@ -6,12 +6,17 @@ import { jwtVerify } from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function middleware(request: NextRequest) {
+  // Skip if requesting static files completely
+  if (request.nextUrl.pathname.startsWith('/images/')) {
+    return NextResponse.next();
+  }
+  
   // Skip login page
   if (request.nextUrl.pathname === '/admin/login') {
     return NextResponse.next();
   }
   
-  // Only apply to admin routes
+  // Only apply auth check to admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
     // Check authentication
     const token = request.cookies.get('token')?.value;
@@ -23,11 +28,8 @@ export async function middleware(request: NextRequest) {
     
     try {
       // Simple token validation without database check for performance
-      // Full validation happens in the getUser function inside the admin layout
       const encoder = new TextEncoder();
-      
       await jwtVerify(token, encoder.encode(JWT_SECRET));
-      
       return NextResponse.next();
     } catch (error) {
       console.error('Invalid token:', error);
@@ -36,16 +38,16 @@ export async function middleware(request: NextRequest) {
     }
   }
   
-  // For static file requests, let them through directly
-  if (request.nextUrl.pathname.startsWith('/images/')) {
-    return NextResponse.next();
-  }
-  
   // Continue for non-admin routes
   return NextResponse.next();
 }
 
-// Configure matcher for middleware to run only on admin routes and image paths
+// Updated matcher to specifically exclude images and static files
 export const config = {
-  matcher: ['/admin/:path*', '/images/:path*'],
+  matcher: [
+    // Exclude static files and api routes for images
+    '/((?!images/|_next/|favicon.ico).*)',
+    // But include admin routes
+    '/admin/:path*'
+  ],
 };

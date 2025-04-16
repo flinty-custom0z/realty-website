@@ -5,6 +5,44 @@ import { writeFile, mkdir, unlink, access } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+// Add GET method to fetch listing details
+// Fix the type signature to match Next.js 15.3.0 expectations
+export async function GET(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
+  try {
+    const id = context.params.id;
+    console.log(`Fetching listing with ID: ${id}`);
+    
+    const listing = await prisma.listing.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        images: true,
+        comments: true,
+      },
+    });
+
+    if (!listing) {
+      console.log(`Listing with ID ${id} not found`);
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+    }
+
+    console.log(`Successfully fetched listing: ${listing.title}`);
+    return NextResponse.json(listing);
+  } catch (error) {
+    console.error(`Error fetching listing:`, error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 async function ensureDirectoryExists(dirPath: string) {
   try {
     await access(dirPath);

@@ -25,27 +25,50 @@ export default function ClientImage({
   const [imgSrc, setImgSrc] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
     // Reset states when src changes
     setImgSrc(src);
     setError(false);
     setIsLoading(true);
+    setRetryCount(0);
   }, [src]);
   
   const handleError = () => {
-    console.log(`Image error loading: ${imgSrc}`);
-    setError(true);
+    console.log(`Image error loading: ${imgSrc}, retry count: ${retryCount}`);
     
-    // Try plural/singular alternatives first
-    if (imgSrc.includes('apartment_')) {
+    if (retryCount >= 3) {
+      // After 3 retries, use fallback
+      setImgSrc(fallbackSrc);
+    setError(true);
+      return;
+    }
+    
+    // Add cache-busting query parameter
+    const timestamp = new Date().getTime();
+    
+    // Try different approaches based on the current source
+    if (imgSrc.includes('/images/')) {
+      // For uploaded images, add cache busting
+      if (!imgSrc.includes('?')) {
+        setImgSrc(`${imgSrc}?t=${timestamp}`);
+      } else if (imgSrc.includes('apartment_')) {
+        // Try alternative naming pattern
       setImgSrc(imgSrc.replace('apartment_', 'apartments_'));
     } else if (imgSrc.includes('house_')) {
       setImgSrc(imgSrc.replace('house_', 'houses_'));
     } else {
-      // Fall back to the provided fallback
-    setImgSrc(fallbackSrc);
+        // Fall back to placeholder
+        setImgSrc(`${fallbackSrc}?t=${timestamp}`);
+      }
+    } else {
+      // For non-image paths or if everything fails, use fallback
+      setImgSrc(`${fallbackSrc}?t=${timestamp}`);
     }
+    
+    // Increment retry counter
+    setRetryCount(prev => prev + 1);
   };
   
   const handleLoad = () => {
@@ -70,10 +93,11 @@ export default function ClientImage({
       priority={priority}
       onError={handleError}
           onLoad={handleLoad}
+          unoptimized={retryCount > 1} // Don't optimize after multiple retries
         />
       )}
       
-      {error && imgSrc === fallbackSrc && (
+      {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
           {alt || 'Изображение недоступно'}
         </div>
