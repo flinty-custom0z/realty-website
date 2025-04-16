@@ -18,20 +18,19 @@
 
 ## Backlog
 
-- Admin login not working when accessing website via IP address (but working via localhost)
 
 
 ## Next
 
-- Change name to "Вторичный Выбор" 
 - Details Page
   - When I click on delete in details it should go back to the appropriate list, not to admin listings panel
 - Link to admin pannel/login somewhere on every page
 - Implement search, right now it's not working
 - Button to reset filter
-- Edit "Риелтор" - contact details
+- Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
 
 
 ## Later
 
+- Admin login not working when accessing website via IP address (but working via localhost)
 - Edit history

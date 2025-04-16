@@ -65,7 +65,10 @@ export default async function ListingDetailPage({ params }: { params: any }) {
         </Link>
         
         {isAdmin && (
-          <AdminListingActions listingId={listing.id} />
+          <AdminListingActions 
+            listingId={listing.id} 
+            categorySlug={listing.category.slug} 
+          />
         )}
       </div>
       

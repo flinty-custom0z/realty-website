@@ -6,9 +6,10 @@ import { useState } from 'react';
 
 interface AdminListingActionsProps {
   listingId: string;
+  categorySlug: string; // Added categorySlug prop
 }
 
-export default function AdminListingActions({ listingId }: AdminListingActionsProps) {
+export default function AdminListingActions({ listingId, categorySlug }: AdminListingActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -28,7 +29,8 @@ export default function AdminListingActions({ listingId }: AdminListingActionsPr
         throw new Error('Ошибка при удалении объявления');
       }
       
-      router.push('/admin/listings');
+      // Redirect to the category page instead of admin listings
+      router.push(`/listing-category/${categorySlug}`);
       router.refresh();
     } catch (error) {
       console.error('Error deleting listing:', error);
