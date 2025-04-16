@@ -1,33 +1,32 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 
-export async function GET() {
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prismaDistrict = new PrismaClient();
+
+export async function GET(req: NextRequest) {
   try {
-    // Get all unique districts from active listings
-    const districts = await prisma.listing.findMany({
-      where: {
-        status: 'active',
-        district: {
-          not: null,
-        }
-      },
-      select: {
-        district: true,
-      },
-      distinct: ['district'],
-      orderBy: {
-        district: 'asc',
-      },
+    const { searchParams } = new URL(req.url);
+    const categorySlug = searchParams.get('category');
+
+    const whereFilter: any = { status: 'active', district: { not: null } };
+
+    if (categorySlug) {
+      const cat = await prismaDistrict.category.findUnique({ where: { slug: categorySlug } });
+      if (cat) whereFilter.categoryId = cat.id;
+    }
+
+    const districts = await prismaDistrict.listing.groupBy({
+      by: ['district'],
+      where: whereFilter,
+      _count: { district: true },
+      orderBy: { district: 'asc' },
     });
 
-    // Extract and filter out null/empty districts
-    const uniqueDistricts = districts
-      .map(item => item.district)
-      .filter(Boolean) as string[];
-
-    return NextResponse.json(uniqueDistricts);
-  } catch (error) {
-    console.error('Error fetching districts:', error);
+    const result = districts.map((d) => d.district).filter(Boolean);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error('[api/districts] error', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

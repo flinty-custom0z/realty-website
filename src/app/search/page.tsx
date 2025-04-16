@@ -1,96 +1,92 @@
-import { Suspense } from 'react';
 import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import SearchFormWrapper from '@/components/SearchFormWrapper';
 import Link from 'next/link';
 
-// Force dynamic rendering to prevent caching
+// Force dynamic rendering so every request is fresh
 export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
-async function getListings(searchParams: Record<string, string | string[] | undefined>) {
-  // Build filter object
-  const filter: any = { 
-    status: 'active',
-  };
-  
-  // Apply search filters
+/**
+ * Build Prisma-compatible filter object from URL query params
+ */
+async function buildFilter(searchParams: Record<string, string | string[] | undefined>) {
+  const filter: any = { status: 'active' };
+
+  // Full‑text search
   if (searchParams.q) {
     filter.OR = [
       { title: { contains: searchParams.q as string, mode: 'insensitive' } },
       { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
     ];
   }
-  
-  // Apply other filters
+
+  // Multi‑category support  — handles `?category=houses&category=land`
+  const categoryParams = searchParams.category;
+  if (categoryParams) {
+    const slugs = Array.isArray(categoryParams) ? categoryParams : [categoryParams];
+    const cats = await prisma.category.findMany({ where: { slug: { in: slugs } }, select: { id: true } });
+    if (cats.length) {
+      filter.categoryId = { in: cats.map((c) => c.id) };
+    }
+  }
+
+  // Numeric filters (price, rooms)
   if (searchParams.minPrice) {
-    filter.price = { ...filter.price, gte: parseFloat(searchParams.minPrice as string) };
+    filter.price = { ...(filter.price || {}), gte: parseFloat(searchParams.minPrice as string) };
   }
-  
   if (searchParams.maxPrice) {
-    filter.price = { ...filter.price, lte: parseFloat(searchParams.maxPrice as string) };
+    filter.price = { ...(filter.price || {}), lte: parseFloat(searchParams.maxPrice as string) };
   }
-  
-  // Multi-room selection support
+
   const roomParams = searchParams.rooms;
   if (roomParams) {
-    // Handle both array and single value cases
-    const roomValues = Array.isArray(roomParams) 
-      ? roomParams.map(r => parseInt(r)) 
-      : [parseInt(roomParams as string)];
-    
-    if (roomValues.length > 0) {
-      filter.rooms = { in: roomValues };
-    }
+    const roomsArr = Array.isArray(roomParams) ? roomParams : [roomParams];
+    const values = roomsArr.map((r) => parseInt(r)).filter(Boolean);
+    if (values.length) filter.rooms = { in: values };
   }
-  
+
   if (searchParams.district) {
-    filter.district = { contains: searchParams.district as string, mode: 'insensitive' };
+    const dists = Array.isArray(searchParams.district) ? searchParams.district : [searchParams.district];
+    filter.district = { in: dists };
   }
-  
+
   if (searchParams.condition) {
-    filter.condition = searchParams.condition as string;
+    const conds = Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition];
+    filter.condition = { in: conds };
   }
-  
-  // Category filter if provided
-  if (searchParams.category) {
-    const category = await prisma.category.findUnique({
-      where: { slug: searchParams.category as string },
-    });
-    if (category) {
-      filter.categoryId = category.id;
-    }
-  }
-  
-  // Get page number
+
+  return filter;
+}
+
+/**
+ * Fetch listings with pagination.
+ */
+async function getListings(searchParams: Record<string, string | string[] | undefined>) {
+  const filter = await buildFilter(searchParams);
+
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 30;
   
-  // Determine sort order
-  const sortField = searchParams.sort || 'dateAdded';
-  const sortOrder = searchParams.order || 'desc';
+  // simple sort implementation (extend as required)
+  const sortField = (searchParams.sort as string) || 'dateAdded';
+  const sortOrder = (searchParams.order as string) === 'asc' ? 'asc' : 'desc';
   
-  // Count total
-  const total = await prisma.listing.count({ where: filter });
-  
-  // Get paginated results
-  const listings = await prisma.listing.findMany({
+  const [total, listings] = await Promise.all([
+    prisma.listing.count({ where: filter }),
+    prisma.listing.findMany({
     where: filter,
     include: {
       category: true,
-      images: {
-        where: { isFeatured: true },
-        take: 1,
+        images: { where: { isFeatured: true }, take: 1 },
       },
-    },
-    orderBy: {
-      [sortField as string]: sortOrder as 'asc' | 'desc',
-    },    
+      orderBy: { [sortField]: sortOrder },
     skip: (page - 1) * limit,
     take: limit,
-  });
+    }),
+  ]);
   
   return {
     listings,
@@ -103,95 +99,66 @@ async function getListings(searchParams: Record<string, string | string[] | unde
   };
 }
 
-// Get all categories for the filter
-async function getCategories() {
-  return await prisma.category.findMany({
-    orderBy: {
-      name: 'asc',
-    },
-  });
-}
-
 export default async function SearchPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const resolvedSearchParams = await searchParams;
-  const { listings, pagination } = await getListings(resolvedSearchParams);
-  const categories = await getCategories();
+  const resolvedParams = await searchParams;
+  const { listings, pagination } = await getListings(resolvedParams);
   
-  // Get the search query for display
-  const searchQuery = resolvedSearchParams.q as string;
+  const searchQuery = resolvedParams.q as string | undefined;
   
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">
-        {searchQuery 
-          ? `Результаты поиска: "${searchQuery}"` 
-          : 'Все объявления'}
+        {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Все объявления'}
       </h1>
-      
-      {/* Search form at the top of results */}
-      <div className="w-full max-w-lg mb-6">
-        <SearchFormWrapper initialQuery={searchQuery || ''} />
-      </div>
-      
-      {searchQuery && (
-        <div className="mb-4">
-          <Link href="/" className="text-blue-500 hover:text-blue-700 inline-flex items-center">
-            <span className="mr-1">←</span> Вернуться на главную
-          </Link>
-        </div>
-      )}
       
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
-          <FilterSidebarWrapper 
-            categorySlug="" 
-            categories={categories}
-            searchQuery={searchQuery}
-          />
+          <FilterSidebarWrapper categories={undefined} categorySlug="" searchQuery={searchQuery || ''} />
         </div>
         
         {/* Listings */}
         <div className="w-full md:w-3/4">
+          {/* Result meta & sort */}
           <div className="mb-4 flex justify-between items-center">
             <p className="text-gray-600">
-              {pagination.total > 0 ? (
-                `Отображаются ${(pagination.page - 1) * pagination.limit + 1}-
-                ${Math.min(pagination.page * pagination.limit, pagination.total)} из ${pagination.total} результатов`
-              ) : 'Нет результатов'}
+              {pagination.total > 0
+                ? `Отображаются ${(pagination.page - 1) * pagination.limit + 1}‑${Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.total,
+                  )} из ${pagination.total} результатов`
+                : 'Нет результатов'}
             </p>
-            
-            <select 
-              className="border rounded p-2"
-              // This would need client-side JS to handle the sorting
-            >
+            {/* TODO: hook up sort selector */}
+            <select defaultValue="dateAdded_desc" className="border rounded p-2 text-sm">
               <option value="dateAdded_desc">Дата (новые)</option>
               <option value="price_asc">Цена (от низкой)</option>
               <option value="price_desc">Цена (от высокой)</option>
             </select>
           </div>
           
+          {/* Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {listings.map((listing) => (
+            {listings.map((l) => (
               <ListingCard
-                key={listing.id}
-                id={listing.id}
-                title={listing.title}
-                price={listing.price}
-                district={listing.district || undefined}
-                rooms={listing.rooms || undefined}
-                area={listing.houseArea || undefined}
-                floor={listing.floor || undefined}
-                totalFloors={listing.totalFloors || undefined}
-                condition={listing.condition || undefined}
-                imagePath={listing.images[0]?.path}
-                listingCode={listing.listingCode}
-                categoryName={listing.category.name}
-                showCategory={true} // Always show category in search results
+                key={l.id}
+                id={l.id}
+                title={l.title}
+                price={l.price}
+                district={l.district || undefined}
+                rooms={l.rooms || undefined}
+                area={l.houseArea || undefined}
+                floor={l.floor || undefined}
+                totalFloors={l.totalFloors || undefined}
+                condition={l.condition || undefined}
+                imagePath={l.images[0]?.path}
+                listingCode={l.listingCode}
+                categoryName={l.category.name}
+                showCategory={true}
               />
             ))}
           </div>
@@ -200,31 +167,23 @@ export default async function SearchPage({
           {pagination.pages > 1 && (
             <div className="mt-8 flex justify-center">
               <nav className="inline-flex">
-                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => {
-                  // Create a new URLSearchParams with all current parameters
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((pageNum) => {
                   const params = new URLSearchParams();
-                  Object.entries(searchParams).forEach(([key, value]) => {
-                    if (key !== 'page' && value !== undefined) {
-                      if (Array.isArray(value)) {
-                        value.forEach(v => params.append(key, v));
-                      } else {
-                        params.append(key, value);
-                      }
-                    }
+                  Object.entries(resolvedParams).forEach(([k, v]) => {
+                    if (k === 'page') return;
+                    if (Array.isArray(v)) v.forEach((val) => params.append(k, val));
+                    else if (v !== undefined) params.append(k, v);
                   });
-                  params.set('page', page.toString());
-                  
+                  params.set('page', pageNum.toString());
                   return (
                   <a
-                    key={page}
+                      key={pageNum}
                       href={`/search?${params.toString()}`}
                     className={`px-4 py-2 text-sm border ${
-                      page === pagination.page
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-300 hover:bg-gray-50'
+                        pageNum === pagination.page ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    {page}
+                      {pageNum}
                   </a>
                   );
                 })}

@@ -28,8 +28,7 @@ const CODE_EXTENSIONS = [
 
 // Directories to skip
 const SKIP_DIRECTORIES = [
-  'node_modules', '.next', '.git', 'public/images', 
-  'dist', 'build', 'coverage', '.cache', 'exports'
+  'node_modules', '.next', '.git', 'public/images', 'build', 'coverage', '.cache', 'exports'
 ];
 
 // Files to skip
