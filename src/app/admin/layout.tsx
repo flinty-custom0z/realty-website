@@ -43,10 +43,10 @@ export default async function AdminLayout({
 }) {
   const user = await getUserFromCookie();
   
-  // If no user is found, redirect to login
+  // If no user is found, redirect to the new login path
   if (!user) {
-    console.log('No user found in layout, redirecting to login');
-    redirect('/admin/login');
+    console.log('No user found in layout, redirecting to admin-login');
+    redirect('/admin-login');
   }
   
   return (

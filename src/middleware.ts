@@ -12,8 +12,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Skip auth check for login page
-  if (pathname === '/admin/login') {
+  // Skip auth check for the new login page
+  if (pathname === '/admin-login') {
     return NextResponse.next();
   }
   
@@ -22,8 +22,8 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
     
     if (!token) {
-      console.log('No token found, redirecting to login');
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      console.log('No token found, redirecting to admin-login');
+      return NextResponse.redirect(new URL('/admin-login', request.url));
     }
     
     try {
@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error('Invalid token:', error);
       // Invalid token, redirect to login
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      return NextResponse.redirect(new URL('/admin-login', request.url));
     }
   }
   
@@ -42,9 +42,9 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Exclude login and public paths from auth check
+// Only apply to admin routes
 export const config = {
   matcher: [
-    '/admin((?!/login).*)', // include all /admin routes EXCEPT /admin/login
+    '/admin/:path*',
   ],
 };
