@@ -1,3 +1,7 @@
+// Mark the entire admin layout (and its children) as dynamic so that
+// cookies and other dynamic server functions work properly.
+export const dynamic = 'force-dynamic';
+
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
   try {
-  // In Next.js 15.3.0, cookies() returns a Promise that needs to be awaited
+    // Using cookies() now works at runtime only.
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
@@ -40,11 +44,11 @@ async function getUserFromCookie() {
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   const user = await getUserFromCookie();
   
-  // If no user is found, redirect to login
+  // If no user is found, redirect to login.
   if (!user) {
     console.log('No user found in layout, redirecting to login');
     redirect('/admin/login');
@@ -57,7 +61,6 @@ export default async function AdminLayout({
             <h2 className="text-xl font-bold">Админ панель</h2>
             <p className="text-sm text-gray-600">Привет, {user.name}</p>
           </div>
-          
           <nav className="p-4">
             <ul className="space-y-2">
               <li>
@@ -77,7 +80,10 @@ export default async function AdminLayout({
               </li>
               <li className="border-t pt-2 mt-4">
                 <form action="/api/auth/logout" method="post">
-                  <button type="submit" className="w-full text-left p-2 hover:bg-gray-100 rounded text-red-600">
+                <button
+                  type="submit"
+                  className="w-full text-left p-2 hover:bg-gray-100 rounded text-red-600"
+                >
                     Выйти
                   </button>
                 </form>
