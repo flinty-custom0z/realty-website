@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
-import FilterSidebar from '@/components/FilterSidebar';
 import { notFound } from 'next/navigation';
-import SearchForm from '@/components/SearchForm';
+import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
+import SearchFormWrapper from '@/components/SearchFormWrapper';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -116,14 +116,14 @@ export default async function Page(props: any) {
       {/* Add search form if there's a search query */}
       {searchQuery && (
         <div className="w-full max-w-lg mb-6">
-          <SearchForm categorySlug={slug} initialQuery={searchQuery} />
+          <SearchFormWrapper categorySlug={slug} initialQuery={searchQuery} />
         </div>
       )}
       
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
-          <FilterSidebar 
+          <FilterSidebarWrapper 
             categorySlug={params.slug}
             searchQuery={searchQuery}
           />

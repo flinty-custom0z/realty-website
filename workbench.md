@@ -22,11 +22,14 @@
 
 ## Next
 
-- Link to admin pannel/login somewhere on every page and it should be visible that you're logged in as admin and it should let you log out (button)
-- Implement search, right now it's not working
-- Button to reset filter
 - Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
 - Dynamic suggestions when entering search query
+
+- Button to go back when you're done with searching (not sure how it's usually called/implemented)
+- Filter applied automatically when selecting
+- Multiselect in filter (eg 1 and 2 rooms)
+- Choosing district from avaliable
+- When searching across mult. categories show on each result what category it belongs to
 
 ## Later
 

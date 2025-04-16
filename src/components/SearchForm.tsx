@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface SearchFormProps {
@@ -12,6 +12,16 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
+  
+  // Update state from URL params after component mounts
+  useEffect(() => {
+    if (searchParams && initialQuery === '') {
+      const queryParam = searchParams.get('q');
+      if (queryParam) {
+        setQuery(queryParam);
+      }
+    }
+  }, [searchParams, initialQuery]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -25,6 +35,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     params.append('q', query);
     
     // Preserve other filter parameters if they exist
+    if (searchParams) {
     const preserveParams = ['minPrice', 'maxPrice', 'rooms', 'district', 'condition', 'category'];
     preserveParams.forEach(param => {
       const value = searchParams.get(param);
@@ -32,6 +43,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
         params.append(param, value);
       }
     });
+    }
     
     // Determine where to navigate
     if (categorySlug) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react'; // Add useEffect
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -34,27 +34,34 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Initialize state from URL params
+  // Initialize state with default values
   const [priceRange, setPriceRange] = useState({
+    min: minPrice,
+    max: maxPrice,
+  });
+  
+  const [selectedRooms, setSelectedRooms] = useState<number[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(categorySlug);
+  
+  // Update state from URL params after component mounts
+  useEffect(() => {
+    if (searchParams) {
+      setPriceRange({
     min: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice') as string) : minPrice,
     max: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice') as string) : maxPrice,
   });
   
-  const [selectedRooms, setSelectedRooms] = useState<number[]>(
+      setSelectedRooms(
     searchParams.get('rooms') ? [parseInt(searchParams.get('rooms') as string)] : []
   );
   
-  const [selectedDistrict, setSelectedDistrict] = useState<string>(
-    searchParams.get('district') || ''
-  );
-  
-  const [selectedCondition, setSelectedCondition] = useState<string>(
-    searchParams.get('condition') || ''
-  );
-  
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    searchParams.get('category') || categorySlug
-  );
+      setSelectedDistrict(searchParams.get('district') || '');
+      setSelectedCondition(searchParams.get('condition') || '');
+      setSelectedCategory(searchParams.get('category') || categorySlug);
+    }
+  }, [searchParams, categorySlug, minPrice, maxPrice]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -85,7 +92,7 @@ export default function FilterSidebar({
     // Preserve search query if exists
     if (searchQuery) {
       params.append('q', searchQuery);
-    } else if (searchParams.get('q')) {
+    } else if (searchParams && searchParams.get('q')) {
       params.append('q', searchParams.get('q') as string);
     }
     
@@ -93,7 +100,7 @@ export default function FilterSidebar({
     if (categorySlug === '' && selectedCategory) {
       if (selectedCategory !== 'all') {
         params.append('category', selectedCategory);
-    // Navigate with filters
+        // Navigate with filters
         router.push(`/search?${params.toString()}`);
       } else {
         // If "all" is selected, just use regular search
@@ -101,7 +108,7 @@ export default function FilterSidebar({
       }
     } else {
       // Navigate with filters to category page
-    router.push(`/listing-category/${categorySlug}?${params.toString()}`);
+      router.push(`/listing-category/${categorySlug}?${params.toString()}`);
     }
   };
   
@@ -124,7 +131,7 @@ export default function FilterSidebar({
     const params = new URLSearchParams();
     if (searchQuery) {
       params.append('q', searchQuery);
-    } else if (searchParams.get('q')) {
+    } else if (searchParams && searchParams.get('q')) {
       params.append('q', searchParams.get('q') as string);
     }
     
@@ -138,143 +145,143 @@ export default function FilterSidebar({
   
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-md shadow-sm">
-      <h3 className="text-lg font-medium mb-4">Фильтры</h3>
-      
-      {/* Category dropdown - Only show on search page */}
-      {categorySlug === '' && categories.length > 0 && (
-        <div className="mb-4">
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-            Категория
-          </label>
-          <select
-            id="category"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full p-2 border rounded text-sm"
-          >
-            <option value="all">Все категории</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.slug}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      
-      {/* Price range */}
+    <h3 className="text-lg font-medium mb-4">Фильтры</h3>
+    
+    {/* Category dropdown - Only show on search page */}
+    {categorySlug === '' && categories.length > 0 && (
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            placeholder="От"
-            value={priceRange.min}
-            onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) || 0 })}
-            className="w-full p-2 border rounded text-sm"
-          />
-          <input
-            type="number"
-            placeholder="До"
-            value={priceRange.max}
-            onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) || 0 })}
-            className="w-full p-2 border rounded text-sm"
-          />
-        </div>
-        <input
-          type="range"
-          min={minPrice}
-          max={maxPrice}
-          step={100000}
-          value={priceRange.min}
-          onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) })}
-          className="w-full mt-2"
-        />
-        <input
-          type="range"
-          min={minPrice}
-          max={maxPrice}
-          step={100000}
-          value={priceRange.max}
-          onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) })}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Rooms (for apartments/houses) */}
-      {(categorySlug === 'apartments' || categorySlug === 'houses' || categorySlug === '') && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Количество комнат</label>
-          <div className="flex flex-wrap gap-2">
-            {rooms.map((room) => (
-              <button
-                key={room}
-                type="button"
-                onClick={() => handleRoomToggle(room)}
-                className={`px-3 py-1 text-sm rounded-full border ${
-                  selectedRooms.includes(room)
-                    ? 'bg-blue-500 text-white border-blue-500'
-                    : 'bg-white text-gray-700 border-gray-300'
-                }`}
-              >
-                {room === 5 ? '5+' : room}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* District */}
-      <div className="mb-4">
-        <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
-          Район
-        </label>
-        <input
-          type="text"
-          id="district"
-          value={selectedDistrict}
-          onChange={(e) => setSelectedDistrict(e.target.value)}
-          placeholder="Введите район"
-          className="w-full p-2 border rounded text-sm"
-        />
-      </div>
-      
-      {/* Condition */}
-      <div className="mb-4">
-        <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
-          Состояние
-        </label>
-        <select
-          id="condition"
-          value={selectedCondition}
-          onChange={(e) => setSelectedCondition(e.target.value)}
-          className="w-full p-2 border rounded text-sm"
-        >
-          <option value="">Любое</option>
-          {conditions.map((condition) => (
-            <option key={condition} value={condition}>
-              {condition}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      {/* Submit button */}
-      <button
-        type="submit"
-        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-2"
+      <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+      Категория
+      </label>
+      <select
+      id="category"
+      value={selectedCategory}
+      onChange={(e) => setSelectedCategory(e.target.value)}
+      className="w-full p-2 border rounded text-sm"
       >
-        Фильтровать
-      </button>
-      
-      {/* Reset button */}
-      <button
+      <option value="all">Все категории</option>
+      {categories.map((category) => (
+        <option key={category.id} value={category.slug}>
+        {category.name}
+        </option>
+      ))}
+      </select>
+      </div>
+    )}
+    
+    {/* Price range */}
+    <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-1">Цена</label>
+    <div className="grid grid-cols-2 gap-2">
+    <input
+    type="number"
+    placeholder="От"
+    value={priceRange.min}
+    onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) || 0 })}
+    className="w-full p-2 border rounded text-sm"
+    />
+    <input
+    type="number"
+    placeholder="До"
+    value={priceRange.max}
+    onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) || 0 })}
+    className="w-full p-2 border rounded text-sm"
+    />
+    </div>
+    <input
+    type="range"
+    min={minPrice}
+    max={maxPrice}
+    step={100000}
+    value={priceRange.min}
+    onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) })}
+    className="w-full mt-2"
+    />
+    <input
+    type="range"
+    min={minPrice}
+    max={maxPrice}
+    step={100000}
+    value={priceRange.max}
+    onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) })}
+    className="w-full"
+    />
+    </div>
+    
+    {/* Rooms (for apartments/houses) */}
+    {(categorySlug === 'apartments' || categorySlug === 'houses' || categorySlug === '') && (
+      <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">Количество комнат</label>
+      <div className="flex flex-wrap gap-2">
+      {rooms.map((room) => (
+        <button
+        key={room}
         type="button"
-        onClick={handleReset}
-        className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 transition"
-      >
-        Сбросить фильтры
-      </button>
+        onClick={() => handleRoomToggle(room)}
+        className={`px-3 py-1 text-sm rounded-full border ${
+          selectedRooms.includes(room)
+          ? 'bg-blue-500 text-white border-blue-500'
+          : 'bg-white text-gray-700 border-gray-300'
+        }`}
+        >
+        {room === 5 ? '5+' : room}
+        </button>
+      ))}
+      </div>
+      </div>
+    )}
+    
+    {/* District */}
+    <div className="mb-4">
+    <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
+    Район
+    </label>
+    <input
+    type="text"
+    id="district"
+    value={selectedDistrict}
+    onChange={(e) => setSelectedDistrict(e.target.value)}
+    placeholder="Введите район"
+    className="w-full p-2 border rounded text-sm"
+    />
+    </div>
+    
+    {/* Condition */}
+    <div className="mb-4">
+    <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">
+    Состояние
+    </label>
+    <select
+    id="condition"
+    value={selectedCondition}
+    onChange={(e) => setSelectedCondition(e.target.value)}
+    className="w-full p-2 border rounded text-sm"
+    >
+    <option value="">Любое</option>
+    {conditions.map((condition) => (
+      <option key={condition} value={condition}>
+      {condition}
+      </option>
+    ))}
+    </select>
+    </div>
+    
+    {/* Submit button */}
+    <button
+    type="submit"
+    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-2"
+    >
+    Фильтровать
+    </button>
+    
+    {/* Reset button */}
+    <button
+    type="button"
+    onClick={handleReset}
+    className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 transition"
+    >
+    Сбросить фильтры
+    </button>
     </form>
   );
 }
