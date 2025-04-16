@@ -12,13 +12,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
   try {
-    // cookies() returns a runtime cookie store now
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) {
+    // Await cookies() to resolve the promise
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    if (!token) {
       console.log('No token in cookie, returning null');
-    return null;
-  }
+      return null;
+    }
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
@@ -58,35 +58,35 @@ export default async function AdminLayout({
           </div>
           <nav className="p-4">
             <ul className="space-y-2">
-              <li>
-                <Link href="/admin" className="block p-2 hover:bg-gray-100 rounded">
-                  Главная
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/listings" className="block p-2 hover:bg-gray-100 rounded">
-                  Объявления
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/listings/new" className="block p-2 hover:bg-gray-100 rounded">
-                  Добавить объявление
-                </Link>
-              </li>
+            <li>
+              <Link href="/admin" className="block p-2 hover:bg-gray-100 rounded">
+                Главная
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/listings" className="block p-2 hover:bg-gray-100 rounded">
+                Объявления
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/listings/new" className="block p-2 hover:bg-gray-100 rounded">
+                Добавить объявление
+              </Link>
+            </li>
               <li className="border-t pt-2 mt-4">
                 <form action="/api/auth/logout" method="post">
                 <button
                   type="submit"
                   className="w-full text-left p-2 hover:bg-gray-100 rounded text-red-600"
                 >
-                    Выйти
-                  </button>
+                  Выйти
+                </button>
                 </form>
               </li>
             </ul>
           </nav>
         </aside>
-      
+
       <main className="flex-1 p-6 bg-white">
         {children}
       </main>
