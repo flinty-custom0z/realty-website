@@ -60,8 +60,8 @@ export default function ClientImage({
   return (
     <>
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="animate-pulse bg-gray-200 w-full h-full"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-pulse bg-gray-100 w-full h-full"></div>
         </div>
       )}
       
@@ -70,7 +70,7 @@ export default function ClientImage({
       src={imgSrc}
       alt={alt}
       fill={fill}
-      className={className}
+          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
       sizes={sizes}
       priority={priority}
       onError={handleError}

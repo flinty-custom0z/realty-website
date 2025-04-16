@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import ClientImage from '@/components/ClientImage';
+import ImageGallery from '@/components/ImageGallery';
 
 const prisma = new PrismaClient();
 
@@ -44,45 +44,8 @@ export default async function ListingDetailPage({ params }: { params: any }) {
       
       <h1 className="text-3xl font-bold mb-6">{listing.title}</h1>
       
-      {/* Image gallery */}
-      <div className="mb-8">
-        <div className="relative h-96 bg-gray-200 mb-2 rounded overflow-hidden">
-          {listing.images.length > 0 ? (
-            <div className="relative h-full w-full">
-              <ClientImage
-                src={listing.images[0].path}
-                alt={listing.title}
-                fill
-                className="object-contain"
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                priority={true}
-                fallbackSrc="/images/placeholder.png"
-              />
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-              Нет фото
-            </div>
-          )}
-        </div>
-        
-        {listing.images.length > 1 && (
-          <div className="grid grid-cols-6 gap-2">
-            {listing.images.map((image) => (
-              <div key={image.id} className="relative h-20 bg-gray-200 rounded overflow-hidden">
-                <ClientImage
-                  src={image.path}
-                  alt={listing.title}
-                  fill
-                  className="object-cover cursor-pointer"
-                  sizes="(max-width: 768px) 16vw, 100px"
-                  fallbackSrc="/images/placeholder.png"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Updated Image Gallery Component */}
+      <ImageGallery images={listing.images} title={listing.title} />
       
       <div className="flex flex-col md:flex-row gap-8">
         {/* Main content */}

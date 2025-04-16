@@ -19,3 +19,17 @@
 ## Backlog
 
 - Admin login not working when accessing website via IP address (but working via localhost)
+
+
+## Next
+
+
+- Better image slider:
+  - Dynamic resizing/remove gray borders
+  - Click not working on other pics
+- Change name
+- Remove "Детали" link on details page
+- Admin comments
+- Link to admin pannel/login
+- Buttons for admins on every listing
+- Implement search
