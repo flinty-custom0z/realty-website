@@ -2,8 +2,12 @@ import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ImageGallery from '@/components/ImageGallery';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
+import AdminListingActions from '@/components/AdminListingActions';
 
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getListing(id: string) {
   const listing = await prisma.listing.findUnique({
@@ -24,8 +28,27 @@ async function getListing(id: string) {
   return listing;
 }
 
+async function isUserAdmin() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+    
+    if (!token) return false;
+    
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
+    
+    return !!user;
+  } catch (error) {
+    return false;
+  }
+}
+
 export default async function ListingDetailPage({ params }: { params: any }) {
   const listing = await getListing(params.id);
+  const isAdmin = await isUserAdmin();
   
   if (!listing) {
     notFound();
@@ -36,16 +59,22 @@ export default async function ListingDetailPage({ params }: { params: any }) {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <Link href={`/listing-category/${listing.category.slug}`} className="text-blue-500 hover:underline">
-          Детали
+          ← Назад к списку
         </Link>
+        
+        {isAdmin && (
+          <AdminListingActions listingId={listing.id} />
+        )}
       </div>
       
       <h1 className="text-3xl font-bold mb-6">{listing.title}</h1>
       
-      {/* Updated Image Gallery Component */}
+      {/* Image Gallery with reduced size */}
+      <div className="max-w-4xl mx-auto mb-8">
       <ImageGallery images={listing.images} title={listing.title} />
+      </div>
       
       <div className="flex flex-col md:flex-row gap-8">
         {/* Main content */}
@@ -84,12 +113,30 @@ export default async function ListingDetailPage({ params }: { params: any }) {
           {/* Public Description */}
           {listing.publicDescription && (
             <div className="bg-white shadow rounded-md p-6 mb-6">
-              <h2 className="text-xl font-bold mb-4">Комментарий</h2>
+              <h2 className="text-xl font-bold mb-4">Описание</h2>
               <div className="prose max-w-none">
                 {listing.publicDescription.split('\n').map((paragraph, i) => (
                   <p key={i} className="mb-4">{paragraph}</p>
                 ))}
               </div>
+            </div>
+          )}
+          
+          {/* Admin Comment - Only visible to admins */}
+          {isAdmin && listing.adminComment && (
+            <div className="bg-white shadow rounded-md p-6 mb-6 border-l-4 border-blue-500">
+              <h2 className="text-xl font-bold mb-4 flex items-center">
+                <span className="mr-2">🔒</span>
+                Комментарий администратора
+              </h2>
+              <div className="prose max-w-none text-gray-700">
+                {listing.adminComment.split('\n').map((paragraph, i) => (
+                  <p key={i} className="mb-4">{paragraph}</p>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-4 italic">
+                Этот комментарий виден только администраторам
+              </p>
             </div>
           )}
         </div>

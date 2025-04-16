@@ -23,11 +23,15 @@
 
 ## Next
 
-- Change name
+- Change name to "Вторичный Выбор" 
 - Details Page
-  - Remove "Детали" link on details page (prob. need to rename to something like "назад к списку")
-  - Make image smaller
-  - Buttons for admins on every listing (edit, delete)
-  - Комментарий админ-ра должен быть показан на детальных страницах тоже if you're logged in as an admin
-- Link to admin pannel/login
-- Implement search
+  - When I click on delete in details it should go back to the appropriate list, not to admin listings panel
+- Link to admin pannel/login somewhere on every page
+- Implement search, right now it's not working
+- Button to reset filter
+- Edit "Риелтор" - contact details
+
+
+## Later
+
+- Edit history

@@ -38,7 +38,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
   }
 
   return (
-    <div className="mb-8">
+    <div className="w-full">
       {/* Main image container */}
       <div className="relative w-full aspect-[4/3] mb-4 rounded overflow-hidden">
         {/* Navigation buttons for desktop */}
