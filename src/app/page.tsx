@@ -82,7 +82,7 @@ export default async function Home() {
           <Link 
             key={category.id}
             href={`/listing-category/${category.slug}`}
-            className={`category-card h-64 category-${category.slug}`}
+            className={`category-card aspect-square sm:aspect-video md:aspect-[4/3] category-${category.slug}`}
           >
             {/* Use category placeholder image as background with client component */}
             <div className="absolute inset-0 w-full h-full">

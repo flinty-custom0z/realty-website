@@ -57,6 +57,11 @@ export default function ClientImage({
     setIsLoading(false);
   };
   
+  // Ensure we have a properly defined image source before rendering
+  if (!imgSrc && !error) {
+    return null;
+  }
+  
   return (
     <>
       {isLoading && (
