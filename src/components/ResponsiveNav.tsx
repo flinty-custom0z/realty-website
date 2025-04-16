@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import AdminNavClient from './AdminNavClient';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -77,9 +76,6 @@ export default function ResponsiveNav() {
                 Промышленные объекты
               </Link>
             </nav>
-            
-            {/* Admin Navigation (always visible) */}
-            <AdminNavClient />
             
             {/* Mobile menu button */}
             <button

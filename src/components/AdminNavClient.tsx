@@ -60,21 +60,22 @@ export default function AdminNavClient() {
   }
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center justify-center my-2">
       {user ? (
         <div className="flex items-center space-x-3">
           <Link 
             href="/admin" 
-            className="text-blue-600 hover:text-blue-800 text-sm md:text-base flex items-center whitespace-nowrap"
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
           >
-            <span className="hidden md:inline mr-1">👤</span> 
-            <span className="hidden md:inline">{user.name}</span>
-            <span className="md:hidden">Админ</span>
+            <span className="mr-1">👤</span> 
+            <span>{user.name}</span>
+            <span className="mx-1">|</span>
+            <span>Админ панель</span>
           </Link>
           
           <button
             onClick={handleLogout}
-            className="text-red-600 hover:text-red-800 text-sm md:text-base"
+            className="text-red-600 hover:text-red-800 text-sm"
           >
             Выйти
           </button>
@@ -82,10 +83,10 @@ export default function AdminNavClient() {
       ) : (
         <Link 
           href="/admin-login"
-          className="text-gray-600 hover:text-gray-900 text-sm md:text-base flex items-center"
+          className="text-gray-600 hover:text-gray-900 text-sm flex items-center"
         >
-          <span className="hidden md:inline mr-1">🔐</span> 
-          Админ
+          <span className="mr-1">🔐</span> 
+          Вход для администраторов
         </Link>
       )}
     </div>
