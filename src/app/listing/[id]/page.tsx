@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { notFound, headers as nextHeaders, cookies as nextCookies } from 'next/headers';
+import { headers as nextHeaders, cookies as nextCookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ImageGallery from '@/components/ImageGallery';
 import AdminListingActions from '@/components/AdminListingActions';
@@ -26,7 +27,8 @@ async function fetchListing(id: string) {
 
 async function currentUserIsAdmin() {
   try {
-    const token = nextCookies().get('token')?.value;
+    const cookies = await nextCookies();
+    const token = cookies.get('token')?.value;
     if (!token) return false;
     
     const { id } = jwt.verify(token, JWT_SECRET) as { id: string };
@@ -36,8 +38,8 @@ async function currentUserIsAdmin() {
   }
 }
 
-function buildBackHref(categorySlug: string) {
-  const hdr = nextHeaders();
+async function buildBackHref(categorySlug: string) {
+  const hdr = await nextHeaders();
   const referer = hdr.get('referer');
   if (!referer) return `/listing-category/${categorySlug}`;
   
@@ -78,7 +80,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   if (!listing) notFound();
   
   const isAdmin = await currentUserIsAdmin();
-  const backHref = buildBackHref(listing!.category.slug);
+  const backHref = await buildBackHref(listing!.category.slug);
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');
   
   return (
