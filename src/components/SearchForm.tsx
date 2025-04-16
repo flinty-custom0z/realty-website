@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface SearchFormProps {
   categorySlug?: string;
@@ -11,50 +11,28 @@ interface SearchFormProps {
 export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery);
   
-  // Update state from URL params after component mounts
+  // Sync with URL and clear on nav
   useEffect(() => {
-    if (searchParams) {
-      const queryParam = searchParams.get('q');
-      if (queryParam) {
-        setQuery(queryParam);
-      }
+    const param = searchParams.get('q');
+    if (param) setQuery(param);
+    else if (!pathname.startsWith('/search') && !pathname.startsWith('/listing-category/')) {
+      setQuery('');
     }
-  }, [searchParams]);
+  }, [searchParams, pathname]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    
     if (!query.trim()) return;
-    
-    // Build query params, preserving existing filters if any
     const params = new URLSearchParams();
-    
-    // Add the search query
     params.append('q', query);
-    
-    // Preserve other filter parameters if they exist
-    if (searchParams) {
-    const preserveParams = ['minPrice', 'maxPrice', 'rooms', 'district', 'condition', 'category'];
-    preserveParams.forEach(param => {
-        // Handle multiple values (like rooms)
-        const values = searchParams.getAll(param);
-        if (values.length > 0) {
-          values.forEach(value => {
-        params.append(param, value);
-          });
-      }
+    ['minPrice','maxPrice','category','district','condition'].forEach((p) => {
+      searchParams.getAll(p).forEach((v) => params.append(p, v));
     });
-    }
-    
-    // Always use the main search route when searching from navbar
-    // Only use category-specific search when explicitly on a category page
-    if (categorySlug && categorySlug.trim() !== '') {
-      router.push(`/listing-category/${categorySlug}?${params.toString()}`);
-    } else {
-      router.push(`/search?${params.toString()}`);
-    }
+    const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
+    router.push(`${base}?${params}`);
   };
   
   return (
@@ -67,10 +45,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           placeholder="Ваш запрос"
           className="flex-grow p-2 border rounded-l"
         />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
-        >
+        <button type="submit" className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition">
           Искать
         </button>
       </div>
