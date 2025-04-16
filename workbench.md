@@ -26,7 +26,7 @@
 - Implement search, right now it's not working
 - Button to reset filter
 - Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
-
+- Dynamic suggestions when entering search query
 
 ## Later
 

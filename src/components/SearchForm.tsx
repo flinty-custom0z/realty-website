@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface SearchFormProps {
   categorySlug?: string;
@@ -10,6 +10,7 @@ interface SearchFormProps {
 
 export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
   
   const handleSubmit = (e: FormEvent) => {
@@ -17,10 +18,26 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     
     if (!query.trim()) return;
     
+    // Build query params, preserving existing filters if any
+    const params = new URLSearchParams();
+    
+    // Add the search query
+    params.append('q', query);
+    
+    // Preserve other filter parameters if they exist
+    const preserveParams = ['minPrice', 'maxPrice', 'rooms', 'district', 'condition', 'category'];
+    preserveParams.forEach(param => {
+      const value = searchParams.get(param);
+      if (value) {
+        params.append(param, value);
+      }
+    });
+    
+    // Determine where to navigate
     if (categorySlug) {
-      router.push(`/listing-category/${categorySlug}?q=${encodeURIComponent(query)}`);
+      router.push(`/listing-category/${categorySlug}?${params.toString()}`);
     } else {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
+      router.push(`/search?${params.toString()}`);
     }
   };
   

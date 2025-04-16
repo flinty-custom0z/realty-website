@@ -2,6 +2,13 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface FilterSidebarProps {
   categorySlug: string;
@@ -10,6 +17,8 @@ interface FilterSidebarProps {
   districts?: string[];
   rooms?: number[];
   conditions?: string[];
+  categories?: Category[];
+  searchQuery?: string;
 }
 
 export default function FilterSidebar({
@@ -19,6 +28,8 @@ export default function FilterSidebar({
   districts = [],
   rooms = [1, 2, 3, 4, 5],
   conditions = ['Черновая', 'Предчистовая', 'Требуется ремонт', 'Частичный ремонт', 'Ремонт под ключ', 'Хорошее', 'Евроремонт'],
+  categories = [],
+  searchQuery = '',
 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,6 +50,10 @@ export default function FilterSidebar({
   
   const [selectedCondition, setSelectedCondition] = useState<string>(
     searchParams.get('condition') || ''
+  );
+  
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    searchParams.get('category') || categorySlug
   );
   
   const handleSubmit = (e: FormEvent) => {
@@ -68,12 +83,26 @@ export default function FilterSidebar({
     }
     
     // Preserve search query if exists
-    if (searchParams.get('q')) {
+    if (searchQuery) {
+      params.append('q', searchQuery);
+    } else if (searchParams.get('q')) {
       params.append('q', searchParams.get('q') as string);
     }
     
+    // If we're on the search page and a category is selected
+    if (categorySlug === '' && selectedCategory) {
+      if (selectedCategory !== 'all') {
+        params.append('category', selectedCategory);
     // Navigate with filters
+        router.push(`/search?${params.toString()}`);
+      } else {
+        // If "all" is selected, just use regular search
+        router.push(`/search?${params.toString()}`);
+      }
+    } else {
+      // Navigate with filters to category page
     router.push(`/listing-category/${categorySlug}?${params.toString()}`);
+    }
   };
   
   const handleRoomToggle = (room: number) => {
@@ -84,9 +113,54 @@ export default function FilterSidebar({
     }
   };
   
+  const handleReset = () => {
+    // Reset all filter values to default
+    setPriceRange({ min: minPrice, max: maxPrice });
+    setSelectedRooms([]);
+    setSelectedDistrict('');
+    setSelectedCondition('');
+    
+    // Preserve only the search query if it exists
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.append('q', searchQuery);
+    } else if (searchParams.get('q')) {
+      params.append('q', searchParams.get('q') as string);
+    }
+    
+    // Redirect to appropriate page
+    if (categorySlug) {
+      router.push(`/listing-category/${categorySlug}?${params.toString()}`);
+    } else {
+      router.push(`/search?${params.toString()}`);
+    }
+  };
+  
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-md shadow-sm">
       <h3 className="text-lg font-medium mb-4">Фильтры</h3>
+      
+      {/* Category dropdown - Only show on search page */}
+      {categorySlug === '' && categories.length > 0 && (
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Категория
+          </label>
+          <select
+            id="category"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full p-2 border rounded text-sm"
+          >
+            <option value="all">Все категории</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       
       {/* Price range */}
       <div className="mb-4">
@@ -128,7 +202,7 @@ export default function FilterSidebar({
       </div>
       
       {/* Rooms (for apartments/houses) */}
-      {categorySlug === 'apartments' || categorySlug === 'houses' ? (
+      {(categorySlug === 'apartments' || categorySlug === 'houses' || categorySlug === '') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Количество комнат</label>
           <div className="flex flex-wrap gap-2">
@@ -148,7 +222,7 @@ export default function FilterSidebar({
             ))}
           </div>
         </div>
-      ) : null}
+      )}
       
       {/* District */}
       <div className="mb-4">
@@ -185,11 +259,21 @@ export default function FilterSidebar({
         </select>
       </div>
       
+      {/* Submit button */}
       <button
         type="submit"
-        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mb-2"
       >
         Фильтровать
+      </button>
+      
+      {/* Reset button */}
+      <button
+        type="button"
+        onClick={handleReset}
+        className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 transition"
+      >
+        Сбросить фильтры
       </button>
     </form>
   );

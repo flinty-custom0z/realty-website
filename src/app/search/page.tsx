@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebar from '@/components/FilterSidebar';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import SearchForm from '@/components/SearchForm';
 
 // Force dynamic rendering to prevent caching
@@ -10,21 +10,9 @@ export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
-async function getCategory(slug: string) {
-  const category = await prisma.category.findUnique({
-    where: { slug },
-  });
-  
-  return category;
-}
-
-async function getListings(
-  categoryId: string,
-  searchParams: Record<string, string | string[] | undefined>
-) {
+async function getListings(searchParams: Record<string, string | string[] | undefined>) {
   // Build filter object
   const filter: any = { 
-    categoryId,
     status: 'active',
   };
   
@@ -36,6 +24,7 @@ async function getListings(
     ];
   }
   
+  // Apply other filters
   if (searchParams.minPrice) {
     filter.price = { ...filter.price, gte: parseFloat(searchParams.minPrice as string) };
   }
@@ -56,6 +45,16 @@ async function getListings(
     filter.condition = searchParams.condition as string;
   }
   
+  // Category filter if provided
+  if (searchParams.category) {
+    const category = await prisma.category.findUnique({
+      where: { slug: searchParams.category as string },
+    });
+    if (category) {
+      filter.categoryId = category.id;
+    }
+  }
+  
   // Get page number
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 30;
@@ -71,6 +70,7 @@ async function getListings(
   const listings = await prisma.listing.findMany({
     where: filter,
     include: {
+      category: true,
       images: {
         where: { isFeatured: true },
         take: 1,
@@ -94,37 +94,46 @@ async function getListings(
   };
 }
 
-export default async function Page(props: any) {
-  const { params, searchParams = {} } = props;
-  const slug = params.slug;
-  
-  const category = await getCategory(slug);
-  
-  if (!category) {
-    notFound();
-  }
-  
-  const { listings, pagination } = await getListings(category.id, searchParams);
+// Get all categories for the filter
+async function getCategories() {
+  return await prisma.category.findMany({
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
 
-  // Get search query if exists
-  const searchQuery = searchParams.q as string || '';
-
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { listings, pagination } = await getListings(resolvedSearchParams);
+  const categories = await getCategories();
+  
+  // Get the search query for display
+  const searchQuery = resolvedSearchParams.q as string;
+  
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">{category.name}</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        {searchQuery 
+          ? `Результаты поиска: "${searchQuery}"` 
+          : 'Все объявления'}
+      </h1>
       
-      {/* Add search form if there's a search query */}
-      {searchQuery && (
-        <div className="w-full max-w-lg mb-6">
-          <SearchForm categorySlug={slug} initialQuery={searchQuery} />
-        </div>
-      )}
+      {/* Search form at the top of results */}
+      <div className="w-full max-w-lg mb-6">
+        <SearchForm initialQuery={searchQuery || ''} />
+      </div>
       
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
           <FilterSidebar 
-            categorySlug={params.slug}
+            categorySlug="" 
+            categories={categories}
             searchQuery={searchQuery}
           />
         </div>
@@ -175,7 +184,7 @@ export default async function Page(props: any) {
                 {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
                   <a
                     key={page}
-                    href={`/listing-category/${params.slug}?${new URLSearchParams({
+                    href={`/search?${new URLSearchParams({
                       ...Object.fromEntries(
                         Object.entries(searchParams || {}).filter(([key]) => key !== 'page')
                       ),
@@ -198,7 +207,7 @@ export default async function Page(props: any) {
           {listings.length === 0 && (
             <div className="text-center py-12">
               <p className="text-lg text-gray-600">Нет объектов, соответствующих вашим критериям</p>
-              <p className="text-sm text-gray-500 mt-2">Попробуйте изменить параметры фильтра</p>
+              <p className="text-sm text-gray-500 mt-2">Попробуйте изменить параметры поиска</p>
             </div>
           )}
         </div>
