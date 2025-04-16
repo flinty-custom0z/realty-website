@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, generateToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,20 +18,7 @@ export async function POST(req: NextRequest) {
     console.log(`User authenticated successfully: ${user.name}`);
     const token = generateToken(user.id);
     
-    // Set HTTP-only cookie
-    const cookieStore = await cookies();
-    cookieStore.set({
-      name: 'token',
-      value: token,
-      httpOnly: true,
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: 'lax',
-    });
-
-    console.log('Cookie set, returning success response');
-    
+    // Create the response
     const response = NextResponse.json({
       success: true,
       user: {
@@ -42,7 +28,7 @@ export async function POST(req: NextRequest) {
       }
     });
     
-    // Add the cookie to the response headers directly as backup
+    // Set the cookie directly on the response
     response.cookies.set({
       name: 'token',
       value: token,

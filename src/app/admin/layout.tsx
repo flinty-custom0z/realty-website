@@ -1,5 +1,4 @@
-// Mark the entire admin layout (and its children) as dynamic so that
-// cookies and other dynamic server functions work properly.
+// Force dynamic rendering so cookies() can be used at runtime.
 export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';
@@ -13,26 +12,22 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
   try {
-    // Using cookies() now works at runtime only.
+    // cookies() returns a runtime cookie store now
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
-
   if (!token) {
       console.log('No token in cookie, returning null');
     return null;
   }
-  
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, name: true, username: true },
     });
-    
     if (!user) {
       console.log('User not found for token');
       return null;
     }
-    
     console.log(`User found in layout: ${user.name}`);
     return user;
   } catch (error) {
@@ -48,7 +43,7 @@ export default async function AdminLayout({
 }) {
   const user = await getUserFromCookie();
   
-  // If no user is found, redirect to login.
+  // If no user is found, redirect to login
   if (!user) {
     console.log('No user found in layout, redirecting to login');
     redirect('/admin/login');
