@@ -28,6 +28,7 @@ export default function AdminImagePreview({
         ${isSelected ? 'border-blue-500' : 'border-gray-200'}
         ${isMarkedForDeletion ? 'opacity-50' : ''}
       `}
+      onClick={() => !isMarkedForDeletion && onSetFeatured(image.id)}
     >
       <div className="relative h-full w-full">
         <ClientImage
@@ -39,36 +40,26 @@ export default function AdminImagePreview({
         />
       </div>
         
-      <div className="absolute top-2 right-2 flex space-x-1">
+      <div className="absolute top-2 right-2">
         <button
           type="button"
-          onClick={() => onToggleDelete(image.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleDelete(image.id);
+          }}
           className={`
             p-1 rounded-full w-7 h-7 flex items-center justify-center
             ${isMarkedForDeletion ? 'bg-red-500 text-white' : 'bg-white text-red-500 opacity-0 group-hover:opacity-100'}
             transition-opacity
           `}
+          aria-label={isMarkedForDeletion ? "Отменить удаление" : "Удалить фото"}
         >
           {isMarkedForDeletion ? '↩' : '×'}
         </button>
-        
-        {!isMarkedForDeletion && (
-          <button
-            type="button"
-            onClick={() => onSetFeatured(image.id)}
-            className={`
-              p-1 rounded-full w-7 h-7 flex items-center justify-center
-              ${isSelected ? 'bg-blue-500 text-white' : 'bg-white text-blue-500 opacity-0 group-hover:opacity-100'}
-              transition-opacity
-            `}
-          >
-            ★
-          </button>
-        )}
       </div>
       
       {isSelected && (
-        <div className="absolute bottom-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+        <div className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
           Главное фото
         </div>
       )}

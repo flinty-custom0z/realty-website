@@ -6,10 +6,12 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 // GET method (fixed)
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const url = new URL(req.url);
-    const id = url.pathname.split('/').pop();
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing ID in request' }, { status: 400 });
@@ -26,7 +28,6 @@ export async function GET(req: NextRequest) {
           },
         },
         images: true,
-        comments: true,
       },
     });
 
@@ -66,7 +67,7 @@ async function saveImage(file: File) {
   return `/images/${filename}`;
 }
 
-export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
+export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const formData = await req.formData();
     const listingId = params.id;
@@ -76,13 +77,13 @@ export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
     const price = parseFloat(formData.get('price') as string);
     const status = formData.get('status') as string;
     const district = formData.get('district') as string;
-    const rooms = parseInt(formData.get('rooms') as string || '0');
-    const floor = parseInt(formData.get('floor') as string || '0');
-    const totalFloors = parseInt(formData.get('totalFloors') as string || '0');
-    const houseArea = parseFloat(formData.get('houseArea') as string || '0');
-    const landArea = parseFloat(formData.get('landArea') as string || '0');
+    const rooms = formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null;
+    const floor = formData.get('floor') ? parseInt(formData.get('floor') as string) : null;
+    const totalFloors = formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null;
+    const houseArea = formData.get('houseArea') ? parseFloat(formData.get('houseArea') as string) : null;
+    const landArea = formData.get('landArea') ? parseFloat(formData.get('landArea') as string) : null;
     const condition = formData.get('condition') as string;
-    const yearBuilt = parseInt(formData.get('yearBuilt') as string || '0');
+    const yearBuilt = formData.get('yearBuilt') ? parseInt(formData.get('yearBuilt') as string) : null;
     const categoryId = formData.get('categoryId') as string;
     const publicDescription = formData.get('publicDescription') as string;
     const adminComment = formData.get('adminComment') as string;
@@ -169,7 +170,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
 
     const updatedListing = await prisma.listing.findUnique({
       where: { id: listingId },
-      include: { images: true, comments: true },
+      include: { images: true },
     });
 
     return NextResponse.json(updatedListing);
@@ -181,7 +182,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
 
 
 // Delete listing
-async function handleDeleteListing(req: NextRequest, user: any, { params }: { params: { id: string } }) {
+async function handleDeleteListing(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const listing = await prisma.listing.findUnique({
       where: { id: params.id },
@@ -202,7 +203,7 @@ async function handleDeleteListing(req: NextRequest, user: any, { params }: { pa
       }
     }
 
-    // Delete the listing (cascades images/comments)
+    // Delete the listing (cascades images)
     await prisma.listing.delete({
       where: { id: params.id },
     });
@@ -214,6 +215,4 @@ async function handleDeleteListing(req: NextRequest, user: any, { params }: { pa
   }
 }
 
-export const DELETE = withAuth((req: NextRequest, user: any, params: { params: { id: string } }) =>
-  handleDeleteListing(req, user, params)
-);
+export const DELETE = withAuth(handleDeleteListing);

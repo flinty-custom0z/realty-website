@@ -23,13 +23,11 @@
 
 ## Next
 
-
-- Better image slider:
-  - Dynamic resizing/remove gray borders
-  - Click not working on other pics
 - Change name
-- Remove "Детали" link on details page
-- Admin comments
+- Details Page
+  - Remove "Детали" link on details page (prob. need to rename to something like "назад к списку")
+  - Make image smaller
+  - Buttons for admins on every listing (edit, delete)
+  - Комментарий админ-ра должен быть показан на детальных страницах тоже if you're logged in as an admin
 - Link to admin pannel/login
-- Buttons for admins on every listing
 - Implement search

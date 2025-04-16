@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
+import AdminImagePreview from '@/components/AdminImagePreview';
 
 interface ListingFormData {
   title: string;
@@ -71,8 +72,7 @@ export default function EditListingPage() {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [featuredImageId, setFeaturedImageId] = useState<string>('');
   
-  // For comments
-  const [newComment, setNewComment] = useState('');
+  // For comments - simplified to use adminComment field
   
   // Form data
   const [formData, setFormData] = useState<ListingFormData>({
@@ -261,45 +261,6 @@ export default function EditListingPage() {
       setError(error instanceof Error ? error.message : 'Ошибка при обновлении объявления');
     } finally {
       setIsSaving(false);
-    }
-  };
-  
-  const handleAddComment = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    
-    try {
-      const response = await fetch('/api/admin/comments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          listingId: params.id,
-          content: newComment,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to add comment');
-      }
-      
-      const comment = await response.json();
-      
-      // Add to listing comments
-      setListing(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: [...prev.comments, comment],
-        };
-      });
-      
-      // Clear comment form
-      setNewComment('');
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      alert('Не удалось добавить комментарий');
     }
   };
   
@@ -631,58 +592,14 @@ export default function EditListingPage() {
                 <p className="text-sm text-gray-700 mb-2">Текущие фотографии:</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {listing.images.map(image => (
-                    <div
+                    <AdminImagePreview
                     key={image.id}
-                    className={`
-                      relative group border-2 rounded p-1
-                      ${featuredImageId === image.id ? 'border-blue-500' : 'border-gray-200'}
-                      ${imagesToDelete.includes(image.id) ? 'opacity-50' : ''}
-                    `}
-                  >
-                    <div className="relative h-32">
-                      <ClientImage
-                        src={image.path}
-                        alt="Listing image"
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover rounded"
-                      />
-                    </div>
-                      
-                      <div className="absolute top-2 right-2 flex space-x-1">
-                        <button
-                          type="button"
-                          onClick={() => toggleImageToDelete(image.id)}
-                          className={`
-                            p-1 rounded-full w-7 h-7 flex items-center justify-center
-                            ${imagesToDelete.includes(image.id) ? 'bg-red-500 text-white' : 'bg-white text-red-500 opacity-0 group-hover:opacity-100'}
-                            transition-opacity
-                          `}
-                        >
-                          {imagesToDelete.includes(image.id) ? '↩' : '×'}
-                        </button>
-                        
-                        {!imagesToDelete.includes(image.id) && (
-                          <button
-                            type="button"
-                            onClick={() => setImageAsFeatured(image.id)}
-                            className={`
-                              p-1 rounded-full w-7 h-7 flex items-center justify-center
-                              ${featuredImageId === image.id ? 'bg-blue-500 text-white' : 'bg-white text-blue-500 opacity-0 group-hover:opacity-100'}
-                              transition-opacity
-                            `}
-                          >
-                            ★
-                          </button>
-                        )}
-                      </div>
-                      
-                      {featuredImageId === image.id && (
-                        <div className="absolute bottom-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                          Главное фото
-                        </div>
-                      )}
-                    </div>
+                      image={image}
+                      isSelected={featuredImageId === image.id}
+                      isMarkedForDeletion={imagesToDelete.includes(image.id)}
+                      onToggleDelete={toggleImageToDelete}
+                      onSetFeatured={setImageAsFeatured}
+                    />
                   ))}
                 </div>
               </div>
@@ -701,11 +618,12 @@ export default function EditListingPage() {
               {imagePreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+                    <div key={index} className="relative group aspect-square">
                       <ClientImage
                         src={preview.url}
                         alt={`Preview ${index + 1}`}
-                        className="h-32 w-full object-cover rounded"
+                        fill
+                        className="object-cover rounded"
                       />
                       <button
                         type="button"
@@ -731,45 +649,6 @@ export default function EditListingPage() {
             </button>
           </div>
         </form>
-      </div>
-      
-      {/* Comments section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 className="text-lg font-medium mb-4">Комментарии</h3>
-        
-        <div className="mb-4">
-          <form onSubmit={handleAddComment} className="flex gap-2">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Добавить комментарий"
-              className="flex-grow p-2 border rounded"
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-              disabled={!newComment.trim()}
-            >
-              Добавить
-            </button>
-          </form>
-        </div>
-        
-        {listing.comments && listing.comments.length > 0 ? (
-          <div className="space-y-4">
-            {listing.comments.map(comment => (
-              <div key={comment.id} className="bg-gray-50 p-4 rounded">
-                <div className="text-sm text-gray-500 mb-1">
-                  {formatDate(comment.createdAt)}
-                </div>
-                <p>{comment.content}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">Нет комментариев</p>
-        )}
       </div>
     </div>
   );

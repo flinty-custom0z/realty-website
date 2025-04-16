@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { existsSync } from 'fs';
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +16,27 @@ export async function GET(
     // Build the full path to the image
     const fullPath = path.join(process.cwd(), 'public', 'images', imagePath);
     
+    // Check if file exists first to avoid errors
+    if (!existsSync(fullPath)) {
+      console.error(`Image not found: ${fullPath}`);
+      
+      // Get default placeholder path
+      const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder.png');
+      
+      // If placeholder exists, return it
+      if (existsSync(placeholderPath)) {
+        const placeholderBuffer = await fs.readFile(placeholderPath);
+        return new NextResponse(placeholderBuffer, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      }
+      
+      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+    }
+    
     try {
       // Read the file
       const fileBuffer = await fs.readFile(fullPath);
@@ -27,19 +49,22 @@ export async function GET(
       else if (ext === '.png') contentType = 'image/png';
       else if (ext === '.gif') contentType = 'image/gif';
       else if (ext === '.svg') contentType = 'image/svg+xml';
+      else if (ext === '.webp') contentType = 'image/webp';
       
-      // Return the image
+      // Add better caching headers
       return new NextResponse(fileBuffer, {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=31536000, immutable',
+          'Content-Length': fileBuffer.length.toString(),
+          'Accept-Ranges': 'bytes',
         },
       });
     } catch (err) {
       console.error(`Error reading image file: ${fullPath}`, err);
       return NextResponse.json(
-        { error: 'Image not found' },
-        { status: 404 }
+        { error: 'Error reading image file' },
+        { status: 500 }
       );
     }
   } catch (error) {
