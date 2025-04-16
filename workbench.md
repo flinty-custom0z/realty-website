@@ -20,21 +20,30 @@
 
 
 
+## NOW
+
+- Multiselect in filter for everything that can be multi selected: categories (when general search), "район" and "состояние" when in one of the categories
+
+- Choosing district from avaliable: when in category should once show categories that are avaliable for this type of listing
+- Button to go back when you're done with searching: when searching in category this button should go back to category not to main
+- Clear search query when going to some other page (category/main page - navigation from header)
+
+- Remove two search bars in search results
+- Go back to search results when opening a listing from a search
+- Add another search field in "Фильтры" when you're in a category - it should filter/search only from listings in the currect category
+
+- Fix: When in search selecting a filter it resets to a general `/search` 
+
+- On main after categories it should show all listings and user should be able to choose what to sort by
+
 ## Next
 
-- Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
-- Dynamic suggestions when entering search query
-
-- Button to go back when you're done with searching (not sure how it's usually called/implemented)
 - Filter applied automatically when selecting
-- Multiselect in filter (eg 1 and 2 rooms)
-- Choosing district from avaliable
-- When searching across mult. categories show on each result what category it belongs to
+- Dynamic suggestions when entering search query
+- Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
 
-
-- Reset search query after refreshing the webpage
 
 ## Later
 
-- Admin login not working when accessing website via IP address (but working via localhost)
 - Edit history
+- Admin login not working when accessing website via IP address (but working via localhost)

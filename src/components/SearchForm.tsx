@@ -15,13 +15,13 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   
   // Update state from URL params after component mounts
   useEffect(() => {
-    if (searchParams && initialQuery === '') {
+    if (searchParams) {
       const queryParam = searchParams.get('q');
       if (queryParam) {
         setQuery(queryParam);
       }
     }
-  }, [searchParams, initialQuery]);
+  }, [searchParams]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -38,9 +38,12 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     if (searchParams) {
     const preserveParams = ['minPrice', 'maxPrice', 'rooms', 'district', 'condition', 'category'];
     preserveParams.forEach(param => {
-      const value = searchParams.get(param);
-      if (value) {
+        // Handle multiple values (like rooms)
+        const values = searchParams.getAll(param);
+        if (values.length > 0) {
+          values.forEach(value => {
         params.append(param, value);
+          });
       }
     });
     }

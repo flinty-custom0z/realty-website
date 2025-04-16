@@ -38,6 +38,9 @@ export default function FilterSidebar({
   // Flag to track initial mount
   const isInitialMount = useRef(true);
   
+  // Track if filters have actually changed from their initial state
+  const filtersChanged = useRef(false);
+  
   // Initialize state with default values
   const [priceRange, setPriceRange] = useState({
     min: minPrice,
@@ -48,6 +51,16 @@ export default function FilterSidebar({
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedCondition, setSelectedCondition] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>(categorySlug);
+  
+  // Store initial values to detect changes
+  const initialValues = useRef({
+    priceMin: minPrice,
+    priceMax: maxPrice,
+    rooms: [] as number[],
+    district: '',
+    condition: '',
+    category: categorySlug
+  });
   
   // Flag to track if filters are active
   const [filtersActive, setFiltersActive] = useState(false);
@@ -103,6 +116,16 @@ export default function FilterSidebar({
       setSelectedCondition(conditionParam || '');
       setSelectedCategory(categoryParam || categorySlug);
       
+      // Save initial values for change detection
+      initialValues.current = {
+        priceMin: minPriceParam ? parseInt(minPriceParam) : minPrice,
+        priceMax: maxPriceParam ? parseInt(maxPriceParam) : maxPrice,
+        rooms: roomsParam.length > 0 ? roomsParam.map(r => parseInt(r)) : [],
+        district: districtParam || '',
+        condition: conditionParam || '',
+        category: categoryParam || categorySlug
+      };
+      
       // Determine if filters are active
       setFiltersActive(
         !!minPriceParam || 
@@ -112,6 +135,9 @@ export default function FilterSidebar({
         !!conditionParam
       );
     }
+    
+    // Mark initial mount as complete
+    isInitialMount.current = false;
   }, [searchParams, categorySlug, minPrice, maxPrice]);
   
   const applyFilters = () => {
@@ -162,6 +188,24 @@ export default function FilterSidebar({
     }
   };
   
+  // Function to check if filters have actually changed
+  const haveFiltersChanged = () => {
+    if (priceRange.min !== initialValues.current.priceMin) return true;
+    if (priceRange.max !== initialValues.current.priceMax) return true;
+    
+    // Check rooms (comparing arrays)
+    if (selectedRooms.length !== initialValues.current.rooms.length) return true;
+    for (let i = 0; i < selectedRooms.length; i++) {
+      if (!initialValues.current.rooms.includes(selectedRooms[i])) return true;
+    }
+    
+    if (selectedDistrict !== initialValues.current.district) return true;
+    if (selectedCondition !== initialValues.current.condition) return true;
+    if (selectedCategory !== initialValues.current.category) return true;
+    
+    return false;
+  };
+  
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     applyFilters();
@@ -171,7 +215,6 @@ export default function FilterSidebar({
   useEffect(() => {
     // Skip on first render to prevent unwanted redirects
     if (isInitialMount.current) {
-      isInitialMount.current = false;
       return;
     }
     
@@ -181,9 +224,9 @@ export default function FilterSidebar({
       const isSearchPage = pathname?.includes('/search') || pathname?.includes('/listing-category/');
       const hasSearchQuery = searchParams?.has('q');
       
-      // Don't auto-apply if we're on a search page with results and this is user's first interaction
-      if (isSearchPage && hasSearchQuery) {
-        // Only apply if user has explicitly changed filters
+      // FIXED: Only apply if filters have actually changed
+      if (isSearchPage && hasSearchQuery && haveFiltersChanged()) {
+        filtersChanged.current = true;
         applyFilters();
       }
     }, 800); // 800ms debounce
