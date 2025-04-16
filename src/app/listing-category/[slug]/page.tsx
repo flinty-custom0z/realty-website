@@ -4,7 +4,8 @@ import ListingCard from '@/components/ListingCard';
 import FilterSidebar from '@/components/FilterSidebar';
 import { notFound } from 'next/navigation';
 
-
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 

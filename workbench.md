@@ -22,9 +22,7 @@
 
 ## Next
 
-- Details Page
-  - When I click on delete in details it should go back to the appropriate list, not to admin listings panel
-- Link to admin pannel/login somewhere on every page
+- Link to admin pannel/login somewhere on every page and it should be visible that you're logged in as admin and it should let you log out (button)
 - Implement search, right now it's not working
 - Button to reset filter
 - Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people

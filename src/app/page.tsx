@@ -4,6 +4,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import ClientImage from '@/components/ClientImage';
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 // Map category slugs to their placeholder images - using both plural and singular for redundancy
@@ -25,7 +28,7 @@ async function getCategories() {
   const categories = await prisma.category.findMany({
     include: {
       _count: {
-        select: { listings: true },
+        select: { listings: { where: { status: 'active' } } }, // Only count active listings
       },
     },
   });
