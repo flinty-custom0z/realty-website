@@ -45,8 +45,9 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     });
     }
     
-    // Determine where to navigate
-    if (categorySlug) {
+    // Always use the main search route when searching from navbar
+    // Only use category-specific search when explicitly on a category page
+    if (categorySlug && categorySlug.trim() !== '') {
       router.push(`/listing-category/${categorySlug}?${params.toString()}`);
     } else {
       router.push(`/search?${params.toString()}`);

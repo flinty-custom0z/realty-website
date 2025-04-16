@@ -4,6 +4,7 @@ import ListingCard from '@/components/ListingCard';
 import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import SearchFormWrapper from '@/components/SearchFormWrapper';
+import Link from 'next/link';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -104,9 +105,16 @@ async function getListings(
   };
 }
 
-export default async function Page(props: any) {
-  const { params, searchParams = {} } = props;
-  const slug = params.slug;
+export default async function Page({ 
+  params, 
+  searchParams,
+}: { 
+  params: Promise<{ slug: string }>; 
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
   
   const category = await getCategory(slug);
   
@@ -114,10 +122,10 @@ export default async function Page(props: any) {
     notFound();
   }
   
-  const { listings, pagination } = await getListings(category.id, searchParams);
+  const { listings, pagination } = await getListings(category.id, resolvedSearchParams);
 
   // Get search query if exists
-  const searchQuery = searchParams.q as string || '';
+  const searchQuery = resolvedSearchParams.q as string || '';
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -130,11 +138,19 @@ export default async function Page(props: any) {
         </div>
       )}
       
+      {searchQuery && (
+        <div className="mb-4">
+          <Link href={`/listing-category/${slug}`} className="text-blue-500 hover:text-blue-700 inline-flex items-center">
+            <span className="mr-1">←</span> Вернуться к {category.name.toLowerCase()}
+          </Link>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
           <FilterSidebarWrapper 
-            categorySlug={params.slug}
+            categorySlug={slug}
             searchQuery={searchQuery}
           />
         </div>
@@ -184,15 +200,24 @@ export default async function Page(props: any) {
           {pagination.pages > 1 && (
             <div className="mt-8 flex justify-center">
               <nav className="inline-flex">
-                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => {
+                  // Create a new URLSearchParams with all current parameters
+                  const params = new URLSearchParams();
+                  Object.entries(searchParams).forEach(([key, value]) => {
+                    if (key !== 'page' && value !== undefined) {
+                      if (Array.isArray(value)) {
+                        value.forEach(v => params.append(key, v));
+                      } else {
+                        params.append(key, value);
+                      }
+                    }
+                  });
+                  params.set('page', page.toString());
+                  
+                  return (
                   <a
                     key={page}
-                    href={`/listing-category/${params.slug}?${new URLSearchParams({
-                      ...Object.fromEntries(
-                        Object.entries(searchParams || {}).filter(([key]) => key !== 'page')
-                      ),
-                      page: page.toString(),
-                    })}`}
+                      href={`/listing-category/${slug}?${params.toString()}`}
                     className={`px-4 py-2 text-sm border ${
                       page === pagination.page
                         ? 'bg-blue-500 text-white border-blue-500'
@@ -201,7 +226,8 @@ export default async function Page(props: any) {
                   >
                     {page}
                   </a>
-                ))}
+                  );
+                })}
               </nav>
             </div>
           )}

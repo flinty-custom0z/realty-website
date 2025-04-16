@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -34,6 +34,9 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  
+  // Flag to track initial mount
+  const isInitialMount = useRef(true);
   
   // Initialize state with default values
   const [priceRange, setPriceRange] = useState({
@@ -136,11 +139,12 @@ export default function FilterSidebar({
       params.append('condition', selectedCondition);
     }
     
-    // Preserve search query if exists
-    if (searchQuery) {
+    // Preserve search query if exists - CRITICAL FIX
+    const currentQuery = searchParams && searchParams.get('q');
+    if (currentQuery) {
+      params.append('q', currentQuery);
+    } else if (searchQuery) {
       params.append('q', searchQuery);
-    } else if (searchParams && searchParams.get('q')) {
-      params.append('q', searchParams.get('q') as string);
     }
     
     // Navigate based on context
@@ -165,9 +169,21 @@ export default function FilterSidebar({
   
   // Auto-apply filters when selections change (with debounce)
   useEffect(() => {
+    // Skip on first render to prevent unwanted redirects
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    // Only auto-apply filters when user explicitly changes them, not on initial load
     const timer = setTimeout(() => {
-      // Only auto-apply if component has mounted and not the first render
-      if (searchParams) {
+      // Check if we're on a search page with a query
+      const isSearchPage = pathname?.includes('/search') || pathname?.includes('/listing-category/');
+      const hasSearchQuery = searchParams?.has('q');
+      
+      // Don't auto-apply if we're on a search page with results and this is user's first interaction
+      if (isSearchPage && hasSearchQuery) {
+        // Only apply if user has explicitly changed filters
         applyFilters();
       }
     }, 800); // 800ms debounce
@@ -194,10 +210,11 @@ export default function FilterSidebar({
     
     // Preserve only the search query if it exists
     const params = new URLSearchParams();
-    if (searchQuery) {
+    const currentQuery = searchParams?.get('q');
+    if (currentQuery) {
+      params.append('q', currentQuery);
+    } else if (searchQuery) {
       params.append('q', searchQuery);
-    } else if (searchParams && searchParams.get('q')) {
-      params.append('q', searchParams.get('q') as string);
     }
     
     // Redirect to appropriate page
@@ -365,11 +382,19 @@ export default function FilterSidebar({
     </select>
     </div>
     
-    {/* Reset button */}
+        {/* Filter and Reset buttons */}
+        <div className="space-y-2">
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+          >
+            Применить фильтры
+          </button>
+          
     <button
     type="button"
     onClick={handleReset}
-          className={`w-full mb-2 py-2 rounded transition ${
+            className={`w-full py-2 rounded transition ${
             filtersActive 
               ? 'bg-red-500 text-white hover:bg-red-600' 
               : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -377,6 +402,7 @@ export default function FilterSidebar({
     >
           {filtersActive ? 'Сбросить фильтры' : 'Очистить'}
     </button>
+        </div>
     </form>
     </div>
   );

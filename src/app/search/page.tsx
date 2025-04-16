@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import SearchFormWrapper from '@/components/SearchFormWrapper';
+import Link from 'next/link';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -136,6 +137,14 @@ export default async function SearchPage({
         <SearchFormWrapper initialQuery={searchQuery || ''} />
       </div>
       
+      {searchQuery && (
+        <div className="mb-4">
+          <Link href="/" className="text-blue-500 hover:text-blue-700 inline-flex items-center">
+            <span className="mr-1">←</span> Вернуться на главную
+          </Link>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
@@ -191,15 +200,24 @@ export default async function SearchPage({
           {pagination.pages > 1 && (
             <div className="mt-8 flex justify-center">
               <nav className="inline-flex">
-                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => {
+                  // Create a new URLSearchParams with all current parameters
+                  const params = new URLSearchParams();
+                  Object.entries(searchParams).forEach(([key, value]) => {
+                    if (key !== 'page' && value !== undefined) {
+                      if (Array.isArray(value)) {
+                        value.forEach(v => params.append(key, v));
+                      } else {
+                        params.append(key, value);
+                      }
+                    }
+                  });
+                  params.set('page', page.toString());
+                  
+                  return (
                   <a
                     key={page}
-                    href={`/search?${new URLSearchParams({
-                      ...Object.fromEntries(
-                        Object.entries(resolvedSearchParams || {}).filter(([key]) => key !== 'page')
-                      ),
-                      page: page.toString(),
-                    })}`}
+                      href={`/search?${params.toString()}`}
                     className={`px-4 py-2 text-sm border ${
                       page === pagination.page
                         ? 'bg-blue-500 text-white border-blue-500'
@@ -208,7 +226,8 @@ export default async function SearchPage({
                   >
                     {page}
                   </a>
-                ))}
+                  );
+                })}
               </nav>
             </div>
           )}

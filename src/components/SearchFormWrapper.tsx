@@ -17,9 +17,12 @@ export default function SearchFormWrapper({
   categorySlug, 
   initialQuery 
 }: SearchFormWrapperProps) {
+  // Make sure we only pass a valid category slug
+  const validatedSlug = categorySlug && categorySlug.trim() !== '' ? categorySlug : undefined;
+  
   return (
     <Suspense fallback={<div className="w-full h-10 bg-gray-100 animate-pulse rounded"></div>}>
-      <SearchForm categorySlug={categorySlug} initialQuery={initialQuery} />
+      <SearchForm categorySlug={validatedSlug} initialQuery={initialQuery} />
     </Suspense>
   );
 }
