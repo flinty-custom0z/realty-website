@@ -88,10 +88,10 @@ export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
     });
 
     // Handle new image uploads
-    const images = formData.getAll('images') as File[];
+    const newImages = formData.getAll('newImages') as File[];
 
-    if (images.length > 0) {
-      const imagePromises = images.map(async (file) => {
+    if (newImages.length > 0) {
+      const imagePromises = newImages.map(async (file) => {
         const imagePath = await saveImage(file);
         return prisma.image.create({
           data: {
@@ -112,8 +112,12 @@ export const PUT = withAuth(async (req: NextRequest, { params }: any) => {
 
       await Promise.all(
         oldImages.map(async (img) => {
+          try {
           const filePath = path.join(process.cwd(), 'public', img.path);
-          await unlink(filePath).catch(() => null);
+            await unlink(filePath).catch(() => console.log(`Could not delete file: ${filePath}`));
+          } catch (error) {
+            console.error(`Error deleting image file:`, error);
+          }
         })
       );
 

@@ -5,7 +5,7 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-// Map category slugs to their placeholder images
+// Map category slugs to their placeholder images - ensure we use the plural form consistently
 const categoryImages = {
   'apartments': '/images/apartments_placeholder.png',
   'houses': '/images/houses_placeholder.png',

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('canvas');
 
+// Match the category slugs to what's used in the rest of the application
 const categories = [
   { slug: 'apartments', color: '#90cdf4', name: 'Квартиры' },
   { slug: 'houses', color: '#9ae6b4', name: 'Дома' },
@@ -11,10 +12,17 @@ const categories = [
   { slug: 'industrial', color: '#e2e8f0', name: 'Промышленные объекты' },
 ];
 
+// Also create singular versions for compatibility
+const singularVersions = [
+  { slug: 'apartment', color: '#90cdf4', name: 'Квартиры' },
+  { slug: 'house', color: '#9ae6b4', name: 'Дома' },
+];
+
 // Create images directory if it doesn't exist
 const imagesDir = path.join(process.cwd(), 'public', 'images');
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir, { recursive: true });
+  console.log(`Created images directory at ${imagesDir}`);
 }
 
 // Create a default placeholder
@@ -52,7 +60,9 @@ function createCategoryPlaceholders() {
   const width = 400;
   const height = 300;
 
-  categories.forEach(category => {
+  const allCategories = [...categories, ...singularVersions];
+
+  allCategories.forEach(category => {
     const placeholderPath = path.join(imagesDir, `${category.slug}_placeholder.png`);
     if (fs.existsSync(placeholderPath)) {
       console.log(`Placeholder for ${category.slug} already exists`);
@@ -81,6 +91,12 @@ function createCategoryPlaceholders() {
 }
 
 // Execute
+try {
+  console.log('Starting placeholder image creation');
 createDefaultPlaceholder();
 createCategoryPlaceholders();
 console.log('All placeholder images created successfully');
+} catch (error) {
+  console.error('Error creating placeholder images:', error);
+  process.exit(1);
+}

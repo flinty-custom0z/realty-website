@@ -6,13 +6,16 @@ import ClientImage from '@/components/ClientImage';
 
 const prisma = new PrismaClient();
 
-// Map category slugs to their placeholder images
+// Map category slugs to their placeholder images - using both plural and singular for redundancy
 const categoryImages = {
   'apartments': '/images/apartments_placeholder.png',
   'houses': '/images/houses_placeholder.png',
   'land': '/images/land_placeholder.png',
   'commercial': '/images/commercial_placeholder.png',
-  'industrial': '/images/industrial_placeholder.png'
+  'industrial': '/images/industrial_placeholder.png',
+  // Singular backups
+  'apartment': '/images/apartment_placeholder.png',
+  'house': '/images/house_placeholder.png',
 };
 
 // Default fallback image if a specific category image is not found
@@ -30,7 +33,7 @@ async function getCategories() {
   return categories;
 }
 
-// Validate that all placeholder images exist, create them if they don't
+// Validate that all placeholder images exist
 async function ensurePlaceholderImages() {
   try {
     const publicDir = path.join(process.cwd(), 'public');
@@ -41,6 +44,7 @@ async function ensurePlaceholderImages() {
       await fs.access(imagesDir);
     } catch (error) {
       await fs.mkdir(imagesDir, { recursive: true });
+      console.log('Created images directory');
     }
     
     // Check if default placeholder exists
@@ -48,19 +52,8 @@ async function ensurePlaceholderImages() {
     try {
       await fs.access(defaultPlaceholderPath);
     } catch (error) {
-      console.log('Default placeholder image does not exist, will use fallback path');
-      // In a real system, you would create a placeholder image file here
-    }
-
-    // Check each category placeholder
-    for (const [slug, imagePath] of Object.entries(categoryImages)) {
-      const fullPath = path.join(publicDir, imagePath);
-      try {
-        await fs.access(fullPath);
-      } catch (error) {
-        console.log(`Placeholder for ${slug} not found, will use default`);
-        // Category placeholder doesn't exist, will fallback to default
-      }
+      console.log('Default placeholder image does not exist');
+      // In production we'd create a placeholder here
     }
   } catch (error) {
     console.error('Error ensuring placeholder images:', error);
@@ -77,7 +70,15 @@ export default async function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => (
+        {categories.map((category) => {
+          // Try both plural and singular versions of image paths
+          const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
+                          categoryImages[(category.slug.endsWith('s') ? 
+                                         category.slug.slice(0, -1) : 
+                                         category.slug + 's') as keyof typeof categoryImages] || 
+                          defaultPlaceholder;
+          
+          return (
           <Link 
             key={category.id}
             href={`/listing-category/${category.slug}`}
@@ -86,7 +87,7 @@ export default async function Home() {
             {/* Use category placeholder image as background with client component */}
             <div className="absolute inset-0 w-full h-full">
               <ClientImage
-              src={categoryImages[category.slug as keyof typeof categoryImages] || defaultPlaceholder}
+                  src={imageSrc}
               alt={category.name}
               fill
               className="object-cover"
@@ -102,7 +103,8 @@ export default async function Home() {
               </p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

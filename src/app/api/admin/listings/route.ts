@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, access } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 async function ensureDirectoryExists(dirPath: string) {
   try {
-    await mkdir(dirPath, { recursive: true });
+    await access(dirPath);
   } catch (error) {
-    // Directory might already exist or other error
-    console.error("Error ensuring directory exists:", error);
+    // Directory doesn't exist, create it
+    await mkdir(dirPath, { recursive: true });
+    console.log(`Created directory: ${dirPath}`);
   }
 }
 
@@ -134,10 +135,12 @@ async function handleCreateListing(req: NextRequest) {
     } else {
       // If no images were uploaded, use a placeholder
       console.log("No images uploaded, using placeholder");
+      let placeholderPath = `/images/${category?.slug || 'placeholder'}_placeholder.png`;
+      
       await prisma.image.create({
         data: {
           listingId: listing.id,
-          path: `/images/${category?.slug || 'placeholder'}_placeholder.png`,
+          path: placeholderPath,
           isFeatured: true,
         },
       });
