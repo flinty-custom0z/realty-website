@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const SearchForm = dynamic(() => import('@/components/SearchForm'), {
@@ -18,24 +18,39 @@ export default function SearchFormWrapper({
   initialQuery 
 }: SearchFormWrapperProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery || '');
   
   // Update query when URL changes
   useEffect(() => {
+    // Process URL query parameter
     const urlQuery = searchParams.get('q');
-    if (urlQuery === null) {
+    
+    // If we're on a category page, check if it matches the current category
+    if (pathname.startsWith('/listing-category/')) {
+      const currentCategorySlug = pathname.split('/')[2]?.split('?')[0];
+      
+      if (currentCategorySlug === categorySlug) {
+        // Only update query if we're in the same category
+        if (urlQuery !== null) {
+          setQuery(urlQuery);
+        }
+      } else {
+        // Clear query when category changes
       setQuery('');
-    } else if (urlQuery !== query) {
+      }
+    } else if (urlQuery !== null) {
+      // For other pages, just update to match URL
       setQuery(urlQuery);
+    } else if (query && !urlQuery) {
+      // Clear query when URL doesn't have one
+      setQuery('');
     }
-  }, [searchParams, query]);
-  
-  // Make sure we only pass a valid category slug
-  const validatedSlug = categorySlug && categorySlug.trim() !== '' ? categorySlug : undefined;
+  }, [searchParams, pathname, categorySlug, query]);
   
   return (
     <Suspense fallback={<div className="w-full h-10 bg-gray-100 animate-pulse rounded"></div>}>
-      <SearchForm categorySlug={validatedSlug} initialQuery={query} />
+      <SearchForm categorySlug={categorySlug} initialQuery={query} />
     </Suspense>
   );
 }

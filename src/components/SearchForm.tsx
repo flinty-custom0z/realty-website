@@ -49,25 +49,24 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     const params = new URLSearchParams();
     params.append('q', query);
     
-    // Store the full current URL (including all params) to return to later
+    // Store the origin of the search to return to later
+    if (pathname.startsWith('/listing-category/') && categorySlug) {
+      // If coming from a category page, remember that
+      params.append('from', `category:${categorySlug}`);
+    } else if (!pathname.startsWith('/search')) {
+      // If not already on search page, store full current URL
     const currentFullUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-    
-    // Don't include the return URL if we're already on the search page
-    if (!pathname.startsWith('/search')) {
       params.append('returnUrl', encodeURIComponent(currentFullUrl));
     }
     
-    // Preserve current filter values if searching from a category page
+    // Determine where to search
     if (categorySlug) {
-      ['minPrice','maxPrice','district','condition','rooms'].forEach((p) => {
-        searchParams.getAll(p).forEach((v) => params.append(p, v));
-      });
-      params.append('from', `category:${categorySlug}`);
+      // Search within the current category
+      router.push(`/listing-category/${categorySlug}?${params}`);
+    } else {
+      // Global search
+      router.push(`/search?${params}`);
     }
-    
-    // Automatically use current category if in a category page or go to search page
-    const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
-    router.push(`${base}?${params}`);
   };
   
   return (
@@ -77,7 +76,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ваш запрос"
+          placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
           className="flex-grow p-2 border rounded-l"
         />
         <button type="submit" className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition">

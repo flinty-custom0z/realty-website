@@ -111,10 +111,12 @@ function getBackDestination(searchParams: Record<string, string | string[] | und
     }
   }
   
-  // Second priority: category
-  if (searchParams.from && (searchParams.from as string).startsWith('category:')) {
-    const categorySlug = (searchParams.from as string).split(':')[1];
+  // Second priority: category from 'from' parameter
+  if (searchParams.from && typeof searchParams.from === 'string' && searchParams.from.startsWith('category:')) {
+    const categorySlug = searchParams.from.split(':')[1];
+    if (categorySlug) {
     return `/listing-category/${categorySlug}`;
+  }
   }
   
   // Third priority: single selected category
@@ -193,7 +195,6 @@ export default async function SearchPage({
       </h1>
       
       {/* Back link - always show for search results */}
-      {searchQuery && (
         <div className="mb-4">
           <Link 
             href={backUrl}
@@ -202,7 +203,6 @@ export default async function SearchPage({
             <span className="mr-1">←</span> {backLinkText}
           </Link>
         </div>
-      )}
       
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}

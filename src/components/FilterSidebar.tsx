@@ -2,7 +2,6 @@
 
 import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import Link from 'next/link';
 
 interface Category {
   id: string;
@@ -127,6 +126,9 @@ export default function FilterSidebar({
     if (urlQuery === null && query !== '') {
       // If 'q' param was removed from URL but our state still has it, clear it
       setQuery('');
+    } else if (urlQuery !== null && urlQuery !== query) {
+      // If 'q' param changed, update our state
+      setQuery(urlQuery);
     }
   }, [searchParams, query]);
 
@@ -149,6 +151,25 @@ export default function FilterSidebar({
     
     return hasSearchQuery || hasCustomPrice || hasOtherFilters;
   };
+
+  // Apply filters immediately when toggling a filter
+  useEffect(() => {
+    // Do not apply on initial render
+    if (initialOptionsRef.current.districts.length === 0) return;
+    
+    // Don't apply if we're already applying or if there's no change
+    if (isApplyingRef.current) return;
+    
+    // Use a small delay to prevent rapid consecutive changes
+    const timer = setTimeout(() => {
+      // Only apply filters when toggling, not when loading filters initially
+      if (hasCustomFilters()) {
+        applyFilters();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories]);
 
   // Apply filters
   const applyFilters = () => {

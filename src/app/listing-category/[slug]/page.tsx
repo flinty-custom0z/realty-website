@@ -112,7 +112,7 @@ async function getListings(
   };
 }
 
-export default async function Page({ 
+export default async function CategoryPage({ 
   params, 
   searchParams,
 }: { 
@@ -142,10 +142,10 @@ export default async function Page({
       {searchQuery && (
         <div className="mb-4">
           <Link 
-      href={`/listing-category/${slug}`} // This URL should have no query params
+            href={`/listing-category/${slug}`} // URL with no query params
             className="text-blue-500 hover:text-blue-700 inline-flex items-center"
           >
-            <span className="mr-1">←</span> Вернуться к {category.name.toLowerCase()}
+            <span className="mr-1">←</span> Вернуться ко всем {category.name.toLowerCase()}
           </Link>
         </div>
       )}
