@@ -34,16 +34,24 @@ export default function FilterSidebar({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  // State for filters
-  const [query, setQuery] = useState(searchQuery);
+  // State for search input (unsynced with URL)
+  const [searchInputValue, setSearchInputValue] = useState('');
+  // State for filters synced with URL
+  const [syncedQuery, setSyncedQuery] = useState(searchQuery);
+  
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.getAll('category'));
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams.getAll('district'));
   const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams.getAll('condition'));
   const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams.getAll('rooms'));
-  const [isUserTyping, setIsUserTyping] = useState(false);
   
+  // Initialize search input value from URL on first load
+  useEffect(() => {
+    if (searchInputValue === '' && searchQuery) {
+      setSearchInputValue(searchQuery);
+    }
+  }, [searchQuery]);
   
   // Reference to initial filter options
   const initialOptionsRef = useRef<FilterOptions>({
@@ -60,7 +68,7 @@ export default function FilterSidebar({
     rooms: [],
     priceRange: { min: 0, max: 30000000 }
   });
-  
+
   // Flag to prevent multiple calls
   const isApplyingRef = useRef(false);
   
@@ -121,25 +129,20 @@ export default function FilterSidebar({
     };
   }, [categorySlug, searchQuery, searchParams]);
   
+  // Update synced query when URL changes (but don't update search input)
   useEffect(() => {
-    // Skip if user is actively typing
-    if (isUserTyping) return;
-    
-    // When searchParams changes, check if 'q' parameter exists
     const urlQuery = searchParams.get('q');
-    if (urlQuery === null && query !== '') {
-      // If 'q' param was removed from URL but our state still has it, clear it
-      setQuery('');
-    } else if (urlQuery !== null && urlQuery !== query) {
-      // If 'q' param changed, update our state
-      setQuery(urlQuery);
+    if (urlQuery === null && syncedQuery !== '') {
+      setSyncedQuery('');
+    } else if (urlQuery !== null && urlQuery !== syncedQuery) {
+      setSyncedQuery(urlQuery);
     }
-  }, [searchParams, query, isUserTyping]);
+  }, [searchParams, syncedQuery]);
   
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
     // Check if there's a search query
-    const hasSearchQuery = query.trim() !== '';
+    const hasSearchQuery = searchInputValue.trim() !== '';
     
     // Check if price is different from initial
     const hasCustomPrice = 
@@ -181,8 +184,8 @@ export default function FilterSidebar({
     try {
       const params = new URLSearchParams();
       
-      // Preserve search query if exists
-      if (query.trim()) params.append('q', query);
+      // Use the search input value for the query parameter
+      if (searchInputValue.trim()) params.append('q', searchInputValue);
       
       // Add price filters only if they differ from defaults
       const minDefault = initialOptionsRef.current.priceRange.min.toString();
@@ -237,8 +240,8 @@ export default function FilterSidebar({
     
     // Create params and preserve the search query if it exists
     const params = new URLSearchParams();
-    if (query.trim()) {
-      params.append('q', query);
+    if (searchInputValue.trim()) {
+      params.append('q', searchInputValue);
     }
     
     // Keep return URL and from parameter
@@ -306,9 +309,7 @@ export default function FilterSidebar({
   // Category-specific search
   const handleCategorySearch = (e: FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
-    
-    // Use the regular filter apply mechanism but ensure the query is set
+    if (!searchInputValue.trim()) return;
     applyFilters();
   };
   
@@ -321,13 +322,8 @@ export default function FilterSidebar({
       <div className="flex">
       <input
       type="text"
-      value={query}
-      onChange={(e) => {
-        setIsUserTyping(true);
-        setQuery(e.target.value);
-        // Reset flag after delay
-        setTimeout(() => setIsUserTyping(false), 300);
-      }}
+        value={searchInputValue}
+        onChange={(e) => setSearchInputValue(e.target.value)}
       placeholder="Поиск"
       className="w-full p-2 border rounded-l"
       />

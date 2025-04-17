@@ -30,7 +30,19 @@
 - When I select and unselect a filter the results won't reset it still shows only filtered listings until I select "применить"
 
 
+- Now I need to fix the language errors like "←Вернуться ко всем квартиры" should be ко всем квартирам. Find all errors like this and help me fix them.
+- Also when I start typing "сбросить фильтры" shows up, but results stay the same (meaning no filter is applied until I press search or "применить фильтры").
+- Also when I enter something "сбросить фильтры" won't reset/clear the search. Same when I clear the entry and press "применить" 
+
+- Also when I search something globally and go to the main/home page - the query won't clear. Only when I switch to a category
+
+
+- Then I also need to change other filter fields dynamically. Eg when I select "состояние" and there are fewer listings - "районы", price, rooms and other things/filters should reflect the change and only show from options that fit the remaining listings
+
 ## Next
+
+- The main image should be the first to show up when opening details, now they're not the same
+
 
 - Fix sorting, currently it's doing anything
 - Dynamic suggestions when entering search query
