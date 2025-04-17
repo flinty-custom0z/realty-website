@@ -18,6 +18,10 @@ Here are the features I need you to help me implement/errors I need you to help 
 
 ```
 
+- Don't need multiple search fields (second one in filters block), change to just automatically select a fitting category when search from a category page.
+
+- From search results it should go back to category tho if the search was started from a category and not from the main page (Dynamic <- Назад к {категории}/Назад на главную depending on where the search was started)
+- Filter applied automatically when selecting
 ```
 
 Please read the code, check the attached project and help me fix it. Return the full fixed version for every file I need to fix. Don't be cheap and read as much as you can. It's very important.

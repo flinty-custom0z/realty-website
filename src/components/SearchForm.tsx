@@ -16,9 +16,13 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   
   // Sync with URL and clear on nav
   useEffect(() => {
+    if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
     const param = searchParams.get('q');
-    if (param) setQuery(param);
-    else if (!pathname.startsWith('/search') && !pathname.startsWith('/listing-category/')) {
+      if (param) {
+        setQuery(param);
+      }
+    } else {
+      // Clear search when navigating away from search or category pages
       setQuery('');
     }
   }, [searchParams, pathname]);
@@ -26,11 +30,22 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    
+    // Create new search params object
     const params = new URLSearchParams();
     params.append('q', query);
-    ['minPrice','maxPrice','category','district','condition'].forEach((p) => {
+    
+    // Preserve current filter values
+    ['minPrice','maxPrice','district','condition','rooms'].forEach((p) => {
       searchParams.getAll(p).forEach((v) => params.append(p, v));
     });
+    
+    // Add 'from' parameter if we're on a category page
+    if (categorySlug) {
+      params.append('from', `category:${categorySlug}`);
+    }
+    
+    // Automatically use current category if in a category page or go to search page
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
     router.push(`${base}?${params}`);
   };

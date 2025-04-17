@@ -77,14 +77,14 @@ async function getListings(searchParams: Record<string, string | string[] | unde
   const [total, listings] = await Promise.all([
     prisma.listing.count({ where: filter }),
     prisma.listing.findMany({
-    where: filter,
-    include: {
-      category: true,
+      where: filter,
+      include: {
+        category: true,
         images: { where: { isFeatured: true }, take: 1 },
       },
       orderBy: { [sortField]: sortOrder },
-    skip: (page - 1) * limit,
-    take: limit,
+      skip: (page - 1) * limit,
+      take: limit,
     }),
   ]);
   
@@ -99,6 +99,42 @@ async function getListings(searchParams: Record<string, string | string[] | unde
   };
 }
 
+/**
+ * Check if search originated from a category page
+ */
+function getOriginatingCategory(searchParams: Record<string, string | string[] | undefined>) {
+  const referrer = searchParams.from as string;
+  if (referrer && referrer.startsWith('category:')) {
+    return referrer.split(':')[1];
+  }
+  
+  // If we have exactly one category selected, we can consider that as the originating category
+  const categoryParam = searchParams.category;
+  if (categoryParam && !Array.isArray(categoryParam)) {
+    return categoryParam;
+  }
+  
+  return null;
+}
+
+/**
+ * Get all categories for the filter sidebar
+ */
+async function getAllCategories() {
+  return prisma.category.findMany({
+    orderBy: { name: 'asc' },
+    include: {
+      _count: {
+        select: { 
+          listings: {
+            where: { status: 'active' }
+          }
+        }
+      }
+    }
+  });
+}
+
 export default async function SearchPage({
   searchParams,
 }: {
@@ -106,8 +142,23 @@ export default async function SearchPage({
 }) {
   const resolvedParams = await searchParams;
   const { listings, pagination } = await getListings(resolvedParams);
+  const categories = await getAllCategories();
   
   const searchQuery = resolvedParams.q as string | undefined;
+  
+  // Check if search originated from a category page
+  const originatingCategory = getOriginatingCategory(resolvedParams);
+  
+  // If there's an originating category, get its name
+  let categoryName = '';
+  if (originatingCategory) {
+    const category = await prisma.category.findUnique({
+      where: { slug: originatingCategory },
+    });
+    if (category) {
+      categoryName = category.name.toLowerCase();
+    }
+  }
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -115,10 +166,35 @@ export default async function SearchPage({
         {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Все объявления'}
       </h1>
       
+      {/* Back link - always show for search results */}
+      {searchQuery && (
+        <div className="mb-4">
+          {originatingCategory ? (
+          <Link 
+            href={`/listing-category/${originatingCategory}`} 
+            className="text-blue-500 hover:text-blue-700 inline-flex items-center"
+          >
+            <span className="mr-1">←</span> Назад к {categoryName || 'категории'}
+          </Link>
+          ) : (
+            <Link 
+              href="/" 
+              className="text-blue-500 hover:text-blue-700 inline-flex items-center"
+            >
+              <span className="mr-1">←</span> На главную
+            </Link>
+          )}
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <div className="w-full md:w-1/4">
-          <FilterSidebarWrapper categories={undefined} categorySlug="" searchQuery={searchQuery || ''} />
+          <FilterSidebarWrapper 
+            categories={categories} 
+            categorySlug="" 
+            searchQuery={searchQuery} 
+          />
         </div>
         
         {/* Listings */}
@@ -176,15 +252,15 @@ export default async function SearchPage({
                   });
                   params.set('page', pageNum.toString());
                   return (
-                  <a
+                    <a
                       key={pageNum}
                       href={`/search?${params.toString()}`}
-                    className={`px-4 py-2 text-sm border ${
+                      className={`px-4 py-2 text-sm border ${
                         pageNum === pagination.page ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
+                      }`}
+                    >
                       {pageNum}
-                  </a>
+                    </a>
                   );
                 })}
               </nav>

@@ -38,11 +38,11 @@ async function getListings(
   }
   
   if (searchParams.minPrice) {
-    filter.price = { ...filter.price, gte: parseFloat(searchParams.minPrice as string) };
+    filter.price = { ...(filter.price || {}), gte: parseFloat(searchParams.minPrice as string) };
   }
   
   if (searchParams.maxPrice) {
-    filter.price = { ...filter.price, lte: parseFloat(searchParams.maxPrice as string) };
+    filter.price = { ...(filter.price || {}), lte: parseFloat(searchParams.maxPrice as string) };
   }
   
   // Multi-room selection support
@@ -53,17 +53,25 @@ async function getListings(
       ? roomParams.map(r => parseInt(r)) 
       : [parseInt(roomParams as string)];
     
-    if (roomValues.length > 0) {
-      filter.rooms = { in: roomValues };
+    if (roomValues.some(v => !isNaN(v))) {
+      filter.rooms = { in: roomValues.filter(v => !isNaN(v)) };
     }
   }
   
   if (searchParams.district) {
-    filter.district = { contains: searchParams.district as string, mode: 'insensitive' };
+    const districts = Array.isArray(searchParams.district) 
+      ? searchParams.district 
+      : [searchParams.district as string];
+    
+    filter.district = { in: districts };
   }
   
   if (searchParams.condition) {
-    filter.condition = searchParams.condition as string;
+    const conditions = Array.isArray(searchParams.condition) 
+      ? searchParams.condition 
+      : [searchParams.condition as string];
+    
+    filter.condition = { in: conditions };
   }
   
   // Get page number
@@ -138,9 +146,13 @@ export default async function Page({
         </div>
       )}
       
+      {/* Show "back to category" link when search is active */}
       {searchQuery && (
         <div className="mb-4">
-          <Link href={`/listing-category/${slug}`} className="text-blue-500 hover:text-blue-700 inline-flex items-center">
+          <Link 
+            href={`/listing-category/${slug}`} 
+            className="text-blue-500 hover:text-blue-700 inline-flex items-center"
+          >
             <span className="mr-1">←</span> Вернуться к {category.name.toLowerCase()}
           </Link>
         </div>
@@ -203,7 +215,7 @@ export default async function Page({
                 {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => {
                   // Create a new URLSearchParams with all current parameters
                   const params = new URLSearchParams();
-                  Object.entries(searchParams).forEach(([key, value]) => {
+                  Object.entries(resolvedSearchParams).forEach(([key, value]) => {
                     if (key !== 'page' && value !== undefined) {
                       if (Array.isArray(value)) {
                         value.forEach(v => params.append(key, v));
@@ -215,17 +227,17 @@ export default async function Page({
                   params.set('page', page.toString());
                   
                   return (
-                  <a
-                    key={page}
+                    <a
+                      key={page}
                       href={`/listing-category/${slug}?${params.toString()}`}
-                    className={`px-4 py-2 text-sm border ${
-                      page === pagination.page
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
-                  </a>
+                      className={`px-4 py-2 text-sm border ${
+                        page === pagination.page
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </a>
                   );
                 })}
               </nav>
