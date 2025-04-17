@@ -158,20 +158,36 @@ async function getBackLinkText(backUrl: string) {
 /**
  * Get all categories for the filter sidebar
  */
-async function getAllCategories() {
+async function getAllCategories(searchParams: Record<string, string | string[] | undefined>) {
+  // Create base filter
+  const baseFilter: any = { status: 'active' };
+  
+  // Add search query filter if present
+  if (searchParams.q) {
+    baseFilter.OR = [
+      { title: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
+    ];
+  }
+  
+  // Find categories that have matching listings
   return prisma.category.findMany({
+    where: {
+      listings: {
+        some: baseFilter
+      }
+    },
     orderBy: { name: 'asc' },
     include: {
       _count: {
         select: { 
-          listings: {
-            where: { status: 'active' }
-          }
+          listings: { where: { status: 'active' } }
         }
       }
     }
   });
 }
+
 
 export default async function SearchPage({
   searchParams,
@@ -180,7 +196,8 @@ export default async function SearchPage({
 }) {
   const resolvedParams = await searchParams;
   const { listings, pagination } = await getListings(resolvedParams);
-  const categories = await getAllCategories();
+  // Update how categories are retrieved
+  const categories = await getAllCategories(resolvedParams);
   
   const searchQuery = resolvedParams.q as string | undefined;
   

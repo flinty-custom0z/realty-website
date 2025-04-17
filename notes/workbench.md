@@ -22,24 +22,13 @@
 
 ## NOW
 
-- Don't need multiple search fields (second one in filters block), change to just automatically select a fitting category when search from a category page.
-- There's still no button to go back when searching
-    - From search results it should go back to category tho if the search was started from a category and not from the main page (Dynamic <- Назад к {категории}/Назад на главную depending on where the search was started)
-- When using filter in a category it shows listings from other categories
-    - Filters incorrectly show other categories, districts etc. when you search from a category. It works when you just open a category (meaning it automatically limits the options to such that exist in listings in the category) but doesn't do the same when searching
-
-
-- "<- На главную" is showing twice now when searching keep the second one
-- Add reset filter functionality
-- Also when doing global search hide the second search field - it should be only for when browsing a category
-
-- Search entry from the field needs to be cleared when going to another category. Now it only clears when you go home
-
-- When I turn on and off a few filters it glitches until I manually unset them and press "Применить фильтры"
-- Filters are also applying inconsistently. Eg when I select number of rooms it doesn't do anything but if i click the same number again it filters and changes the url accordingly
-
-
 - When you press "Сбросить фильтры" while searching it shouldn't remove the search query
+
+- When opening details from search the search query in field should remain bc you may go back to the search results
+- Filters still incorrectly show other categories to select when doing a global search, it should be limited to avaliable categories just like with other filters
+- Cannot enter anything in second search field (the one in filters block), looks like it's getting erased right away
+- When I select and unselect a filter the results won't reset it still shows only filtered listings until I select "применить"
+
 
 ## Next
 

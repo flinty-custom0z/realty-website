@@ -21,11 +21,10 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   useEffect(() => {
           if (!searchParams) return;
           
-    if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
       const paramQuery = searchParams.get('q');
       
-      // If we're on a category page, only set the query if it's for this category
-      // This ensures search is cleared when switching categories
+  if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
+    // Handle category pages
       if (pathname.startsWith('/listing-category/')) {
         const currentCategory = pathname.split('/')[2]?.split('?')[0];
         
@@ -36,13 +35,16 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           setQuery('');
         }
       } else if (paramQuery) {
-        // For search page, always set the query if it exists
+      // For search page
         setQuery(paramQuery);
       }
-    } else {
-      // Clear search when navigating away from search or category pages
-      setQuery('');
+    } else if (pathname.startsWith('/listing/')) {
+      // On listing detail page, preserve the query
+      if (paramQuery) {
+        setQuery(paramQuery);
+      }
     }
+    // Don't clear the query when on detail pages
   }, [searchParams, pathname, categorySlug]);
   
   const handleSubmit = (e: FormEvent) => {
