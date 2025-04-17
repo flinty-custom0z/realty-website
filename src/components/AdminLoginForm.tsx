@@ -1,20 +1,17 @@
 'use client';
 
 import { useState, FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import SearchParamsProvider from '@/components/SearchParamsProvider';
 
 export default function AdminLoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Get the redirect URL from search params (if any)
-  const redirectTo = searchParams.get('redirect') || '/admin';
-  
-  const handleLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent, redirectTo: string = '/admin') => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -42,7 +39,12 @@ export default function AdminLoginForm() {
   };
   
   return (
-    <form onSubmit={handleLogin} className="p-6 bg-white rounded shadow-md w-full max-w-md">
+    <SearchParamsProvider>
+      {(searchParams) => {
+        const redirectTo = searchParams?.get('redirect') || '/admin';
+        
+        return (
+          <form onSubmit={(e) => handleLogin(e, redirectTo)} className="p-6 bg-white rounded shadow-md w-full max-w-md">
       <h2 className="text-xl font-bold mb-4 text-center">Вход в административную панель</h2>
       
       {error && (
@@ -89,5 +91,8 @@ export default function AdminLoginForm() {
         {isLoading ? 'Выполняется вход...' : 'Войти'}
       </button>
     </form>
+  );
+      }}
+    </SearchParamsProvider>
   );
 }

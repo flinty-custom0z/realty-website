@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import SearchParamsProvider from '@/components/SearchParamsProvider';
 
 const SearchForm = dynamic(() => import('@/components/SearchForm'), {
   loading: () => <div className="w-full h-10 bg-gray-100 animate-pulse rounded"></div>
@@ -17,12 +18,16 @@ export default function SearchFormWrapper({
   categorySlug, 
   initialQuery 
 }: SearchFormWrapperProps) {
-  const searchParams = useSearchParams();
   const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery || '');
   
+  return (
+    <SearchParamsProvider>
+      {(searchParams) => {
   // Update query when URL changes
   useEffect(() => {
+          if (!searchParams) return;
+          
     // Process URL query parameter
     const urlQuery = searchParams.get('q');
     
@@ -52,5 +57,8 @@ export default function SearchFormWrapper({
     <Suspense fallback={<div className="w-full h-10 bg-gray-100 animate-pulse rounded"></div>}>
       <SearchForm categorySlug={categorySlug} initialQuery={query} />
     </Suspense>
+        );
+      }}
+    </SearchParamsProvider>
   );
 }

@@ -29,9 +29,6 @@
     - Filters incorrectly show other categories, districts etc. when you search from a category. It works when you just open a category (meaning it automatically limits the options to such that exist in listings in the category) but doesn't do the same when searching
 
 
-
-
-- Change second search field the one that is filters block to "Поиск ко категории" and modify it so that it only searches in the current category. Also remove "<- На главную" below it.
 - "<- На главную" is showing twice now when searching keep the second one
 - Add reset filter functionality
 - Also when doing global search hide the second search field - it should be only for when browsing a category
@@ -42,6 +39,7 @@
 - Filters are also applying inconsistently. Eg when I select number of rooms it doesn't do anything but if i click the same number again it filters and changes the url accordingly
 
 
+- When you press "Сбросить фильтры" while searching it shouldn't remove the search query
 
 ## Next
 

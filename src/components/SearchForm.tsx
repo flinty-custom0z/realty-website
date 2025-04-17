@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import SearchParamsProvider from '@/components/SearchParamsProvider';
 
 interface SearchFormProps {
   categorySlug?: string;
@@ -10,13 +11,16 @@ interface SearchFormProps {
 
 export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery);
   
+  return (
+    <SearchParamsProvider>
+      {(searchParams) => {
   // Sync with URL and clear when appropriate
   useEffect(() => {
-    // Get current query from URL if on search or category page
+          if (!searchParams) return;
+          
     if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
       const paramQuery = searchParams.get('q');
       
@@ -54,8 +58,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
       // If coming from a category page, remember that
       params.append('from', `category:${categorySlug}`);
     } else if (!pathname.startsWith('/search')) {
-      // If not already on search page, store full current URL
-    const currentFullUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+            const currentFullUrl = `${pathname}${searchParams ? `?${searchParams.toString()}` : ''}`;
       params.append('returnUrl', encodeURIComponent(currentFullUrl));
     }
     
@@ -84,5 +87,8 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
         </button>
       </div>
     </form>
+        );
+      }}
+    </SearchParamsProvider>
   );
 }

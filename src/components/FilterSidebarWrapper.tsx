@@ -3,7 +3,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import SearchParamsProvider from '@/components/SearchParamsProvider';
 
 const FilterSidebar = dynamic(() => import('@/components/FilterSidebar'), {
   loading: () => <div className="w-full h-96 bg-gray-100 animate-pulse rounded"></div>
@@ -26,18 +27,20 @@ export default function FilterSidebarWrapper({
   searchQuery,
   categories 
 }: FilterSidebarWrapperProps) {
-  // Client side state to store search parameters
   const [currentSearchQuery, setCurrentSearchQuery] = useState(searchQuery || '');
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   
+  return (
+    <SearchParamsProvider>
+      {(searchParams) => {
   // Update search query when URL changes
   useEffect(() => {
+          if (!searchParams) return;
+          
     const urlQuery = searchParams.get('q');
     if (urlQuery !== null) {
       setCurrentSearchQuery(urlQuery);
     } else if (currentSearchQuery && !urlQuery) {
-      // Clear search when 'q' param is removed
       setCurrentSearchQuery('');
     }
   }, [searchParams, currentSearchQuery]);
@@ -50,5 +53,8 @@ export default function FilterSidebarWrapper({
         categories={categories}
       />
     </Suspense>
+        );
+      }}
+    </SearchParamsProvider>
   );
 }
