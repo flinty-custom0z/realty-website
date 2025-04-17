@@ -142,7 +142,7 @@ export default async function Page({
       {searchQuery && (
         <div className="mb-4">
           <Link 
-            href={`/listing-category/${slug}`} 
+      href={`/listing-category/${slug}`} // This URL should have no query params
             className="text-blue-500 hover:text-blue-700 inline-flex items-center"
           >
             <span className="mr-1">←</span> Вернуться к {category.name.toLowerCase()}

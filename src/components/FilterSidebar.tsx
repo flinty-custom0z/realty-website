@@ -65,7 +65,8 @@ export default function FilterSidebar({
   
   // Fetch available filter options dynamically
   useEffect(() => {
-    let isMounted = true;
+    // Create an abort controller for cleanup
+    const controller = new AbortController();
     
     const fetchFilterOptions = async () => {
       // Include search query in the filter options URL
@@ -85,8 +86,9 @@ export default function FilterSidebar({
       }
       
       try {
-      const res = await fetch(url);
-        if (res.ok && isMounted) {
+      const res = await fetch(url, { signal: controller.signal });
+      
+      if (res.ok) {
         const data = await res.json();
         setFilterOptions(data);
           
@@ -104,23 +106,29 @@ export default function FilterSidebar({
         }
         }
       } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error("Error fetching filter options:", error);
       }
+    }
     };
     
     fetchFilterOptions();
     
-    return () => {
-      isMounted = false;
-    };
-  }, [categorySlug, searchQuery]);
+      // Clean up by aborting any in-flight requests when the component unmounts or deps change
+  return () => {
+    controller.abort();
+  };
+}, [categorySlug, searchQuery, searchParams]);
   
-  // Clear query on navigation
+  // Additional useEffect to sync with URL changes
   useEffect(() => {
-    if (!pathname.startsWith('/search') && !pathname.startsWith('/listing-category/')) {
+    // When searchParams changes, check if 'q' parameter exists
+    const urlQuery = searchParams.get('q');
+    if (urlQuery === null && query !== '') {
+      // If 'q' param was removed from URL but our state still has it, clear it
       setQuery('');
     }
-  }, [pathname]);
+  }, [searchParams, query]);
 
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
