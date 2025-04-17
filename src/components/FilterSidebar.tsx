@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -37,23 +37,36 @@ export default function FilterSidebar({
   
   // State for filters
   const [query, setQuery] = useState(searchQuery);
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '0');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '30000000');
+  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.getAll('category'));
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams.getAll('district'));
   const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams.getAll('condition'));
   const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams.getAll('rooms'));
 
-  // State for available options
+  // Reference to initial filter options
+  const initialOptionsRef = useRef<FilterOptions>({
+    districts: [],
+    conditions: [],
+    rooms: [],
+    priceRange: { min: 0, max: 30000000 }
+  });
+
+  // State for current filter options
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     districts: [],
     conditions: [],
     rooms: [],
     priceRange: { min: 0, max: 30000000 }
   });
+
+  // Flag to prevent multiple calls
+  const isApplyingRef = useRef(false);
   
   // Fetch available filter options dynamically
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchFilterOptions = async () => {
       // Include search query in the filter options URL
       let url = `/api/filter-options`;
@@ -71,10 +84,16 @@ export default function FilterSidebar({
         url += `?${params.toString()}`;
       }
       
+      try {
       const res = await fetch(url);
-      if (res.ok) {
+        if (res.ok && isMounted) {
         const data = await res.json();
         setFilterOptions(data);
+          
+          // Save initial filter options when first loaded
+          if (initialOptionsRef.current.districts.length === 0) {
+            initialOptionsRef.current = data;
+          }
         
         // Update price range if not explicitly set by user
         if (!searchParams.has('minPrice')) {
@@ -83,28 +102,68 @@ export default function FilterSidebar({
         if (!searchParams.has('maxPrice')) {
           setMaxPrice(data.priceRange.max.toString());
         }
+        }
+      } catch (error) {
+        console.error("Error fetching filter options:", error);
       }
     };
+    
     fetchFilterOptions();
-  }, [categorySlug, searchQuery, searchParams]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [categorySlug, searchQuery]);
   
-  // Clear query on nav
+  // Clear query on navigation
   useEffect(() => {
     if (!pathname.startsWith('/search') && !pathname.startsWith('/listing-category/')) {
       setQuery('');
     }
   }, [pathname]);
 
-  // Apply filters automatically when changed
+  // Determine if custom filters are applied
+  const hasCustomFilters = () => {
+    // Check if there's a search query
+    const hasSearchQuery = query.trim() !== '';
+    
+    // Check if price is different from initial
+    const hasCustomPrice = 
+      (minPrice !== '' && minPrice !== initialOptionsRef.current.priceRange.min.toString()) || 
+      (maxPrice !== '' && maxPrice !== initialOptionsRef.current.priceRange.max.toString());
+    
+    // Check if any other filters are selected
+    const hasOtherFilters = 
+      selectedDistricts.length > 0 || 
+      selectedConditions.length > 0 || 
+      selectedRooms.length > 0 ||
+      (!categorySlug && selectedCategories.length > 0);
+    
+    return hasSearchQuery || hasCustomPrice || hasOtherFilters;
+  };
+
+  // Apply filters
   const applyFilters = () => {
+    if (isApplyingRef.current) return;
+    isApplyingRef.current = true;
+    
+    try {
     const params = new URLSearchParams();
     
     // Preserve search query if exists
     if (query.trim()) params.append('q', query);
     
-    // Add all other filters
-    params.append('minPrice', minPrice);
-    params.append('maxPrice', maxPrice);
+      // Add price filters only if they differ from defaults
+      const minDefault = initialOptionsRef.current.priceRange.min.toString();
+      const maxDefault = initialOptionsRef.current.priceRange.max.toString();
+      
+      if (minPrice && minPrice !== minDefault) {
+        params.append('minPrice', minPrice);
+      }
+      
+      if (maxPrice && maxPrice !== maxDefault) {
+        params.append('maxPrice', maxPrice);
+      }
     
     // Add multi-select filters
     selectedCategories.forEach((c) => params.append('category', c));
@@ -112,53 +171,88 @@ export default function FilterSidebar({
     selectedConditions.forEach((c) => params.append('condition', c));
     selectedRooms.forEach((r) => params.append('rooms', r));
 
+      // Keep return URL if it exists
+      const returnUrl = searchParams.get('returnUrl');
+      if (returnUrl) {
+        params.append('returnUrl', returnUrl);
+      }
+
+      // Keep the 'from' parameter if it exists
+    const fromParam = searchParams.get('from');
+    if (fromParam) {
+      params.append('from', fromParam);
+    }
+
     // Determine the base URL (category page or search page)
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
     router.push(`${base}?${params.toString()}`);
+    } finally {
+      // Reset flag after a delay to prevent multiple rapid calls
+      setTimeout(() => {
+        isApplyingRef.current = false;
+      }, 300);
+    }
   };
 
-  // Handler functions for filter changes with auto-apply
+  // Reset all filters
+  const resetFilters = () => {
+    // Reset to initial values
+    setQuery('');
+    setMinPrice(initialOptionsRef.current.priceRange.min.toString());
+    setMaxPrice(initialOptionsRef.current.priceRange.max.toString());
+    setSelectedCategories([]);
+    setSelectedDistricts([]);
+    setSelectedConditions([]);
+    setSelectedRooms([]);
+    
+    // Keep return URL and from parameter
+    const params = new URLSearchParams();
+    
+    const returnUrl = searchParams.get('returnUrl');
+    if (returnUrl) {
+      params.append('returnUrl', returnUrl);
+    }
+    
+    const fromParam = searchParams.get('from');
+    if (fromParam) {
+      params.append('from', fromParam);
+    }
+    
+    // Navigate to the base URL with minimal params
+    const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
+    router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  // Handler functions for filter changes
   const handleCategoryToggle = (slug: string) => {
     setSelectedCategories((prev) => {
-      const newCategories = prev.includes(slug) 
+      return prev.includes(slug) 
         ? prev.filter((s) => s !== slug) 
         : [...prev, slug];
-      
-      setTimeout(() => applyFilters(), 0);
-      return newCategories;
     });
   };
   
   const handleDistrictToggle = (district: string) => {
     setSelectedDistricts((prev) => {
-      const newDistricts = prev.includes(district) 
+      return prev.includes(district) 
         ? prev.filter((d) => d !== district) 
         : [...prev, district];
-      
-      setTimeout(() => applyFilters(), 0);
-      return newDistricts;
     });
   };
   
   const handleConditionToggle = (cond: string) => {
     setSelectedConditions((prev) => {
-      const newConditions = prev.includes(cond) 
+      return prev.includes(cond) 
         ? prev.filter((c) => c !== cond) 
         : [...prev, cond];
-      
-      setTimeout(() => applyFilters(), 0);
-      return newConditions;
     });
   };
   
   const handleRoomToggle = (room: string) => {
     setSelectedRooms((prev) => {
-      const newRooms = prev.includes(room)
+      return prev.includes(room)
         ? prev.filter((r) => r !== room)
         : [...prev, room];
-      
-      setTimeout(() => applyFilters(), 0);
-      return newRooms;
     });
   };
   
@@ -168,7 +262,6 @@ export default function FilterSidebar({
     } else {
       setMaxPrice(value);
     }
-    // Don't auto-apply price filter immediately to avoid too many requests while typing
   };
   
   const handleSubmit = (e: FormEvent) => {
@@ -176,54 +269,43 @@ export default function FilterSidebar({
     applyFilters();
   };
   
-  // Get current base path to determine if we're on search or category page
-  const isSearchPage = pathname.startsWith('/search');
-  // Get the original category if coming from a category page
-  const originatingCategory = searchParams.get('from')?.startsWith('category:') 
-    ? searchParams.get('from')?.split(':')[1] 
-    : null;
+  // Category-specific search
+  const handleCategorySearch = (e: FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    
+    // Use the regular filter apply mechanism but ensure the query is set
+    applyFilters();
+  };
   
   return (
     <div className="p-4 bg-white shadow rounded-md mb-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Only show search field if we're not in a category page */}
-        {!categorySlug && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Поиск</label>
+      {/* Category-specific search field - only show in category pages */}
+      {categorySlug && (
+        <form onSubmit={handleCategorySearch} className="mb-4">
+          <label className="block text-sm font-medium mb-1">Поиск по категории</label>
+          <div className="flex">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ваш запрос"
-              className="w-full p-2 border rounded"
+              placeholder="Поиск"
+              className="w-full p-2 border rounded-l"
             />
+            <button type="submit" className="bg-blue-500 text-white px-3 rounded-r hover:bg-blue-600 transition">
+              Искать
+            </button>
           </div>
+        </form>
         )}
 
-        {/* "Return to" link when on search results page */}
-        {searchQuery && isSearchPage && (
-          <div className="mb-4">
-            {originatingCategory ? (
-              <Link 
-                href={`/listing-category/${originatingCategory}`} 
-                className="text-blue-500 hover:text-blue-700 inline-flex items-center"
-              >
-                <span className="mr-1">←</span> Назад к категории
-              </Link>
-            ) : (
-              <Link href="/" className="text-blue-500 hover:text-blue-700 inline-flex items-center">
-                <span className="mr-1">←</span> На главную
-            </Link>
-            )}
-          </div>
-        )}
-
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Multi-category selection (only on general search page) */}
-        {!categorySlug && (
+        {!categorySlug && categories.length > 0 && (
           <div>
             <label className="block text-sm font-medium mb-1">Категории</label>
             <div className="flex flex-wrap gap-2">
-              {categories?.map((cat) => (
+              {categories.map((cat) => (
                 <button
                   key={cat.slug}
                   type="button"
@@ -336,13 +418,26 @@ export default function FilterSidebar({
           </div>
         )}
     
-        {/* Apply Filters Button */}
+        {/* Filter action buttons */}
+        <div className={hasCustomFilters() ? "flex space-x-2" : ""}>
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+            className={hasCustomFilters() ? "flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition" : "w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"}
         >
           Применить фильтры
         </button>
+          
+          {/* Only show reset button when custom filters are applied */}
+          {hasCustomFilters() && (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="flex-1 bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300 transition"
+          >
+            Сбросить фильтры
+          </button>
+          )}
+        </div>
       </form>
     </div>
   );

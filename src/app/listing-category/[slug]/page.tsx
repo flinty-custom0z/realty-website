@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
-import SearchFormWrapper from '@/components/SearchFormWrapper';
 import Link from 'next/link';
 
 // Force dynamic rendering to prevent caching
@@ -138,13 +137,6 @@ export default async function Page({
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">{category.name}</h1>
-      
-      {/* Add search form if there's a search query */}
-      {searchQuery && (
-        <div className="w-full max-w-lg mb-6">
-          <SearchFormWrapper categorySlug={slug} initialQuery={searchQuery} />
-        </div>
-      )}
       
       {/* Show "back to category" link when search is active */}
       {searchQuery && (

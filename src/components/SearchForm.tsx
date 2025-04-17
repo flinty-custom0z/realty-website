@@ -14,18 +14,32 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery);
   
-  // Sync with URL and clear on nav
+  // Sync with URL and clear when appropriate
   useEffect(() => {
+    // Get current query from URL if on search or category page
     if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
-    const param = searchParams.get('q');
-      if (param) {
-        setQuery(param);
+      const paramQuery = searchParams.get('q');
+      
+      // If we're on a category page, only set the query if it's for this category
+      // This ensures search is cleared when switching categories
+      if (pathname.startsWith('/listing-category/')) {
+        const currentCategory = pathname.split('/')[2]?.split('?')[0];
+        
+        if (categorySlug === currentCategory && paramQuery) {
+          setQuery(paramQuery);
+        } else if (categorySlug !== currentCategory) {
+          // Clear search when navigating to a different category
+          setQuery('');
+        }
+      } else if (paramQuery) {
+        // For search page, always set the query if it exists
+        setQuery(paramQuery);
       }
     } else {
       // Clear search when navigating away from search or category pages
       setQuery('');
     }
-  }, [searchParams, pathname]);
+  }, [searchParams, pathname, categorySlug]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -35,13 +49,19 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     const params = new URLSearchParams();
     params.append('q', query);
     
-    // Preserve current filter values
-    ['minPrice','maxPrice','district','condition','rooms'].forEach((p) => {
-      searchParams.getAll(p).forEach((v) => params.append(p, v));
-    });
+    // Store the full current URL (including all params) to return to later
+    const currentFullUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     
-    // Add 'from' parameter if we're on a category page
+    // Don't include the return URL if we're already on the search page
+    if (!pathname.startsWith('/search')) {
+      params.append('returnUrl', encodeURIComponent(currentFullUrl));
+    }
+    
+    // Preserve current filter values if searching from a category page
     if (categorySlug) {
+      ['minPrice','maxPrice','district','condition','rooms'].forEach((p) => {
+        searchParams.getAll(p).forEach((v) => params.append(p, v));
+      });
       params.append('from', `category:${categorySlug}`);
     }
     

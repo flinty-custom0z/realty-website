@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
-import SearchFormWrapper from '@/components/SearchFormWrapper';
 import Link from 'next/link';
 
 // Force dynamic rendering so every request is fresh
@@ -100,21 +99,58 @@ async function getListings(searchParams: Record<string, string | string[] | unde
 }
 
 /**
- * Check if search originated from a category page
+ * Determine where to go back to based on URL parameters
  */
-function getOriginatingCategory(searchParams: Record<string, string | string[] | undefined>) {
-  const referrer = searchParams.from as string;
-  if (referrer && referrer.startsWith('category:')) {
-    return referrer.split(':')[1];
+function getBackDestination(searchParams: Record<string, string | string[] | undefined>) {
+  // First priority: explicit return URL
+  if (searchParams.returnUrl) {
+    try {
+      return decodeURIComponent(searchParams.returnUrl as string);
+    } catch (e) {
+      console.error("Failed to decode returnUrl", e);
+    }
   }
   
-  // If we have exactly one category selected, we can consider that as the originating category
+  // Second priority: category
+  if (searchParams.from && (searchParams.from as string).startsWith('category:')) {
+    const categorySlug = (searchParams.from as string).split(':')[1];
+    return `/listing-category/${categorySlug}`;
+  }
+  
+  // Third priority: single selected category
   const categoryParam = searchParams.category;
   if (categoryParam && !Array.isArray(categoryParam)) {
-    return categoryParam;
+    return `/listing-category/${categoryParam}`;
   }
   
-  return null;
+  // Default fallback
+  return '/';
+}
+
+/**
+ * Get display text for back link
+ */
+async function getBackLinkText(backUrl: string) {
+  // If returning to home
+  if (backUrl === '/') {
+    return 'На главную';
+  }
+  
+  // If returning to a category
+  if (backUrl.startsWith('/listing-category/')) {
+    const categorySlug = backUrl.split('/')[2]?.split('?')[0];
+    if (categorySlug) {
+      const category = await prisma.category.findUnique({
+        where: { slug: categorySlug },
+      });
+      if (category) {
+        return `Назад к ${category.name.toLowerCase()}`;
+      }
+    }
+  }
+  
+  // Default
+  return 'Назад';
 }
 
 /**
@@ -146,19 +182,9 @@ export default async function SearchPage({
   
   const searchQuery = resolvedParams.q as string | undefined;
   
-  // Check if search originated from a category page
-  const originatingCategory = getOriginatingCategory(resolvedParams);
-  
-  // If there's an originating category, get its name
-  let categoryName = '';
-  if (originatingCategory) {
-    const category = await prisma.category.findUnique({
-      where: { slug: originatingCategory },
-    });
-    if (category) {
-      categoryName = category.name.toLowerCase();
-    }
-  }
+  // Get back navigation info
+  const backUrl = getBackDestination(resolvedParams);
+  const backLinkText = await getBackLinkText(backUrl);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -169,21 +195,12 @@ export default async function SearchPage({
       {/* Back link - always show for search results */}
       {searchQuery && (
         <div className="mb-4">
-          {originatingCategory ? (
           <Link 
-            href={`/listing-category/${originatingCategory}`} 
+            href={backUrl}
             className="text-blue-500 hover:text-blue-700 inline-flex items-center"
           >
-            <span className="mr-1">←</span> Назад к {categoryName || 'категории'}
+            <span className="mr-1">←</span> {backLinkText}
           </Link>
-          ) : (
-            <Link 
-              href="/" 
-              className="text-blue-500 hover:text-blue-700 inline-flex items-center"
-            >
-              <span className="mr-1">←</span> На главную
-            </Link>
-          )}
         </div>
       )}
       
