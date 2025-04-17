@@ -9,6 +9,23 @@ export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
 
 /**
+ * Helper function to get proper grammatical case for back links
+ */
+function getDativeCase(categoryName: string): string {
+  // Handle Russian declensions for common category names
+  const dative: Record<string, string> = {
+    'Квартиры': 'квартирам',
+    'Дома': 'домам',
+    'Земельные участки': 'земельным участкам',
+    'Коммерция': 'коммерческим объектам',
+    'Промышленные объекты': 'промышленным объектам'
+  };
+  
+  return dative[categoryName] || categoryName.toLowerCase();
+}
+
+
+/**
  * Build Prisma-compatible filter object from URL query params
  */
 async function buildFilter(searchParams: Record<string, string | string[] | undefined>) {
@@ -130,7 +147,7 @@ function getBackDestination(searchParams: Record<string, string | string[] | und
 }
 
 /**
- * Get display text for back link
+ * Get display text for back link with proper grammatical case
  */
 async function getBackLinkText(backUrl: string) {
   // If returning to home
@@ -146,7 +163,7 @@ async function getBackLinkText(backUrl: string) {
         where: { slug: categorySlug },
       });
       if (category) {
-        return `Назад к ${category.name.toLowerCase()}`;
+        return `Назад к ${getDativeCase(category.name)}`;
       }
     }
   }

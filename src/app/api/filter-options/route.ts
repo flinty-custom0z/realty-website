@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const categorySlug = searchParams.get('category');
     const searchQuery = searchParams.get('q');
 
+    // Build base filter for active listings
     const whereFilter: any = { status: 'active' };
 
     // Add category filter if provided
@@ -25,31 +26,60 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Get available districts
+    // Handle additional filter parameters to provide dynamic filter options
+    
+    // Price range filter
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    if (minPrice) {
+      whereFilter.price = { ...(whereFilter.price || {}), gte: parseFloat(minPrice) };
+    }
+    if (maxPrice) {
+      whereFilter.price = { ...(whereFilter.price || {}), lte: parseFloat(maxPrice) };
+    }
+    
+    // Handle array params (district, condition, rooms)
+    const makeArrayFilter = (paramName: string, fieldName: string) => {
+      const params = searchParams.getAll(paramName);
+      if (params.length > 0) {
+        // Skip filtering by the parameter we're looking for options of
+        if (paramName !== fieldName) {
+          whereFilter[paramName] = { in: params };
+        }
+      }
+    };
+    
+    // Get districts with selected condition/rooms filters applied
+    const districtFilter = { ...whereFilter };
+    delete districtFilter.district; // Remove district filter when getting district options
     const districts = await prisma.listing.groupBy({
       by: ['district'],
-      where: { ...whereFilter, district: { not: null } },
+      where: { ...districtFilter, district: { not: null } },
       _count: { district: true },
       orderBy: { district: 'asc' },
     });
 
-    // Get available conditions
+    // Get conditions with selected district/rooms filters applied
+    const conditionFilter = { ...whereFilter };
+    delete conditionFilter.condition; // Remove condition filter when getting condition options
     const conditions = await prisma.listing.groupBy({
       by: ['condition'],
-      where: { ...whereFilter, condition: { not: null } },
+      where: { ...conditionFilter, condition: { not: null } },
       _count: { condition: true },
       orderBy: { condition: 'asc' },
     });
 
-    // Get available room counts
+    // Get room counts with selected district/condition filters applied
+    const roomsFilter = { ...whereFilter };
+    delete roomsFilter.rooms; // Remove rooms filter when getting room options
     const rooms = await prisma.listing.groupBy({
       by: ['rooms'],
-      where: { ...whereFilter, rooms: { not: null } },
+      where: { ...roomsFilter, rooms: { not: null } },
       _count: { rooms: true },
       orderBy: { rooms: 'asc' },
     });
 
-    // Get price range
+    // Get price range based on current filters
     const priceRange = await prisma.listing.aggregate({
       where: whereFilter,
       _min: { price: true },

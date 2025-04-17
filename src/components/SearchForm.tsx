@@ -43,6 +43,9 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
       if (paramQuery) {
         setQuery(paramQuery);
       }
+  } else if (pathname === '/') {
+    // Explicitly clear search when on home page
+    setQuery('');
     }
     // Don't clear the query when on detail pages
   }, [searchParams, pathname, categorySlug]);

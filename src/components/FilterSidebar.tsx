@@ -35,7 +35,7 @@ export default function FilterSidebar({
   const pathname = usePathname();
   
   // State for search input (unsynced with URL)
-  const [searchInputValue, setSearchInputValue] = useState('');
+  const [searchInputValue, setSearchInputValue] = useState(searchQuery || '');
   // State for filters synced with URL
   const [syncedQuery, setSyncedQuery] = useState(searchQuery);
   
@@ -71,6 +71,10 @@ export default function FilterSidebar({
 
   // Flag to prevent multiple calls
   const isApplyingRef = useRef(false);
+  const isFirstRenderRef = useRef(true);
+  
+  // Track if we've submitted a search
+  const hasSubmittedSearch = useRef(false);
   
   // Fetch available filter options dynamically
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function FilterSidebar({
     const controller = new AbortController();
     
     const fetchFilterOptions = async () => {
-      // Include search query in the filter options URL
+      // Include search query and all current filters in the options URL
       let url = `/api/filter-options`;
       const params = new URLSearchParams();
       
@@ -88,6 +92,24 @@ export default function FilterSidebar({
       
       if (searchQuery) {
         params.append('q', searchQuery);
+      }
+      
+      // Add current selections to get dynamic options
+      if (!isFirstRenderRef.current) {
+        // Add price filters
+        if (minPrice && minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
+          params.append('minPrice', minPrice);
+        }
+        
+        if (maxPrice && maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
+          params.append('maxPrice', maxPrice);
+        }
+        
+        // Add all other filters except the ones we're looking for options for
+        selectedCategories.forEach(c => params.append('category', c));
+        selectedDistricts.forEach(d => params.append('district', d));
+        selectedConditions.forEach(c => params.append('condition', c));
+        selectedRooms.forEach(r => params.append('rooms', r));
       }
       
       if (params.toString()) {
@@ -123,11 +145,16 @@ export default function FilterSidebar({
     
     fetchFilterOptions();
     
+    // After first render, mark it as complete
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+    }
+    
     // Clean up by aborting any in-flight requests when the component unmounts or deps change
     return () => {
       controller.abort();
     };
-  }, [categorySlug, searchQuery, searchParams]);
+  }, [categorySlug, searchQuery, hasSubmittedSearch.current]);
   
   // Update synced query when URL changes (but don't update search input)
   useEffect(() => {
@@ -136,6 +163,7 @@ export default function FilterSidebar({
       setSyncedQuery('');
     } else if (urlQuery !== null && urlQuery !== syncedQuery) {
       setSyncedQuery(urlQuery);
+      setSearchInputValue(urlQuery); // Keep the search input in sync with URL
     }
   }, [searchParams, syncedQuery]);
   
@@ -158,23 +186,6 @@ export default function FilterSidebar({
     
     return hasSearchQuery || hasCustomPrice || hasOtherFilters;
   };
-  
-  // Apply filters immediately when toggling a filter
-  useEffect(() => {
-    // Do not apply on initial render
-    if (initialOptionsRef.current.districts.length === 0) return;
-    
-  // Don't apply if we're already applying
-    if (isApplyingRef.current) return;
-    
-    // Use a small delay to prevent rapid consecutive changes
-    const timer = setTimeout(() => {
-    // Always apply filters on toggle, regardless of hasCustomFilters()
-        applyFilters();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories]);
   
   // Apply filters
   const applyFilters = () => {
@@ -217,6 +228,9 @@ export default function FilterSidebar({
         params.append('from', fromParam);
       }
       
+      // Mark that we've submitted a search to refresh filter options
+      hasSubmittedSearch.current = true;
+      
       // Determine the base URL (category page or search page)
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
       router.push(`${base}?${params.toString()}`);
@@ -224,7 +238,7 @@ export default function FilterSidebar({
       // Reset flag after a delay to prevent multiple rapid calls
       setTimeout(() => {
         isApplyingRef.current = false;
-      }, 300);
+      }, 200);
     }
   };
   
@@ -238,10 +252,13 @@ export default function FilterSidebar({
     setSelectedConditions([]);
     setSelectedRooms([]);
     
-    // Create params and preserve the search query if it exists
+    // IMPORTANT: Maintain the search query
+    const currentSearch = searchInputValue.trim();
+    
+    // Create params and preserve only the search query
     const params = new URLSearchParams();
-    if (searchInputValue.trim()) {
-      params.append('q', searchInputValue);
+    if (currentSearch) {
+      params.append('q', currentSearch);
     }
     
     // Keep return URL and from parameter
@@ -254,6 +271,9 @@ export default function FilterSidebar({
     if (fromParam) {
       params.append('from', fromParam);
     }
+    
+    // Mark that we've submitted to refresh filter options
+    hasSubmittedSearch.current = true;
     
     // Navigate to the base URL with preserved params
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
@@ -309,7 +329,6 @@ export default function FilterSidebar({
   // Category-specific search
   const handleCategorySearch = (e: FormEvent) => {
     e.preventDefault();
-    if (!searchInputValue.trim()) return;
     applyFilters();
   };
   
