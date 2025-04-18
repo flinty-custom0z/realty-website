@@ -72,6 +72,56 @@ function Info({
   );
 }
 
+async function getBackLinkText(backUrl: string) {
+  // If returning to home
+  if (backUrl === '/') {
+    return 'На главную';
+  }
+  
+  // If returning to search results
+  if (backUrl.startsWith('/search')) {
+    return 'Назад к результатам поиска';
+  }
+  
+  // If returning to a category
+  if (backUrl.startsWith('/listing-category/')) {
+    const categorySlug = backUrl.split('/')[2]?.split('?')[0];
+    if (categorySlug) {
+      const category = await prisma.category.findUnique({
+        where: { slug: categorySlug },
+      });
+      if (category) {
+        // If it's a search within category (has query parameter)
+        if (backUrl.includes('?q=')) {
+          return 'Назад к результатам поиска';
+        }
+        // If it's just a category page
+        return `Назад к ${getDativeCase(category.name)}`;
+      }
+    }
+  }
+  
+  // Default
+  return 'Назад';
+}
+
+
+/**
+ * Helper function to get proper grammatical case for back links
+ */
+function getDativeCase(categoryName: string): string {
+  // Handle Russian declensions for common category names
+  const dative: Record<string, string> = {
+    'Квартиры': 'квартирам',
+    'Дома': 'домам',
+    'Земельные участки': 'земельным участкам',
+    'Коммерция': 'коммерческим объектам',
+    'Промышленные объекты': 'промышленным объектам'
+  };
+  
+  return dative[categoryName] || categoryName.toLowerCase();
+}
+
 /* ───────────────────────────── page ───────────────────────────── */
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -81,6 +131,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   
   const isAdmin = await currentUserIsAdmin();
   const backHref = await buildBackHref(listing!.category.slug);
+  const backLinkText = await getBackLinkText(backHref); // Add this line
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');
   
   return (
@@ -88,7 +139,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     {/* top bar */}
     <div className="mb-4 flex justify-between items-center">
     <Link href={backHref} className="text-blue-500 hover:underline">
-    ← Назад к результатам
+    ← {backLinkText} {/* Change this line */}
     </Link>
     {isAdmin && (
       <AdminListingActions listingId={listing.id} categorySlug={listing.category.slug} />

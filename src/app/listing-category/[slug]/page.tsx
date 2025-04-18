@@ -12,18 +12,18 @@ export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
 
 // // Helper function to handle Russian grammatical cases
-// function getDativeCase(categoryName: string): string {
-//   // Handle Russian declensions for common category names
-//   const dative: Record<string, string> = {
-//     'Квартиры': 'квартирам',
-//     'Дома': 'домам',
-//     'Земельные участки': 'земельным участкам',
-//     'Коммерция': 'коммерческим объектам',
-//     'Промышленные объекты': 'промышленным объектам'
-//   };
+function getDativeCase(categoryName: string): string {
+  // Handle Russian declensions for common category names
+  const dative: Record<string, string> = {
+    'Квартиры': 'квартирам',
+    'Дома': 'домам',
+    'Земельные участки': 'земельным участкам',
+    'Коммерция': 'коммерческим объектам',
+    'Промышленные объекты': 'промышленным объектам'
+  };
   
-//   return dative[categoryName] || categoryName.toLowerCase();
-// }
+  return dative[categoryName] || categoryName.toLowerCase();
+}
 
 async function getCategory(slug: string) {
   const category = await prisma.category.findUnique({

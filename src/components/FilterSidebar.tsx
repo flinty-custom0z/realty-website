@@ -172,15 +172,13 @@ export default function FilterSidebar({
           const data = await res.json();
         setFilterOptions(data);
         
-        // Only auto-update price ranges on initial load
-        if (isInitialLoadRef.current) {
+      // Always update price ranges unless they were manually edited
             if (!priceEdited.min) {
               setMinPrice(data.priceRange.min.toString());
             }
+      
             if (!priceEdited.max) {
             setMaxPrice(data.priceRange.max.toString());
-          }
-          isInitialLoadRef.current = false;
         }
         }
       } catch (error) {
@@ -195,14 +193,16 @@ export default function FilterSidebar({
     // For category pages, search query is a filter
     const hasSearchQuery = categorySlug && searchInputValue.trim() !== '';
     
-    // For global search, search query is not considered a filter
-    const isGlobalSearch = !categorySlug && searchInputValue.trim() === searchParams?.get('q');
+  // For global search, if there's a query, it's considered the base state, not a filter
+  const globalSearchQuery = searchParams?.get('q') || '';
     
-    // Custom price filters
+  // Custom price filters - check if they differ from the base price range
     const hasCustomPrice = 
-      (minPrice !== '' && filterOptions.priceRange.min !== undefined && 
+    (minPrice !== '' && 
+     filterOptions.priceRange.min !== undefined && 
        parseInt(minPrice) !== filterOptions.priceRange.min) || 
-      (maxPrice !== '' && filterOptions.priceRange.max !== undefined && 
+    (maxPrice !== '' && 
+     filterOptions.priceRange.max !== undefined && 
        parseInt(maxPrice) !== filterOptions.priceRange.max);
     
     // Other filters
@@ -212,7 +212,7 @@ export default function FilterSidebar({
     selectedRooms.length > 0 ||
     (!categorySlug && selectedCategories.length > 0);
     
-    return hasSearchQuery || (!isGlobalSearch && (hasCustomPrice || hasOtherFilters));
+    return hasSearchQuery || hasCustomPrice || hasOtherFilters;
   };
   
   // Apply filters when form is submitted
@@ -299,12 +299,10 @@ export default function FilterSidebar({
     // Create params preserving only global search if appropriate
     const params = new URLSearchParams();
     
-    // Only preserve global search query when in global search
-    if (!categorySlug) {
+  // Always preserve global search query
       const currentQuery = searchParams?.get('q');
-      if (currentQuery) {
+  if (currentQuery && (!categorySlug || pathname === '/search')) {
         params.append('q', currentQuery);
-      }
     }
     
     // Keep navigation parameters

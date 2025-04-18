@@ -21,9 +21,9 @@
 
 ### NOW
 
-- Now it all works except the price is not changing dynamically with the listings
-- Also there's no option to reset filters when doing a global search and selecting a filter
-- It says "назад к результатам" when I open a details page from a category (should only be when searching)
+- Price and all the other filters are updated when doing global search but listings change only when press apply, but should do both
+- Also when selecting a category unavaliable filters disappear instead of graying out
+- Price still won't update in categories when applying filters
 
 
 ### Next
