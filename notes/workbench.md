@@ -21,9 +21,6 @@
 
 ### NOW
 
-- When user presses on "x" in global search field it should go back to the last page (category/main page), now it stays on the same search page just removes the search query
-- Price is not adjusting automatically, and asks to change price when I select apply filters (see screenshot). Looks like all the other filters adjust dynamically except for price
-
 ### Next
 
 - The main image should be the first to show up when opening details, now they're not the same

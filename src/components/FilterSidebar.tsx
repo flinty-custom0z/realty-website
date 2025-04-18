@@ -72,18 +72,45 @@ export default function FilterSidebar({
 
   // Flags to control behavior
   const isApplyingRef = useRef(false);
-  const hasFilterChangedRef = useRef(false);
   const optionsInitializedRef = useRef(false);
-  const isFirstFetch = useRef(true);
-  
-  // Track which filters have been modified
-  const [activeFilters, setActiveFilters] = useState({
-    search: !!searchQuery,
-    districts: false,
-    conditions: false,
-    rooms: false,
-    categories: false,
+  const filterChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSelectedFiltersRef = useRef({
+    districts: [] as string[],
+    conditions: [] as string[],
+    rooms: [] as string[],
+    categories: [] as string[]
   });
+  
+  // Function to check if filters have changed
+  const haveFiltersChanged = () => {
+    const districtsChanged = 
+      selectedDistricts.length !== lastSelectedFiltersRef.current.districts.length ||
+      selectedDistricts.some(d => !lastSelectedFiltersRef.current.districts.includes(d));
+    
+    const conditionsChanged = 
+      selectedConditions.length !== lastSelectedFiltersRef.current.conditions.length ||
+      selectedConditions.some(c => !lastSelectedFiltersRef.current.conditions.includes(c));
+    
+    const roomsChanged = 
+      selectedRooms.length !== lastSelectedFiltersRef.current.rooms.length ||
+      selectedRooms.some(r => !lastSelectedFiltersRef.current.rooms.includes(r));
+    
+    const categoriesChanged = 
+      selectedCategories.length !== lastSelectedFiltersRef.current.categories.length ||
+      selectedCategories.some(c => !lastSelectedFiltersRef.current.categories.includes(c));
+    
+    return districtsChanged || conditionsChanged || roomsChanged || categoriesChanged;
+  };
+  
+  // Function to update last selected filters
+  const updateLastSelectedFilters = () => {
+    lastSelectedFiltersRef.current = {
+      districts: [...selectedDistricts],
+      conditions: [...selectedConditions],
+      rooms: [...selectedRooms],
+      categories: [...selectedCategories]
+    };
+  };
   
   // Initialize search input value from URL on first load
   useEffect(() => {
@@ -119,21 +146,37 @@ export default function FilterSidebar({
     setSelectedConditions(searchParams.getAll('condition'));
     setSelectedRooms(searchParams.getAll('rooms'));
     
-    // Reset active filters when URL parameters are applied
-    setActiveFilters({
-      search: !!paramQuery,
-      districts: false,
-      conditions: false,
-      rooms: false,
-      categories: false,
-    });
+    // Update last selected filters after URL sync
+    updateLastSelectedFilters();
     
   }, [searchParams]);
   
-  // Fetch available filter options - regardless of if filters are active
+  // Handle filter change detection
   useEffect(() => {
-    const controller = new AbortController();
+    // Clear any existing timeout
+    if (filterChangeTimeoutRef.current) {
+      clearTimeout(filterChangeTimeoutRef.current);
+    }
     
+    // Skip during initial load
+    if (!optionsInitializedRef.current) return;
+    
+    // If filters have changed, update options after a short delay
+    if (haveFiltersChanged()) {
+      filterChangeTimeoutRef.current = setTimeout(() => {
+        fetchFilterOptions();
+        updateLastSelectedFilters();
+      }, 100);
+    }
+    
+    return () => {
+      if (filterChangeTimeoutRef.current) {
+        clearTimeout(filterChangeTimeoutRef.current);
+      }
+    };
+  }, [selectedCategories, selectedDistricts, selectedConditions, selectedRooms]);
+  
+  // Fetch available filter options
     const fetchFilterOptions = async () => {
       setIsLoading(true);
       
@@ -149,22 +192,11 @@ export default function FilterSidebar({
         params.append('q', searchInputValue);
       }
       
-      // Add all current filter selections except active ones
-      if (!activeFilters.categories) {
+    // Add all selected filters (including the one being modified)
         selectedCategories.forEach(c => params.append('category', c));
-      }
-      
-      if (!activeFilters.districts) {
         selectedDistricts.forEach(d => params.append('district', d));
-      }
-      
-      if (!activeFilters.conditions) {
         selectedConditions.forEach(c => params.append('condition', c));
-      }
-      
-      if (!activeFilters.rooms) {
         selectedRooms.forEach(r => params.append('rooms', r));
-      }
       
       // Add current price if provided
       if (minPrice) {
@@ -176,9 +208,7 @@ export default function FilterSidebar({
       }
       
       try {
-        const res = await fetch(`/api/filter-options?${params.toString()}`, { 
-          signal: controller.signal 
-        });
+      const res = await fetch(`/api/filter-options?${params.toString()}`);
         
         if (res.ok) {
           const data = await res.json();
@@ -196,8 +226,8 @@ export default function FilterSidebar({
             if (!maxPrice && !priceEdited.max) {
               setMaxPrice(data.priceRange.max.toString());
             }
-          } else if (!isFirstFetch.current) {
-            // Only auto-update price ranges on subsequent fetches if they weren't edited manually
+        } else {
+          // Only auto-update price ranges if they weren't edited manually
             if (!priceEdited.min) {
               setMinPrice(data.priceRange.min.toString());
             }
@@ -205,39 +235,18 @@ export default function FilterSidebar({
             setMaxPrice(data.priceRange.max.toString());
           }
           }
-          
-          isFirstFetch.current = false;
-          
-          // If there was a filter change, apply it automatically
-          if (hasFilterChangedRef.current) {
-            hasFilterChangedRef.current = false;
-            applyFilters();
-          }
         }
       } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
           console.error("Error fetching filter options:", error);
-        }
       } finally {
         setIsLoading(false);
       }
     };
     
-    // Always fetch filter options on initial render
+  // Initial fetch of filter options
+  useEffect(() => {
     fetchFilterOptions();
-    
-    return () => {
-      controller.abort();
-    };
-  }, [
-    categorySlug, 
-    // Only refetch when activeFilters change to ensure dynamic updates
-    activeFilters,
-    selectedCategories,
-    selectedDistricts, 
-    selectedConditions,
-    selectedRooms
-  ]);
+  }, [categorySlug]);
   
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
@@ -315,15 +324,6 @@ export default function FilterSidebar({
       // Reset price edited flags
       setPriceEdited({ min: false, max: false });
       
-      // Reset active filters
-      setActiveFilters({
-        search: !!searchInputValue.trim(),
-        districts: false,
-        conditions: false,
-        rooms: false,
-        categories: false,
-      });
-      
       // Navigate to appropriate page
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
       router.push(`${base}?${params.toString()}`);
@@ -379,14 +379,8 @@ export default function FilterSidebar({
       params.append('from', fromParam);
     }
     
-    // Reset all active filters
-    setActiveFilters({
-      search: !categorySlug && !!searchParams?.get('q'),
-      districts: false,
-      conditions: false,
-      rooms: false,
-      categories: false,
-    });
+    // Update last selected filters
+    updateLastSelectedFilters();
     
     // Navigate with reset filters
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
@@ -396,53 +390,33 @@ export default function FilterSidebar({
   // Handler functions for filter changes
   const handleCategoryToggle = (slug: string) => {
     setSelectedCategories(prev => {
-      const newValue = prev.includes(slug) 
+      return prev.includes(slug) 
         ? prev.filter(s => s !== slug) 
       : [...prev, slug];
-      
-      setActiveFilters(prev => ({...prev, categories: true}));
-      hasFilterChangedRef.current = true;
-      
-      return newValue;
     });
   };
   
   const handleDistrictToggle = (district: string) => {
     setSelectedDistricts(prev => {
-      const newValue = prev.includes(district) 
+      return prev.includes(district) 
         ? prev.filter(d => d !== district) 
       : [...prev, district];
-      
-      setActiveFilters(prev => ({...prev, districts: true}));
-      hasFilterChangedRef.current = true;
-      
-      return newValue;
     });
   };
   
   const handleConditionToggle = (cond: string) => {
     setSelectedConditions(prev => {
-      const newValue = prev.includes(cond) 
+      return prev.includes(cond) 
         ? prev.filter(c => c !== cond) 
       : [...prev, cond];
-      
-      setActiveFilters(prev => ({...prev, conditions: true}));
-      hasFilterChangedRef.current = true;
-      
-      return newValue;
     });
   };
   
   const handleRoomToggle = (room: string) => {
     setSelectedRooms(prev => {
-      const newValue = prev.includes(room)
+      return prev.includes(room)
         ? prev.filter(r => r !== room)
       : [...prev, room];
-      
-      setActiveFilters(prev => ({...prev, rooms: true}));
-      hasFilterChangedRef.current = true;
-      
-      return newValue;
     });
   };
   
@@ -454,8 +428,6 @@ export default function FilterSidebar({
       setMaxPrice(value);
       setPriceEdited(prev => ({ ...prev, max: true }));
     }
-    
-    hasFilterChangedRef.current = true;
   };
   
   const handleSubmit = (e: FormEvent) => {
@@ -466,7 +438,6 @@ export default function FilterSidebar({
   // Category-specific search
   const handleCategorySearch = (e: FormEvent) => {
     e.preventDefault();
-    setActiveFilters(prev => ({...prev, search: true}));
     applyFilters();
   };
   

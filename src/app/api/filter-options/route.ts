@@ -17,10 +17,6 @@ export async function GET(req: NextRequest) {
     const rooms = searchParams.getAll('rooms');
     const categories = searchParams.getAll('category');
 
-    // Determine which parameters are being actively edited
-    // and shouldn't be included in filter queries
-    const activeFilter = searchParams.get('activeFilter') || '';
-
     // Build base filter for active listings
     const baseFilter: any = { status: 'active' };
 
@@ -28,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (categorySlug) {
       const cat = await prisma.category.findUnique({ where: { slug: categorySlug } });
       if (cat) baseFilter.categoryId = cat.id;
-    } else if (categories.length > 0 && activeFilter !== 'categories') {
+    } else if (categories.length > 0) {
       // For multi-category selection in global search
       const cats = await prisma.category.findMany({
         where: { slug: { in: categories } },
@@ -49,44 +45,36 @@ export async function GET(req: NextRequest) {
     }
 
     // Add price range filter
-    if (minPrice && activeFilter !== 'price') {
+    if (minPrice) {
       baseFilter.price = { ...(baseFilter.price || {}), gte: parseFloat(minPrice) };
     }
     
-    if (maxPrice && activeFilter !== 'price') {
+    if (maxPrice) {
       baseFilter.price = { ...(baseFilter.price || {}), lte: parseFloat(maxPrice) };
     }
     
-    // Create separate filter objects for each query type
-    
-    // Filter for district options (exclude district filter if that's what's being edited)
+    // Create different filter objects for each query type
     const districtFilter = { ...baseFilter };
-    
-    // Filter for condition options (exclude condition filter if that's what's being edited)
     const conditionFilter = { ...baseFilter };
-    
-    // Filter for room options (exclude room filter if that's what's being edited)
     const roomFilter = { ...baseFilter };
-    
-    // Filter for price range (exclude price filter if that's what's being edited)
     const priceFilter = { ...baseFilter };
     
-    // Add districts filter to other queries
-    if (districts.length > 0 && activeFilter !== 'districts') {
+    // Add district filter to condition, room, and price queries
+    if (districts.length > 0) {
       conditionFilter.district = { in: districts };
       roomFilter.district = { in: districts };
       priceFilter.district = { in: districts };
     }
     
-    // Add conditions filter to other queries
-    if (conditions.length > 0 && activeFilter !== 'conditions') {
+    // Add condition filter to district, room, and price queries  
+    if (conditions.length > 0) {
       districtFilter.condition = { in: conditions };
       roomFilter.condition = { in: conditions };
       priceFilter.condition = { in: conditions };
     }
     
-    // Add rooms filter to other queries
-    if (rooms.length > 0 && activeFilter !== 'rooms') {
+    // Add room filter to district, condition, and price queries
+    if (rooms.length > 0) {
       const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
       if (roomValues.length > 0) {
         districtFilter.rooms = { in: roomValues };
@@ -95,8 +83,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Run all queries in parallel for better performance
-    const [districtOptions, conditionOptions, roomOptions, priceRange] = await Promise.all([
+    // Run all queries in parallel
+    const [allListings, districtOptions, conditionOptions, roomOptions, priceRange] = await Promise.all([
+      // Get all listings that match the base filter for counting
+      prisma.listing.findMany({
+        where: baseFilter,
+        select: { id: true }
+      }),
+      
       // Get available districts based on current filters
       prisma.listing.groupBy({
       by: ['district'],
@@ -129,12 +123,13 @@ export async function GET(req: NextRequest) {
       })
     ]);
 
-    // Process results and provide defaults
+    // Set default values if no results
     const minPriceValue = priceRange._min.price !== null ? priceRange._min.price : 0;
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
 
-    // Return filtered options
+    // Return the filter options
     return NextResponse.json({
+      totalCount: allListings.length,
       districts: districtOptions.map(d => d.district).filter(Boolean),
       conditions: conditionOptions.map(c => c.condition).filter(Boolean),
       rooms: roomOptions.map(r => r.rooms?.toString()).filter(Boolean),
