@@ -4,25 +4,26 @@ import ListingCard from '@/components/ListingCard';
 import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
-// Helper function to handle Russian grammatical cases
-function getDativeCase(categoryName: string): string {
-  // Handle Russian declensions for common category names
-  const dative: Record<string, string> = {
-    'Квартиры': 'квартирам',
-    'Дома': 'домам',
-    'Земельные участки': 'земельным участкам',
-    'Коммерция': 'коммерческим объектам',
-    'Промышленные объекты': 'промышленным объектам'
-  };
+// // Helper function to handle Russian grammatical cases
+// function getDativeCase(categoryName: string): string {
+//   // Handle Russian declensions for common category names
+//   const dative: Record<string, string> = {
+//     'Квартиры': 'квартирам',
+//     'Дома': 'домам',
+//     'Земельные участки': 'земельным участкам',
+//     'Коммерция': 'коммерческим объектам',
+//     'Промышленные объекты': 'промышленным объектам'
+//   };
   
-  return dative[categoryName] || categoryName.toLowerCase();
-}
+//   return dative[categoryName] || categoryName.toLowerCase();
+// }
 
 async function getCategory(slug: string) {
   const category = await prisma.category.findUnique({
@@ -126,6 +127,19 @@ async function getListings(
   };
 }
 
+// Determine if we should show back link (only from global search)
+async function shouldShowBackLink(searchParams: Record<string, string | string[] | undefined>) {
+  // Check if coming from global search
+  const fromGlobalSearch = searchParams.from === 'global-search';
+  
+  // Check referrer header
+  const headersList = await headers();
+  const referer = headersList.get('referer');
+  const comingFromSearch = referer?.includes('/search');
+  
+  return fromGlobalSearch || comingFromSearch;
+}
+
 export default async function CategoryPage({ 
   params, 
   searchParams,
@@ -148,18 +162,21 @@ export default async function CategoryPage({
   // Get search query if exists
   const searchQuery = resolvedSearchParams.q as string || '';
 
+  // Determine if we should show back link
+  const showBackLink = await shouldShowBackLink(resolvedSearchParams);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">{category.name}</h1>
       
-      {/* Show "back to category" link when search is active */}
-      {searchQuery && (
+      {/* Show "back to category" link ONLY when coming from global search */}
+      {showBackLink && (
         <div className="mb-4">
           <Link 
-            href={`/listing-category/${slug}`} // URL with no query params
+            href={`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}
             className="text-blue-500 hover:text-blue-700 inline-flex items-center"
           >
-            <span className="mr-1">←</span> Вернуться ко всем {getDativeCase(category.name)}
+            <span className="mr-1">←</span> Назад к результатам поиска
           </Link>
         </div>
       )}

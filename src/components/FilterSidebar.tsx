@@ -38,12 +38,15 @@ export default function FilterSidebar({
   const [searchInputValue, setSearchInputValue] = useState(searchQuery || '');
   
   // States for filter values
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.getAll('category'));
-  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams.getAll('district'));
-  const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams.getAll('condition'));
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams.getAll('rooms'));
+  const [minPrice, setMinPrice] = useState(searchParams?.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(searchParams?.get('maxPrice') || '');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams?.getAll('category') || []);
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams?.getAll('district') || []);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams?.getAll('condition') || []);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams?.getAll('rooms') || []);
+  
+  // State to track loading state
+  const [isLoading, setIsLoading] = useState(true);
   
   // Reference to initial filter options
   const initialOptionsRef = useRef<FilterOptions>({
@@ -66,14 +69,16 @@ export default function FilterSidebar({
   const isApplyingRef = useRef(false);
   const shouldAutoApplyRef = useRef(false);
   const hasFilterChangedRef = useRef(false);
+  const optionsInitializedRef = useRef(false);
   
-  // Keep track of which filters have changed
-  const [filtersChanged, setFiltersChanged] = useState({
-    categories: false,
+  // Track which filters have been modified
+  const [activeFilters, setActiveFilters] = useState({
+    search: !!searchQuery,
+    price: false,
     districts: false,
     conditions: false,
     rooms: false,
-    price: false,
+    categories: false,
   });
   
   // Initialize search input value from URL on first load
@@ -96,7 +101,7 @@ export default function FilterSidebar({
     }
     
     // Only update price if not actively editing
-    if (!filtersChanged.price) {
+    if (!activeFilters.price) {
       if (minPriceParam) {
         setMinPrice(minPriceParam);
       }
@@ -111,28 +116,25 @@ export default function FilterSidebar({
     setSelectedConditions(searchParams.getAll('condition'));
     setSelectedRooms(searchParams.getAll('rooms'));
     
-    // Reset change tracking when URL parameters are applied
-    setFiltersChanged({
-      categories: false,
+    // Reset active filters when URL parameters are applied
+    setActiveFilters({
+      search: !!paramQuery,
+      price: false,
       districts: false,
       conditions: false,
       rooms: false,
-      price: false,
+      categories: false,
     });
     
   }, [searchParams]);
   
-  // Fetch available filter options dynamically
+  // Fetch available filter options - regardless of if filters are active
   useEffect(() => {
-    // Prevent fetch on mount before we have initial values
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
-      return;
-    }
-    
     const controller = new AbortController();
     
     const fetchFilterOptions = async () => {
+      setIsLoading(true);
+      
       // Build query params with all current active filters
       const params = new URLSearchParams();
       
@@ -154,20 +156,20 @@ export default function FilterSidebar({
           params.append('maxPrice', maxPrice);
         }
         
-      // Add multi-select filters excluding the ones we're checking for
-      if (!filtersChanged.categories) {
+      // Only add the filters that aren't being actively modified
+      if (!activeFilters.categories) {
         selectedCategories.forEach(c => params.append('category', c));
       }
       
-      if (!filtersChanged.districts) {
+      if (!activeFilters.districts) {
         selectedDistricts.forEach(d => params.append('district', d));
       }
       
-      if (!filtersChanged.conditions) {
+      if (!activeFilters.conditions) {
         selectedConditions.forEach(c => params.append('condition', c));
       }
       
-      if (!filtersChanged.rooms) {
+      if (!activeFilters.rooms) {
         selectedRooms.forEach(r => params.append('rooms', r));
       }
       
@@ -181,23 +183,22 @@ export default function FilterSidebar({
           setFilterOptions(data);
           
           // Save initial options on first successful load
-          if (initialOptionsRef.current.districts.length === 0) {
+          if (!optionsInitializedRef.current) {
             initialOptionsRef.current = data;
-          }
+            optionsInitializedRef.current = true;
           
-          // Auto-update price range only if not manually set
-          if (!filtersChanged.price && !searchParams.has('minPrice')) {
+            // Initialize price if not set
+            if (!minPrice) {
             setMinPrice(data.priceRange.min.toString());
           }
-          
-          if (!filtersChanged.price && !searchParams.has('maxPrice')) {
+            if (!maxPrice) {
             setMaxPrice(data.priceRange.max.toString());
           }
+          }
           
-          // If a filter has been changed and options are updated,
-          // auto-apply the filters
-          if (hasFilterChangedRef.current && shouldAutoApplyRef.current) {
-            shouldAutoApplyRef.current = false;
+          // If there was a filter change, apply it automatically
+          if (hasFilterChangedRef.current) {
+            hasFilterChangedRef.current = false;
             applyFilters();
           }
         }
@@ -205,9 +206,12 @@ export default function FilterSidebar({
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error("Error fetching filter options:", error);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
     
+    // Always fetch filter options on initial render
     fetchFilterOptions();
     
     return () => {
@@ -215,13 +219,8 @@ export default function FilterSidebar({
     };
   }, [
     categorySlug, 
-    searchInputValue, 
-    // Add dependencies to trigger fetches when filters change
-    filtersChanged.categories,
-    filtersChanged.districts,
-    filtersChanged.conditions,
-    filtersChanged.rooms,
-    filtersChanged.price
+    // Only refetch when activeFilters change to ensure dynamic updates
+    activeFilters
   ]);
   
   // Determine if custom filters are applied
@@ -234,8 +233,10 @@ export default function FilterSidebar({
     
     // Custom price filters
     const hasCustomPrice = 
-    (minPrice !== '' && minPrice !== initialOptionsRef.current.priceRange.min.toString()) || 
-    (maxPrice !== '' && maxPrice !== initialOptionsRef.current.priceRange.max.toString());
+    (minPrice !== '' && initialOptionsRef.current.priceRange.min !== undefined && 
+     minPrice !== initialOptionsRef.current.priceRange.min.toString()) || 
+    (maxPrice !== '' && initialOptionsRef.current.priceRange.max !== undefined && 
+     maxPrice !== initialOptionsRef.current.priceRange.max.toString());
     
     // Other filters
     const hasOtherFilters = 
@@ -270,12 +271,14 @@ export default function FilterSidebar({
         }
       }
       
-      // Add price filters
-      if (minPrice && minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
+      // Add price filters - only if they differ from initial values
+      if (minPrice && initialOptionsRef.current.priceRange.min !== undefined && 
+          minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
         params.append('minPrice', minPrice);
       }
       
-      if (maxPrice && maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
+      if (maxPrice && initialOptionsRef.current.priceRange.max !== undefined && 
+          maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
         params.append('maxPrice', maxPrice);
       }
       
@@ -296,8 +299,15 @@ export default function FilterSidebar({
         params.append('from', fromParam);
       }
       
-      // Reset filter change tracking
-      hasFilterChangedRef.current = false;
+      // Reset active filters
+      setActiveFilters({
+        search: !!searchInputValue.trim(),
+        price: false,
+        districts: false,
+        conditions: false,
+        rooms: false,
+        categories: false,
+      });
       
       // Navigate to appropriate page
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
@@ -313,8 +323,13 @@ export default function FilterSidebar({
   // Reset all filters
   const resetFilters = () => {
     // Reset to initial values
+    if (initialOptionsRef.current.priceRange.min !== undefined) {
     setMinPrice(initialOptionsRef.current.priceRange.min.toString());
+    }
+    if (initialOptionsRef.current.priceRange.max !== undefined) {
     setMaxPrice(initialOptionsRef.current.priceRange.max.toString());
+    }
+    
     setSelectedCategories([]);
     setSelectedDistricts([]);
     setSelectedConditions([]);
@@ -347,6 +362,16 @@ export default function FilterSidebar({
       params.append('from', fromParam);
     }
     
+    // Reset all active filters
+    setActiveFilters({
+      search: !categorySlug && !!searchParams?.get('q'),
+      price: false,
+      districts: false,
+      conditions: false,
+      rooms: false,
+      categories: false,
+    });
+    
     // Navigate with reset filters
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
@@ -354,60 +379,52 @@ export default function FilterSidebar({
   
   // Handler functions for filter changes
   const handleCategoryToggle = (slug: string) => {
-    setSelectedCategories((prev) => {
+    setSelectedCategories(prev => {
       const newValue = prev.includes(slug) 
-      ? prev.filter((s) => s !== slug) 
+        ? prev.filter(s => s !== slug) 
       : [...prev, slug];
       
-      // Mark filter as changed to update options
-      setFiltersChanged(prev => ({...prev, categories: true}));
+      setActiveFilters(prev => ({...prev, categories: true}));
       hasFilterChangedRef.current = true;
-      shouldAutoApplyRef.current = true;
       
       return newValue;
     });
   };
   
   const handleDistrictToggle = (district: string) => {
-    setSelectedDistricts((prev) => {
+    setSelectedDistricts(prev => {
       const newValue = prev.includes(district) 
-      ? prev.filter((d) => d !== district) 
+        ? prev.filter(d => d !== district) 
       : [...prev, district];
       
-      // Mark filter as changed to update options
-      setFiltersChanged(prev => ({...prev, districts: true}));
+      setActiveFilters(prev => ({...prev, districts: true}));
       hasFilterChangedRef.current = true;
-      shouldAutoApplyRef.current = true;
       
       return newValue;
     });
   };
   
   const handleConditionToggle = (cond: string) => {
-    setSelectedConditions((prev) => {
+    setSelectedConditions(prev => {
       const newValue = prev.includes(cond) 
-      ? prev.filter((c) => c !== cond) 
+        ? prev.filter(c => c !== cond) 
       : [...prev, cond];
       
-      // Mark filter as changed to update options
-      setFiltersChanged(prev => ({...prev, conditions: true}));
+      setActiveFilters(prev => ({...prev, conditions: true}));
       hasFilterChangedRef.current = true;
-      shouldAutoApplyRef.current = true;
       
       return newValue;
     });
   };
   
   const handleRoomToggle = (room: string) => {
-    setSelectedRooms((prev) => {
+    setSelectedRooms(prev => {
       const newValue = prev.includes(room)
-      ? prev.filter((r) => r !== room)
+        ? prev.filter(r => r !== room)
       : [...prev, room];
       
-      // Mark filter as changed to update options
-      setFiltersChanged(prev => ({...prev, rooms: true}));
+      setActiveFilters(prev => ({...prev, rooms: true}));
       hasFilterChangedRef.current = true;
-      shouldAutoApplyRef.current = true;
       
       return newValue;
     });
@@ -420,8 +437,7 @@ export default function FilterSidebar({
       setMaxPrice(value);
     }
     
-    // Mark price as changed
-    setFiltersChanged(prev => ({...prev, price: true}));
+    setActiveFilters(prev => ({...prev, price: true}));
     hasFilterChangedRef.current = true;
   };
   
@@ -433,6 +449,7 @@ export default function FilterSidebar({
   // Category-specific search
   const handleCategorySearch = (e: FormEvent) => {
     e.preventDefault();
+    setActiveFilters(prev => ({...prev, search: true}));
     applyFilters();
   };
   
@@ -450,7 +467,10 @@ export default function FilterSidebar({
       placeholder="Поиск"
       className="w-full p-2 border rounded-l"
       />
-      <button type="submit" className="bg-blue-500 text-white px-3 rounded-r hover:bg-blue-600 transition">
+            <button 
+              type="submit" 
+              className="bg-blue-500 text-white px-3 rounded-r hover:bg-blue-600 transition"
+            >
       Искать
       </button>
       </div>
@@ -458,6 +478,13 @@ export default function FilterSidebar({
     )}
     
     <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Loading state */}
+        {isLoading && !optionsInitializedRef.current && (
+          <div className="text-center py-4">
+            <div className="animate-pulse">Загрузка фильтров...</div>
+          </div>
+        )}
+        
     {/* Multi-category selection (only on general search page) */}
     {!categorySlug && categories.length > 0 && (
       <div>

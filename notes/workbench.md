@@ -21,16 +21,8 @@
 
 ### NOW
 
-
-- When I search in a category there should not be any "go back to .. category" - it should only be there for a global search
-
-- Now there are no filters when I open a category, they show up only when I enter something in one of the fields
-- Also it says no results when selecting e.g. a category to filter by
-
-
-- Filters options are not changed dynamically when there are fewer options bc of applied filters (see screenshots: one listing, 3 districts)
-  - Same as before: I need to change other filter fields dynamically. Eg when I select "состояние" and there are fewer listings - "районы", price, rooms and other things/filters should reflect the change and only show from options that fit the remaining listings (see screenshots)
-  - They work sometimes
+- When user presses on "x" in global search field it should go back to the last page (category/main page), now it stays on the same search page just removes the search query
+- Price is not adjusting automatically, and asks to change price when I select apply filters (see screenshot). Looks like all the other filters adjust dynamically except for price
 
 ### Next
 
