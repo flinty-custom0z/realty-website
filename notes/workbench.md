@@ -21,14 +21,16 @@
 
 ### NOW
 
-- Now it asks me to change the price when switching between different filters when it should actually do it automatically.  (see screenshots)
-- Сбросить фильтры should clear the local search
-- When I search in a category and press go back - local search query should be cleared - but now it remains
-- Filters options are not changed dynamically when there are fewer options bc of one filter
-  - Same as before: I need to change other filter fields dynamically. Eg when I select "состояние" and there are fewer listings - "районы", price, rooms and other things/filters should reflect the change and only show from options that fit the remaining listings (see screenshot)
-  - They work in global search sometimes but not in categories
-- Filters are sometimes applied dynamically, sometimes I need to manually press apply
 
+- When I search in a category there should not be any "go back to .. category" - it should only be there for a global search
+
+- Now there are no filters when I open a category, they show up only when I enter something in one of the fields
+- Also it says no results when selecting e.g. a category to filter by
+
+
+- Filters options are not changed dynamically when there are fewer options bc of applied filters (see screenshots: one listing, 3 districts)
+  - Same as before: I need to change other filter fields dynamically. Eg when I select "состояние" and there are fewer listings - "районы", price, rooms and other things/filters should reflect the change and only show from options that fit the remaining listings (see screenshots)
+  - They work sometimes
 
 ### Next
 

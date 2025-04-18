@@ -34,24 +34,16 @@ export default function FilterSidebar({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  // State for search input (unsynced with URL)
+  // State for search input (for category-specific search)
   const [searchInputValue, setSearchInputValue] = useState(searchQuery || '');
-  // State for filters synced with URL
-  const [syncedQuery, setSyncedQuery] = useState(searchQuery);
   
+  // States for filter values
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams.getAll('category'));
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams.getAll('district'));
   const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams.getAll('condition'));
   const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams.getAll('rooms'));
-  
-  // Initialize search input value from URL on first load
-  useEffect(() => {
-    if (searchInputValue === '' && searchQuery) {
-      setSearchInputValue(searchQuery);
-    }
-  }, [searchQuery]);
   
   // Reference to initial filter options
   const initialOptionsRef = useRef<FilterOptions>({
@@ -69,71 +61,144 @@ export default function FilterSidebar({
     priceRange: { min: 0, max: 30000000 }
   });
 
-  // Flag to prevent multiple calls
-  const isApplyingRef = useRef(false);
+  // Flags to control behavior
   const isFirstRenderRef = useRef(true);
+  const isApplyingRef = useRef(false);
+  const shouldAutoApplyRef = useRef(false);
+  const hasFilterChangedRef = useRef(false);
   
-  // Track if we've submitted a search
-  const hasSubmittedSearch = useRef(false);
+  // Keep track of which filters have changed
+  const [filtersChanged, setFiltersChanged] = useState({
+    categories: false,
+    districts: false,
+    conditions: false,
+    rooms: false,
+    price: false,
+  });
+  
+  // Initialize search input value from URL on first load
+  useEffect(() => {
+    if (searchInputValue === '' && searchQuery) {
+      setSearchInputValue(searchQuery);
+    }
+  }, [searchQuery]);
+  
+  // Sync with URL parameters
+  useEffect(() => {
+    if (!searchParams) return;
+    
+    const paramQuery = searchParams.get('q');
+    const minPriceParam = searchParams.get('minPrice');
+    const maxPriceParam = searchParams.get('maxPrice');
+    
+    if (paramQuery !== null) {
+      setSearchInputValue(paramQuery);
+    }
+    
+    // Only update price if not actively editing
+    if (!filtersChanged.price) {
+      if (minPriceParam) {
+        setMinPrice(minPriceParam);
+      }
+      if (maxPriceParam) {
+        setMaxPrice(maxPriceParam);
+      }
+    }
+    
+    // Update selected filters from URL
+    setSelectedCategories(searchParams.getAll('category'));
+    setSelectedDistricts(searchParams.getAll('district'));
+    setSelectedConditions(searchParams.getAll('condition'));
+    setSelectedRooms(searchParams.getAll('rooms'));
+    
+    // Reset change tracking when URL parameters are applied
+    setFiltersChanged({
+      categories: false,
+      districts: false,
+      conditions: false,
+      rooms: false,
+      price: false,
+    });
+    
+  }, [searchParams]);
   
   // Fetch available filter options dynamically
   useEffect(() => {
-    // Create an abort controller for cleanup
+    // Prevent fetch on mount before we have initial values
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+    
     const controller = new AbortController();
     
     const fetchFilterOptions = async () => {
-      // Include search query and all current filters in the options URL
-      let url = `/api/filter-options`;
+      // Build query params with all current active filters
       const params = new URLSearchParams();
       
+      // Base filters
       if (categorySlug) {
         params.append('category', categorySlug);
       }
       
-      if (searchQuery) {
-        params.append('q', searchQuery);
+      if (searchInputValue.trim()) {
+        params.append('q', searchInputValue);
       }
       
-      // Add current selections to get dynamic options
-      if (!isFirstRenderRef.current) {
-        // Add price filters
-        if (minPrice && minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
+      // Add current filter selections
+      if (minPrice) {
           params.append('minPrice', minPrice);
         }
         
-        if (maxPrice && maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
+      if (maxPrice) {
           params.append('maxPrice', maxPrice);
         }
         
-        // Add all other filters except the ones we're looking for options for
+      // Add multi-select filters excluding the ones we're checking for
+      if (!filtersChanged.categories) {
         selectedCategories.forEach(c => params.append('category', c));
+      }
+      
+      if (!filtersChanged.districts) {
         selectedDistricts.forEach(d => params.append('district', d));
+      }
+      
+      if (!filtersChanged.conditions) {
         selectedConditions.forEach(c => params.append('condition', c));
+      }
+      
+      if (!filtersChanged.rooms) {
         selectedRooms.forEach(r => params.append('rooms', r));
       }
       
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-      
       try {
-        const res = await fetch(url, { signal: controller.signal });
+        const res = await fetch(`/api/filter-options?${params.toString()}`, { 
+          signal: controller.signal 
+        });
         
         if (res.ok) {
           const data = await res.json();
           setFilterOptions(data);
           
-          // Save initial filter options when first loaded
+          // Save initial options on first successful load
           if (initialOptionsRef.current.districts.length === 0) {
             initialOptionsRef.current = data;
           }
           
-          // Update price range if not explicitly set by user
-          if (!searchParams.has('minPrice')) {
+          // Auto-update price range only if not manually set
+          if (!filtersChanged.price && !searchParams.has('minPrice')) {
             setMinPrice(data.priceRange.min.toString());
           }
-          if (!searchParams.has('maxPrice')) {
+          
+          if (!filtersChanged.price && !searchParams.has('maxPrice')) {
             setMaxPrice(data.priceRange.max.toString());
+          }
+          
+          // If a filter has been changed and options are updated,
+          // auto-apply the filters
+          if (hasFilterChangedRef.current && shouldAutoApplyRef.current) {
+            shouldAutoApplyRef.current = false;
+            applyFilters();
           }
         }
       } catch (error) {
@@ -145,46 +210,41 @@ export default function FilterSidebar({
     
     fetchFilterOptions();
     
-    // After first render, mark it as complete
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
-    }
-    
-    // Clean up by aborting any in-flight requests when the component unmounts or deps change
     return () => {
       controller.abort();
     };
-  }, [categorySlug, searchQuery, hasSubmittedSearch.current]);
-  
-  // Update synced query when URL changes (but don't update search input)
-  useEffect(() => {
-    const urlQuery = searchParams.get('q');
-    if (urlQuery === null && syncedQuery !== '') {
-      setSyncedQuery('');
-    } else if (urlQuery !== null && urlQuery !== syncedQuery) {
-      setSyncedQuery(urlQuery);
-      setSearchInputValue(urlQuery); // Keep the search input in sync with URL
-    }
-  }, [searchParams, syncedQuery]);
+  }, [
+    categorySlug, 
+    searchInputValue, 
+    // Add dependencies to trigger fetches when filters change
+    filtersChanged.categories,
+    filtersChanged.districts,
+    filtersChanged.conditions,
+    filtersChanged.rooms,
+    filtersChanged.price
+  ]);
   
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
-    // Check if there's a search query
-    const hasSearchQuery = searchInputValue.trim() !== '';
+    // For category pages, search query is a filter
+    const hasSearchQuery = categorySlug && searchInputValue.trim() !== '';
     
-    // Check if price is different from initial
+    // For global search, search query is not considered a filter
+    const isGlobalSearch = !categorySlug && searchInputValue.trim() === searchParams?.get('q');
+    
+    // Custom price filters
     const hasCustomPrice = 
     (minPrice !== '' && minPrice !== initialOptionsRef.current.priceRange.min.toString()) || 
     (maxPrice !== '' && maxPrice !== initialOptionsRef.current.priceRange.max.toString());
     
-    // Check if any other filters are selected
+    // Other filters
     const hasOtherFilters = 
     selectedDistricts.length > 0 || 
     selectedConditions.length > 0 || 
     selectedRooms.length > 0 ||
     (!categorySlug && selectedCategories.length > 0);
     
-    return hasSearchQuery || hasCustomPrice || hasOtherFilters;
+    return hasSearchQuery || (!isGlobalSearch && (hasCustomPrice || hasOtherFilters));
   };
   
   // Apply filters
@@ -195,18 +255,27 @@ export default function FilterSidebar({
     try {
       const params = new URLSearchParams();
       
-      // Use the search input value for the query parameter
-      if (searchInputValue.trim()) params.append('q', searchInputValue);
+      // Add search query, preserving global search query unless we're
+      // filtering within a category
+      if (categorySlug) {
+        // In category, use local search input
+        if (searchInputValue.trim()) {
+          params.append('q', searchInputValue);
+        }
+      } else {
+        // In global search, preserve the query parameter
+        const currentQuery = searchParams?.get('q');
+        if (currentQuery) {
+          params.append('q', currentQuery);
+        }
+      }
       
-      // Add price filters only if they differ from defaults
-      const minDefault = initialOptionsRef.current.priceRange.min.toString();
-      const maxDefault = initialOptionsRef.current.priceRange.max.toString();
-      
-      if (minPrice && minPrice !== minDefault) {
+      // Add price filters
+      if (minPrice && minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
         params.append('minPrice', minPrice);
       }
       
-      if (maxPrice && maxPrice !== maxDefault) {
+      if (maxPrice && maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
         params.append('maxPrice', maxPrice);
       }
       
@@ -216,22 +285,21 @@ export default function FilterSidebar({
       selectedConditions.forEach((c) => params.append('condition', c));
       selectedRooms.forEach((r) => params.append('rooms', r));
       
-      // Keep return URL if it exists
-      const returnUrl = searchParams.get('returnUrl');
+      // Preserve navigation parameters
+      const returnUrl = searchParams?.get('returnUrl');
       if (returnUrl) {
         params.append('returnUrl', returnUrl);
       }
       
-      // Keep the 'from' parameter if it exists
-      const fromParam = searchParams.get('from');
+      const fromParam = searchParams?.get('from');
       if (fromParam) {
         params.append('from', fromParam);
       }
       
-      // Mark that we've submitted a search to refresh filter options
-      hasSubmittedSearch.current = true;
+      // Reset filter change tracking
+      hasFilterChangedRef.current = false;
       
-      // Determine the base URL (category page or search page)
+      // Navigate to appropriate page
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
       router.push(`${base}?${params.toString()}`);
     } finally {
@@ -244,7 +312,7 @@ export default function FilterSidebar({
   
   // Reset all filters
   const resetFilters = () => {
-    // Reset to initial values but keep the query
+    // Reset to initial values
     setMinPrice(initialOptionsRef.current.priceRange.min.toString());
     setMaxPrice(initialOptionsRef.current.priceRange.max.toString());
     setSelectedCategories([]);
@@ -252,30 +320,34 @@ export default function FilterSidebar({
     setSelectedConditions([]);
     setSelectedRooms([]);
     
-    // IMPORTANT: Maintain the search query
-    const currentSearch = searchInputValue.trim();
-    
-    // Create params and preserve only the search query
-    const params = new URLSearchParams();
-    if (currentSearch) {
-      params.append('q', currentSearch);
+    // Clear local search input in category pages
+    if (categorySlug) {
+      setSearchInputValue('');
     }
     
-    // Keep return URL and from parameter
-    const returnUrl = searchParams.get('returnUrl');
+    // Create params preserving only global search if appropriate
+    const params = new URLSearchParams();
+    
+    // Only preserve global search query when in global search
+    if (!categorySlug) {
+      const currentQuery = searchParams?.get('q');
+      if (currentQuery) {
+        params.append('q', currentQuery);
+      }
+    }
+    
+    // Keep navigation parameters
+    const returnUrl = searchParams?.get('returnUrl');
     if (returnUrl) {
       params.append('returnUrl', returnUrl);
     }
     
-    const fromParam = searchParams.get('from');
+    const fromParam = searchParams?.get('from');
     if (fromParam) {
       params.append('from', fromParam);
     }
     
-    // Mark that we've submitted to refresh filter options
-    hasSubmittedSearch.current = true;
-    
-    // Navigate to the base URL with preserved params
+    // Navigate with reset filters
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
@@ -283,33 +355,61 @@ export default function FilterSidebar({
   // Handler functions for filter changes
   const handleCategoryToggle = (slug: string) => {
     setSelectedCategories((prev) => {
-      return prev.includes(slug) 
+      const newValue = prev.includes(slug) 
       ? prev.filter((s) => s !== slug) 
       : [...prev, slug];
+      
+      // Mark filter as changed to update options
+      setFiltersChanged(prev => ({...prev, categories: true}));
+      hasFilterChangedRef.current = true;
+      shouldAutoApplyRef.current = true;
+      
+      return newValue;
     });
   };
   
   const handleDistrictToggle = (district: string) => {
     setSelectedDistricts((prev) => {
-      return prev.includes(district) 
+      const newValue = prev.includes(district) 
       ? prev.filter((d) => d !== district) 
       : [...prev, district];
+      
+      // Mark filter as changed to update options
+      setFiltersChanged(prev => ({...prev, districts: true}));
+      hasFilterChangedRef.current = true;
+      shouldAutoApplyRef.current = true;
+      
+      return newValue;
     });
   };
   
   const handleConditionToggle = (cond: string) => {
     setSelectedConditions((prev) => {
-      return prev.includes(cond) 
+      const newValue = prev.includes(cond) 
       ? prev.filter((c) => c !== cond) 
       : [...prev, cond];
+      
+      // Mark filter as changed to update options
+      setFiltersChanged(prev => ({...prev, conditions: true}));
+      hasFilterChangedRef.current = true;
+      shouldAutoApplyRef.current = true;
+      
+      return newValue;
     });
   };
   
   const handleRoomToggle = (room: string) => {
     setSelectedRooms((prev) => {
-      return prev.includes(room)
+      const newValue = prev.includes(room)
       ? prev.filter((r) => r !== room)
       : [...prev, room];
+      
+      // Mark filter as changed to update options
+      setFiltersChanged(prev => ({...prev, rooms: true}));
+      hasFilterChangedRef.current = true;
+      shouldAutoApplyRef.current = true;
+      
+      return newValue;
     });
   };
   
@@ -319,6 +419,10 @@ export default function FilterSidebar({
     } else {
       setMaxPrice(value);
     }
+    
+    // Mark price as changed
+    setFiltersChanged(prev => ({...prev, price: true}));
+    hasFilterChangedRef.current = true;
   };
   
   const handleSubmit = (e: FormEvent) => {

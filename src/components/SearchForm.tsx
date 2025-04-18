@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import SearchParamsProvider from '@/components/SearchParamsProvider';
 
@@ -13,6 +13,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery);
+  const previousPathRef = useRef(pathname);
   
   return (
     <SearchParamsProvider>
@@ -23,6 +24,26 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           
       const paramQuery = searchParams.get('q');
       
+          // Clear search when navigating between pages
+          if (previousPathRef.current !== pathname) {
+            previousPathRef.current = pathname;
+            
+            // Clear search when moving to home page
+            if (pathname === '/') {
+              setQuery('');
+              return;
+            }
+            
+            // Clear search when moving between categories
+            if (pathname.startsWith('/listing-category/')) {
+              const categoryPath = pathname.split('/')[2]?.split('?')[0];
+              if (categoryPath && categoryPath !== categorySlug) {
+                setQuery('');
+                return;
+              }
+            }
+          }
+          
   if (pathname.startsWith('/search') || pathname.startsWith('/listing-category/')) {
     // Handle category pages
       if (pathname.startsWith('/listing-category/')) {
