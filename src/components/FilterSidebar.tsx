@@ -54,8 +54,16 @@ export default function FilterSidebar({
     max: false
   });
   
-  // Reference to initial filter options
+  // Reference to initial filter options - always preserve these even if API returns empty
   const initialOptionsRef = useRef<FilterOptions>({
+    districts: [],
+    conditions: [],
+    rooms: [],
+    priceRange: { min: 0, max: 30000000 }
+  });
+  
+  // Reference to all available options before filtering
+  const allOptionsRef = useRef<FilterOptions>({
     districts: [],
     conditions: [],
     rooms: [],
@@ -74,50 +82,7 @@ export default function FilterSidebar({
   const isApplyingRef = useRef(false);
   const optionsInitializedRef = useRef(false);
   const filterChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSelectedFiltersRef = useRef({
-    districts: [] as string[],
-    conditions: [] as string[],
-    rooms: [] as string[],
-    categories: [] as string[]
-  });
-  
-  // Function to check if filters have changed
-  const haveFiltersChanged = () => {
-    const districtsChanged = 
-      selectedDistricts.length !== lastSelectedFiltersRef.current.districts.length ||
-      selectedDistricts.some(d => !lastSelectedFiltersRef.current.districts.includes(d));
-    
-    const conditionsChanged = 
-      selectedConditions.length !== lastSelectedFiltersRef.current.conditions.length ||
-      selectedConditions.some(c => !lastSelectedFiltersRef.current.conditions.includes(c));
-    
-    const roomsChanged = 
-      selectedRooms.length !== lastSelectedFiltersRef.current.rooms.length ||
-      selectedRooms.some(r => !lastSelectedFiltersRef.current.rooms.includes(r));
-    
-    const categoriesChanged = 
-      selectedCategories.length !== lastSelectedFiltersRef.current.categories.length ||
-      selectedCategories.some(c => !lastSelectedFiltersRef.current.categories.includes(c));
-    
-    return districtsChanged || conditionsChanged || roomsChanged || categoriesChanged;
-  };
-  
-  // Function to update last selected filters
-  const updateLastSelectedFilters = () => {
-    lastSelectedFiltersRef.current = {
-      districts: [...selectedDistricts],
-      conditions: [...selectedConditions],
-      rooms: [...selectedRooms],
-      categories: [...selectedCategories]
-    };
-  };
-  
-  // Initialize search input value from URL on first load
-  useEffect(() => {
-    if (searchInputValue === '' && searchQuery) {
-      setSearchInputValue(searchQuery);
-    }
-  }, [searchQuery]);
+  const isFirstLoadRef = useRef(true);
   
   // Sync with URL parameters
   useEffect(() => {
@@ -146,28 +111,66 @@ export default function FilterSidebar({
     setSelectedConditions(searchParams.getAll('condition'));
     setSelectedRooms(searchParams.getAll('rooms'));
     
-    // Update last selected filters after URL sync
-    updateLastSelectedFilters();
-    
   }, [searchParams]);
   
-  // Handle filter change detection
+  // Fetch ALL available filter options on initial load
   useEffect(() => {
+    const fetchAllOptions = async () => {
+      try {
+        // Only fetch category-specific options
+        const params = new URLSearchParams();
+        if (categorySlug) {
+          params.append('category', categorySlug);
+        }
+        params.append('all', 'true');
+        
+        const res = await fetch(`/api/filter-options?${params.toString()}`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          // Save all available options
+          allOptionsRef.current = data;
+          
+          // Also use as initial options if not set yet
+          if (!optionsInitializedRef.current) {
+            initialOptionsRef.current = data;
+            optionsInitializedRef.current = true;
+            setFilterOptions(data);
+            
+            // Initialize price if not set
+            if (!minPrice) {
+              setMinPrice(data.priceRange.min.toString());
+            }
+            if (!maxPrice) {
+              setMaxPrice(data.priceRange.max.toString());
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching all filter options:", error);
+      }
+    };
+    
+    fetchAllOptions();
+  }, [categorySlug]);
+  
+  // Fetch filtered options whenever filters change
+  useEffect(() => {
+    // Don't run on first render
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
+      return;
+    }
+    
     // Clear any existing timeout
     if (filterChangeTimeoutRef.current) {
       clearTimeout(filterChangeTimeoutRef.current);
     }
     
-    // Skip during initial load
-    if (!optionsInitializedRef.current) return;
-    
-    // If filters have changed, update options after a short delay
-    if (haveFiltersChanged()) {
+    // Debounce filter changes to reduce API calls
       filterChangeTimeoutRef.current = setTimeout(() => {
-        fetchFilterOptions();
-        updateLastSelectedFilters();
-      }, 100);
-    }
+      fetchFilteredOptions();
+    }, 50);
     
     return () => {
       if (filterChangeTimeoutRef.current) {
@@ -176,8 +179,8 @@ export default function FilterSidebar({
     };
   }, [selectedCategories, selectedDistricts, selectedConditions, selectedRooms]);
   
-  // Fetch available filter options
-    const fetchFilterOptions = async () => {
+  // Fetch filtered options based on current selections
+  const fetchFilteredOptions = async () => {
       setIsLoading(true);
       
       // Build query params with all current active filters
@@ -192,7 +195,7 @@ export default function FilterSidebar({
         params.append('q', searchInputValue);
       }
       
-    // Add all selected filters (including the one being modified)
+    // Add all selected filters
         selectedCategories.forEach(c => params.append('category', c));
         selectedDistricts.forEach(d => params.append('district', d));
         selectedConditions.forEach(c => params.append('condition', c));
@@ -212,21 +215,17 @@ export default function FilterSidebar({
         
         if (res.ok) {
           const data = await res.json();
-          setFilterOptions(data);
-          
-          // Save initial options on first successful load
-          if (!optionsInitializedRef.current) {
-            initialOptionsRef.current = data;
-            optionsInitializedRef.current = true;
-          
-            // Initialize price if not set
-            if (!minPrice && !priceEdited.min) {
-            setMinPrice(data.priceRange.min.toString());
-          }
-            if (!maxPrice && !priceEdited.max) {
-              setMaxPrice(data.priceRange.max.toString());
-            }
-        } else {
+        
+        // Never show empty filter options - fall back to all available options
+        const mergedOptions = {
+          districts: data.districts.length > 0 ? data.districts : allOptionsRef.current.districts,
+          conditions: data.conditions.length > 0 ? data.conditions : allOptionsRef.current.conditions,
+          rooms: data.rooms.length > 0 ? data.rooms : allOptionsRef.current.rooms,
+          priceRange: data.priceRange
+        };
+        
+        setFilterOptions(mergedOptions);
+        
           // Only auto-update price ranges if they weren't edited manually
             if (!priceEdited.min) {
               setMinPrice(data.priceRange.min.toString());
@@ -234,20 +233,19 @@ export default function FilterSidebar({
             if (!priceEdited.max) {
             setMaxPrice(data.priceRange.max.toString());
           }
-          }
+        
+        // Auto-apply filters
+        applyFilters();
         }
       } catch (error) {
           console.error("Error fetching filter options:", error);
+      // Fall back to all options if API fails
+      setFilterOptions(allOptionsRef.current);
       } finally {
         setIsLoading(false);
       }
     };
     
-  // Initial fetch of filter options
-  useEffect(() => {
-    fetchFilterOptions();
-  }, [categorySlug]);
-  
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
     // For category pages, search query is a filter
@@ -321,9 +319,6 @@ export default function FilterSidebar({
         params.append('from', fromParam);
       }
       
-      // Reset price edited flags
-      setPriceEdited({ min: false, max: false });
-      
       // Navigate to appropriate page
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
       router.push(`${base}?${params.toString()}`);
@@ -379,15 +374,12 @@ export default function FilterSidebar({
       params.append('from', fromParam);
     }
     
-    // Update last selected filters
-    updateLastSelectedFilters();
-    
     // Navigate with reset filters
     const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
   
-  // Handler functions for filter changes
+  // Handler functions for filter changes - with auto-apply
   const handleCategoryToggle = (slug: string) => {
     setSelectedCategories(prev => {
       return prev.includes(slug) 
