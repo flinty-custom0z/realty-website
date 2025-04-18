@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     const rooms = searchParams.getAll('rooms');
     const categories = searchParams.getAll('category');
 
-    // Build base filter for active listings
+    // Build base filter for active listings only
+    // This includes category and search query but no other filters
     const baseFilter: any = { status: 'active' };
 
     // Add category filter if provided
@@ -30,7 +31,6 @@ export async function GET(req: NextRequest) {
         where: { slug: { in: categories } },
           select: { id: true }
         });
-        
       if (cats.length > 0) {
         baseFilter.categoryId = { in: cats.map(c => c.id) };
       }
@@ -44,99 +44,138 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Add price range filter
+    // Create the full filter with all current selections 
+    // This determines what's currently available
+    const fullFilter = { ...baseFilter };
+    
+    // Add price range filter to full filter
     if (minPrice) {
-      baseFilter.price = { ...(baseFilter.price || {}), gte: parseFloat(minPrice) };
+      fullFilter.price = { ...(fullFilter.price || {}), gte: parseFloat(minPrice) };
     }
-    
     if (maxPrice) {
-      baseFilter.price = { ...(baseFilter.price || {}), lte: parseFloat(maxPrice) };
+      fullFilter.price = { ...(fullFilter.price || {}), lte: parseFloat(maxPrice) };
     }
     
-    // Create different filter objects for each query type
-    const districtFilter = { ...baseFilter };
-    const conditionFilter = { ...baseFilter };
-    const roomFilter = { ...baseFilter };
-    const priceFilter = { ...baseFilter };
-    
-    // Add district filter to condition, room, and price queries
+    // Add district filter to full filter
     if (districts.length > 0) {
-      conditionFilter.district = { in: districts };
-      roomFilter.district = { in: districts };
-      priceFilter.district = { in: districts };
+      fullFilter.district = { in: districts };
     }
     
-    // Add condition filter to district, room, and price queries  
+    // Add condition filter to full filter
     if (conditions.length > 0) {
-      districtFilter.condition = { in: conditions };
-      roomFilter.condition = { in: conditions };
-      priceFilter.condition = { in: conditions };
+      fullFilter.condition = { in: conditions };
     }
     
-    // Add room filter to district, condition, and price queries
+    // Add room filter to full filter
     if (rooms.length > 0) {
       const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
       if (roomValues.length > 0) {
-        districtFilter.rooms = { in: roomValues };
-        conditionFilter.rooms = { in: roomValues };
-        priceFilter.rooms = { in: roomValues };
+        fullFilter.rooms = { in: roomValues };
       }
     }
 
     // Run all queries in parallel
-    const [allListings, districtOptions, conditionOptions, roomOptions, priceRange] = await Promise.all([
-      // Get all listings that match the base filter for counting
-      prisma.listing.findMany({
-        where: baseFilter,
-        select: { id: true }
-      }),
-      
-      // Get available districts based on current filters
+    const [
+      // Get all districts with counts using base filter
+      allDistricts,
+      // Get all conditions with counts using base filter
+      allConditions,
+      // Get all rooms with counts using base filter
+      allRooms,
+      // Get price range using base filter
+      priceRange,
+      // Get total matches for full filter
+      filteredTotal,
+      // Get available districts with the full filter
+      availableDistricts,
+      // Get available conditions with the full filter
+      availableConditions,
+      // Get available rooms with the full filter
+      availableRooms
+    ] = await Promise.all([
       prisma.listing.groupBy({
       by: ['district'],
-      where: { ...districtFilter, district: { not: null } },
+        where: { ...baseFilter, district: { not: null } },
       _count: { district: true },
       orderBy: { district: 'asc' },
       }),
-
-      // Get available conditions based on current filters
       prisma.listing.groupBy({
       by: ['condition'],
-      where: { ...conditionFilter, condition: { not: null } },
+        where: { ...baseFilter, condition: { not: null } },
       _count: { condition: true },
       orderBy: { condition: 'asc' },
       }),
-
-      // Get available room counts based on current filters
       prisma.listing.groupBy({
       by: ['rooms'],
-        where: { ...roomFilter, rooms: { not: null } },
+        where: { ...baseFilter, rooms: { not: null } },
       _count: { rooms: true },
       orderBy: { rooms: 'asc' },
       }),
-
-      // Get price range based on current filters
       prisma.listing.aggregate({
-        where: priceFilter,
+        where: baseFilter,
       _min: { price: true },
       _max: { price: true },
+      }),
+      prisma.listing.count({
+        where: fullFilter
+      }),
+      prisma.listing.groupBy({
+        by: ['district'],
+        where: { ...fullFilter, district: { not: null } },
+      }),
+      prisma.listing.groupBy({
+        by: ['condition'],
+        where: { ...fullFilter, condition: { not: null } },
+      }),
+      prisma.listing.groupBy({
+        by: ['rooms'],
+        where: { ...fullFilter, rooms: { not: null } },
       })
     ]);
+
+    // Create sets of available values for fast lookups
+    const availableDistrictSet = new Set(availableDistricts.map(d => d.district));
+    const availableConditionSet = new Set(availableConditions.map(c => c.condition));
+    const availableRoomSet = new Set(availableRooms.map(r => r.rooms?.toString()));
+
+    // Process all options and mark availability
+    const processedDistricts = allDistricts.map(d => ({
+      value: d.district,
+      count: d._count.district,
+      available: availableDistrictSet.has(d.district)
+    }));
+
+    const processedConditions = allConditions.map(c => ({
+      value: c.condition,
+      count: c._count.condition,
+      available: availableConditionSet.has(c.condition)
+    }));
+
+    const processedRooms = allRooms.map(r => ({
+      value: r.rooms?.toString(),
+      count: r._count.rooms,
+      available: availableRoomSet.has(r.rooms?.toString())
+    }));
 
     // Set default values if no results
     const minPriceValue = priceRange._min.price !== null ? priceRange._min.price : 0;
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
 
+    // Calculate if any filters are applied beyond category/search
+    const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
+                              rooms.length > 0 || minPrice !== null || maxPrice !== null;
+
     // Return the filter options
     return NextResponse.json({
-      totalCount: allListings.length,
-      districts: districtOptions.map(d => d.district).filter(Boolean),
-      conditions: conditionOptions.map(c => c.condition).filter(Boolean),
-      rooms: roomOptions.map(r => r.rooms?.toString()).filter(Boolean),
+      districts: processedDistricts,
+      conditions: processedConditions,
+      rooms: processedRooms,
       priceRange: {
         min: minPriceValue,
         max: maxPriceValue
-      }
+      },
+      totalCount: filteredTotal,
+      hasFiltersApplied
     });
   } catch (err) {
     console.error('[api/filter-options] error', err);
@@ -145,6 +184,8 @@ export async function GET(req: NextRequest) {
       conditions: [],
       rooms: [],
       priceRange: { min: 0, max: 30000000 },
+      totalCount: 0,
+      hasFiltersApplied: false,
       error: 'Internal server error'
     }, { status: 500 });
   }

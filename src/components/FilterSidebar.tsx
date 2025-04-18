@@ -9,14 +9,22 @@ interface Category {
   slug: string;
 }
 
+interface FilterOption {
+  value: string;
+  count: number;
+  available: boolean;
+}
+
 interface FilterOptions {
-  districts: string[];
-  conditions: string[];
-  rooms: string[];
+  districts: FilterOption[];
+  conditions: FilterOption[];
+  rooms: FilterOption[];
   priceRange: {
     min: number;
     max: number;
   };
+  totalCount: number;
+  hasFiltersApplied: boolean;
 }
 
 interface FilterSidebarProps {
@@ -54,35 +62,20 @@ export default function FilterSidebar({
     max: false
   });
   
-  // Reference to initial filter options - always preserve these even if API returns empty
-  const initialOptionsRef = useRef<FilterOptions>({
-    districts: [],
-    conditions: [],
-    rooms: [],
-    priceRange: { min: 0, max: 30000000 }
-  });
-  
-  // Reference to all available options before filtering
-  const allOptionsRef = useRef<FilterOptions>({
-    districts: [],
-    conditions: [],
-    rooms: [],
-    priceRange: { min: 0, max: 30000000 }
-  });
-  
   // State for current filter options
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     districts: [],
     conditions: [],
     rooms: [],
-    priceRange: { min: 0, max: 30000000 }
+    priceRange: { min: 0, max: 30000000 },
+    totalCount: 0,
+    hasFiltersApplied: false
   });
 
   // Flags to control behavior
   const isApplyingRef = useRef(false);
-  const optionsInitializedRef = useRef(false);
   const filterChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isFirstLoadRef = useRef(true);
+  const isInitialLoadRef = useRef(true);
   
   // Sync with URL parameters
   useEffect(() => {
@@ -113,74 +106,36 @@ export default function FilterSidebar({
     
   }, [searchParams]);
   
-  // Fetch ALL available filter options on initial load
-  useEffect(() => {
-    const fetchAllOptions = async () => {
-      try {
-        // Only fetch category-specific options
-        const params = new URLSearchParams();
-        if (categorySlug) {
-          params.append('category', categorySlug);
-        }
-        params.append('all', 'true');
-        
-        const res = await fetch(`/api/filter-options?${params.toString()}`);
-        
-        if (res.ok) {
-          const data = await res.json();
-          // Save all available options
-          allOptionsRef.current = data;
-          
-          // Also use as initial options if not set yet
-          if (!optionsInitializedRef.current) {
-            initialOptionsRef.current = data;
-            optionsInitializedRef.current = true;
-            setFilterOptions(data);
-            
-            // Initialize price if not set
-            if (!minPrice) {
-              setMinPrice(data.priceRange.min.toString());
-            }
-            if (!maxPrice) {
-              setMaxPrice(data.priceRange.max.toString());
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching all filter options:", error);
-      }
-    };
-    
-    fetchAllOptions();
-  }, [categorySlug]);
-  
-  // Fetch filtered options whenever filters change
-  useEffect(() => {
-    // Don't run on first render
-    if (isFirstLoadRef.current) {
-      isFirstLoadRef.current = false;
-      return;
-    }
-    
+  // Fetch filter options on initial load and when filters change
+   useEffect(() => {
     // Clear any existing timeout
     if (filterChangeTimeoutRef.current) {
       clearTimeout(filterChangeTimeoutRef.current);
     }
     
-    // Debounce filter changes to reduce API calls
+    // Use a larger timeout for debouncing
       filterChangeTimeoutRef.current = setTimeout(() => {
-      fetchFilteredOptions();
-    }, 50);
+      fetchFilterOptions();
+    }, 300); // Increased from 50ms to 300ms
     
     return () => {
       if (filterChangeTimeoutRef.current) {
         clearTimeout(filterChangeTimeoutRef.current);
       }
     };
-  }, [selectedCategories, selectedDistricts, selectedConditions, selectedRooms]);
+  }, [
+    categorySlug,
+    searchInputValue,
+    selectedCategories,
+    selectedDistricts,
+    selectedConditions,
+    selectedRooms,
+    minPrice,
+    maxPrice
+  ]);
   
   // Fetch filtered options based on current selections
-  const fetchFilteredOptions = async () => {
+  const fetchFilterOptions = async () => {
       setIsLoading(true);
       
       // Build query params with all current active filters
@@ -215,32 +170,21 @@ export default function FilterSidebar({
         
         if (res.ok) {
           const data = await res.json();
+        setFilterOptions(data);
         
-        // Never show empty filter options - fall back to all available options
-        const mergedOptions = {
-          districts: data.districts.length > 0 ? data.districts : allOptionsRef.current.districts,
-          conditions: data.conditions.length > 0 ? data.conditions : allOptionsRef.current.conditions,
-          rooms: data.rooms.length > 0 ? data.rooms : allOptionsRef.current.rooms,
-          priceRange: data.priceRange
-        };
-        
-        setFilterOptions(mergedOptions);
-        
-          // Only auto-update price ranges if they weren't edited manually
+        // Only auto-update price ranges on initial load
+        if (isInitialLoadRef.current) {
             if (!priceEdited.min) {
               setMinPrice(data.priceRange.min.toString());
             }
             if (!priceEdited.max) {
             setMaxPrice(data.priceRange.max.toString());
           }
-        
-        // Auto-apply filters
-        applyFilters();
+          isInitialLoadRef.current = false;
+        }
         }
       } catch (error) {
           console.error("Error fetching filter options:", error);
-      // Fall back to all options if API fails
-      setFilterOptions(allOptionsRef.current);
       } finally {
         setIsLoading(false);
       }
@@ -256,10 +200,10 @@ export default function FilterSidebar({
     
     // Custom price filters
     const hasCustomPrice = 
-    (minPrice !== '' && initialOptionsRef.current.priceRange.min !== undefined && 
-     minPrice !== initialOptionsRef.current.priceRange.min.toString()) || 
-    (maxPrice !== '' && initialOptionsRef.current.priceRange.max !== undefined && 
-     maxPrice !== initialOptionsRef.current.priceRange.max.toString());
+      (minPrice !== '' && filterOptions.priceRange.min !== undefined && 
+       parseInt(minPrice) !== filterOptions.priceRange.min) || 
+      (maxPrice !== '' && filterOptions.priceRange.max !== undefined && 
+       parseInt(maxPrice) !== filterOptions.priceRange.max);
     
     // Other filters
     const hasOtherFilters = 
@@ -271,7 +215,7 @@ export default function FilterSidebar({
     return hasSearchQuery || (!isGlobalSearch && (hasCustomPrice || hasOtherFilters));
   };
   
-  // Apply filters
+  // Apply filters when form is submitted
   const applyFilters = () => {
     if (isApplyingRef.current) return;
     isApplyingRef.current = true;
@@ -332,11 +276,11 @@ export default function FilterSidebar({
   // Reset all filters
   const resetFilters = () => {
     // Reset to initial values
-    if (initialOptionsRef.current.priceRange.min !== undefined) {
-    setMinPrice(initialOptionsRef.current.priceRange.min.toString());
+    if (filterOptions.priceRange.min !== undefined) {
+      setMinPrice(filterOptions.priceRange.min.toString());
     }
-    if (initialOptionsRef.current.priceRange.max !== undefined) {
-    setMaxPrice(initialOptionsRef.current.priceRange.max.toString());
+    if (filterOptions.priceRange.max !== undefined) {
+      setMaxPrice(filterOptions.priceRange.max.toString());
     }
     
     setSelectedCategories([]);
@@ -379,7 +323,7 @@ export default function FilterSidebar({
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
   
-  // Handler functions for filter changes - with auto-apply
+  // Handler functions for filter changes - without auto-apply
   const handleCategoryToggle = (slug: string) => {
     setSelectedCategories(prev => {
       return prev.includes(slug) 
@@ -459,7 +403,7 @@ export default function FilterSidebar({
     
     <form onSubmit={handleSubmit} className="space-y-4">
         {/* Loading state */}
-        {isLoading && !optionsInitializedRef.current && (
+        {isLoading && filterOptions.districts.length === 0 && (
           <div className="text-center py-4">
             <div className="animate-pulse">Загрузка фильтров...</div>
           </div>
@@ -496,7 +440,6 @@ export default function FilterSidebar({
     type="number"
     value={minPrice}
     onChange={(e) => handlePriceChange('min', e.target.value)}
-              onBlur={() => applyFilters()}
               min={0}
     className="w-full p-2 border rounded"
     />
@@ -507,76 +450,84 @@ export default function FilterSidebar({
     type="number"
     value={maxPrice}
     onChange={(e) => handlePriceChange('max', e.target.value)}
-              onBlur={() => applyFilters()}
               min={0}
     className="w-full p-2 border rounded"
     />
     </div>
     </div>
     
-    {/* Available Districts - dynamically fetched */}
+        {/* Available Districts */}
     {filterOptions.districts.length > 0 && (
       <div>
       <label className="block text-sm font-medium mb-1">Районы</label>
       <div className="flex flex-wrap gap-2 max-h-40 overflow-auto">
       {filterOptions.districts.map((dist) => (
         <button
-        key={dist}
+                  key={dist.value}
         type="button"
-        onClick={() => handleDistrictToggle(dist)}
+                  onClick={() => handleDistrictToggle(dist.value)}
         className={`px-3 py-1 rounded-full text-sm border ${
-          selectedDistricts.includes(dist)
+                    selectedDistricts.includes(dist.value)
           ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'
+                    : dist.available 
+                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
         }`}
+                  disabled={!dist.available && !selectedDistricts.includes(dist.value)}
         >
-        {dist}
+                  {dist.value}
         </button>
       ))}
       </div>
       </div>
     )}
     
-    {/* Available Conditions - dynamically fetched */}
+        {/* Available Conditions */}
     {filterOptions.conditions.length > 0 && (
       <div>
       <label className="block text-sm font-medium mb-1">Состояние</label>
       <div className="flex flex-wrap gap-2">
       {filterOptions.conditions.map((cond) => (
         <button
-        key={cond}
+                  key={cond.value}
         type="button"
-        onClick={() => handleConditionToggle(cond)}
+                  onClick={() => handleConditionToggle(cond.value)}
         className={`px-3 py-1 rounded-full text-sm border ${
-          selectedConditions.includes(cond)
+                    selectedConditions.includes(cond.value)
           ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'
+                    : cond.available 
+                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
         }`}
+                  disabled={!cond.available && !selectedConditions.includes(cond.value)}
         >
-        {cond}
+                  {cond.value}
         </button>
       ))}
       </div>
       </div>
     )}
     
-    {/* Available Room Options - dynamically fetched */}
+        {/* Available Room Options */}
     {filterOptions.rooms.length > 0 && (
       <div>
       <label className="block text-sm font-medium mb-1">Комнаты</label>
       <div className="flex flex-wrap gap-2">
       {filterOptions.rooms.map((room) => (
         <button
-        key={room}
+                  key={room.value}
         type="button"
-        onClick={() => handleRoomToggle(room)}
+                  onClick={() => handleRoomToggle(room.value)}
         className={`px-3 py-1 rounded-full text-sm border ${
-          selectedRooms.includes(room)
+                    selectedRooms.includes(room.value)
           ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'
+                    : room.available 
+                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
         }`}
+                  disabled={!room.available && !selectedRooms.includes(room.value)}
         >
-        {room}
+                  {room.value}
         </button>
       ))}
       </div>
