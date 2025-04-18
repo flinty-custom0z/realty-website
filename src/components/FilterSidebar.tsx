@@ -38,8 +38,8 @@ export default function FilterSidebar({
   const [searchInputValue, setSearchInputValue] = useState(searchQuery || '');
   
   // States for filter values
-  const [minPrice, setMinPrice] = useState(searchParams?.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState(searchParams?.get('maxPrice') || '');
+  const [minPrice, setMinPrice] = useState<string>(searchParams?.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState<string>(searchParams?.get('maxPrice') || '');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams?.getAll('category') || []);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams?.getAll('district') || []);
   const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams?.getAll('condition') || []);
@@ -47,6 +47,12 @@ export default function FilterSidebar({
   
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State to track if price was manually edited
+  const [priceEdited, setPriceEdited] = useState({
+    min: false,
+    max: false
+  });
   
   // Reference to initial filter options
   const initialOptionsRef = useRef<FilterOptions>({
@@ -65,16 +71,14 @@ export default function FilterSidebar({
   });
 
   // Flags to control behavior
-  const isFirstRenderRef = useRef(true);
   const isApplyingRef = useRef(false);
-  const shouldAutoApplyRef = useRef(false);
   const hasFilterChangedRef = useRef(false);
   const optionsInitializedRef = useRef(false);
+  const isFirstFetch = useRef(true);
   
   // Track which filters have been modified
   const [activeFilters, setActiveFilters] = useState({
     search: !!searchQuery,
-    price: false,
     districts: false,
     conditions: false,
     rooms: false,
@@ -100,15 +104,14 @@ export default function FilterSidebar({
       setSearchInputValue(paramQuery);
     }
     
-    // Only update price if not actively editing
-    if (!activeFilters.price) {
-      if (minPriceParam) {
+    // Only update price from URL if not manually edited
+    if (minPriceParam && !priceEdited.min) {
         setMinPrice(minPriceParam);
       }
-      if (maxPriceParam) {
+    
+    if (maxPriceParam && !priceEdited.max) {
         setMaxPrice(maxPriceParam);
       }
-    }
     
     // Update selected filters from URL
     setSelectedCategories(searchParams.getAll('category'));
@@ -119,7 +122,6 @@ export default function FilterSidebar({
     // Reset active filters when URL parameters are applied
     setActiveFilters({
       search: !!paramQuery,
-      price: false,
       districts: false,
       conditions: false,
       rooms: false,
@@ -147,16 +149,7 @@ export default function FilterSidebar({
         params.append('q', searchInputValue);
       }
       
-      // Add current filter selections
-      if (minPrice) {
-          params.append('minPrice', minPrice);
-        }
-        
-      if (maxPrice) {
-          params.append('maxPrice', maxPrice);
-        }
-        
-      // Only add the filters that aren't being actively modified
+      // Add all current filter selections except active ones
       if (!activeFilters.categories) {
         selectedCategories.forEach(c => params.append('category', c));
       }
@@ -171,6 +164,15 @@ export default function FilterSidebar({
       
       if (!activeFilters.rooms) {
         selectedRooms.forEach(r => params.append('rooms', r));
+      }
+      
+      // Add current price if provided
+      if (minPrice) {
+        params.append('minPrice', minPrice);
+      }
+      
+      if (maxPrice) {
+        params.append('maxPrice', maxPrice);
       }
       
       try {
@@ -188,13 +190,23 @@ export default function FilterSidebar({
             optionsInitializedRef.current = true;
           
             // Initialize price if not set
-            if (!minPrice) {
+            if (!minPrice && !priceEdited.min) {
             setMinPrice(data.priceRange.min.toString());
           }
-            if (!maxPrice) {
+            if (!maxPrice && !priceEdited.max) {
+              setMaxPrice(data.priceRange.max.toString());
+            }
+          } else if (!isFirstFetch.current) {
+            // Only auto-update price ranges on subsequent fetches if they weren't edited manually
+            if (!priceEdited.min) {
+              setMinPrice(data.priceRange.min.toString());
+            }
+            if (!priceEdited.max) {
             setMaxPrice(data.priceRange.max.toString());
           }
           }
+          
+          isFirstFetch.current = false;
           
           // If there was a filter change, apply it automatically
           if (hasFilterChangedRef.current) {
@@ -220,7 +232,11 @@ export default function FilterSidebar({
   }, [
     categorySlug, 
     // Only refetch when activeFilters change to ensure dynamic updates
-    activeFilters
+    activeFilters,
+    selectedCategories,
+    selectedDistricts, 
+    selectedConditions,
+    selectedRooms
   ]);
   
   // Determine if custom filters are applied
@@ -256,8 +272,7 @@ export default function FilterSidebar({
     try {
       const params = new URLSearchParams();
       
-      // Add search query, preserving global search query unless we're
-      // filtering within a category
+      // Add search query
       if (categorySlug) {
         // In category, use local search input
         if (searchInputValue.trim()) {
@@ -271,14 +286,12 @@ export default function FilterSidebar({
         }
       }
       
-      // Add price filters - only if they differ from initial values
-      if (minPrice && initialOptionsRef.current.priceRange.min !== undefined && 
-          minPrice !== initialOptionsRef.current.priceRange.min.toString()) {
+      // Add price filters - only if they have values
+      if (minPrice) {
         params.append('minPrice', minPrice);
       }
       
-      if (maxPrice && initialOptionsRef.current.priceRange.max !== undefined && 
-          maxPrice !== initialOptionsRef.current.priceRange.max.toString()) {
+      if (maxPrice) {
         params.append('maxPrice', maxPrice);
       }
       
@@ -299,10 +312,12 @@ export default function FilterSidebar({
         params.append('from', fromParam);
       }
       
+      // Reset price edited flags
+      setPriceEdited({ min: false, max: false });
+      
       // Reset active filters
       setActiveFilters({
         search: !!searchInputValue.trim(),
-        price: false,
         districts: false,
         conditions: false,
         rooms: false,
@@ -313,7 +328,6 @@ export default function FilterSidebar({
       const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
       router.push(`${base}?${params.toString()}`);
     } finally {
-      // Reset flag after a delay to prevent multiple rapid calls
       setTimeout(() => {
         isApplyingRef.current = false;
       }, 200);
@@ -340,6 +354,9 @@ export default function FilterSidebar({
       setSearchInputValue('');
     }
     
+    // Reset price edited flags
+    setPriceEdited({ min: false, max: false });
+    
     // Create params preserving only global search if appropriate
     const params = new URLSearchParams();
     
@@ -365,7 +382,6 @@ export default function FilterSidebar({
     // Reset all active filters
     setActiveFilters({
       search: !categorySlug && !!searchParams?.get('q'),
-      price: false,
       districts: false,
       conditions: false,
       rooms: false,
@@ -433,11 +449,12 @@ export default function FilterSidebar({
   const handlePriceChange = (type: 'min' | 'max', value: string) => {
     if (type === 'min') {
       setMinPrice(value);
+      setPriceEdited(prev => ({ ...prev, min: true }));
     } else {
       setMaxPrice(value);
+      setPriceEdited(prev => ({ ...prev, max: true }));
     }
     
-    setActiveFilters(prev => ({...prev, price: true}));
     hasFilterChangedRef.current = true;
   };
   
@@ -516,8 +533,8 @@ export default function FilterSidebar({
     type="number"
     value={minPrice}
     onChange={(e) => handlePriceChange('min', e.target.value)}
-    min={filterOptions.priceRange.min}
-    max={filterOptions.priceRange.max}
+              onBlur={() => applyFilters()}
+              min={0}
     className="w-full p-2 border rounded"
     />
     </div>
@@ -527,8 +544,8 @@ export default function FilterSidebar({
     type="number"
     value={maxPrice}
     onChange={(e) => handlePriceChange('max', e.target.value)}
-    min={filterOptions.priceRange.min}
-    max={filterOptions.priceRange.max}
+              onBlur={() => applyFilters()}
+              min={0}
     className="w-full p-2 border rounded"
     />
     </div>

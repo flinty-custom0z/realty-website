@@ -13,53 +13,45 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState(initialQuery);
-  const previousPathRef = useRef(pathname);
+  const previousPathRef = useRef<string | null>(null);
   const [isSearchActive, setIsSearchActive] = useState(false);
   
   return (
     <SearchParamsProvider>
       {(searchParams) => {
-  // Sync with URL and clear when appropriate
+        // Sync with URL and track previous path
   useEffect(() => {
           if (!searchParams) return;
           
       const paramQuery = searchParams.get('q');
-      
-          // Detect navigation between pages
-          if (previousPathRef.current !== pathname) {
-            const prevPath = previousPathRef.current;
-            previousPathRef.current = pathname;
-            
-            // Clear search when moving to home page
-            if (pathname === '/') {
-              setQuery('');
-              setIsSearchActive(false);
-              return;
+          const fromParam = searchParams.get('from');
+          const returnUrlParam = searchParams.get('returnUrl');
+          
+          // Store return destination
+          if ((fromParam || returnUrlParam) && !previousPathRef.current) {
+            if (returnUrlParam) {
+              try {
+                previousPathRef.current = decodeURIComponent(returnUrlParam);
+              } catch (e) {
+                console.error("Failed to decode returnUrl", e);
             }
-            
-            // Clear search when navigating between categories
-            if (pathname.startsWith('/listing-category/')) {
-              const prevWasCategory = prevPath.startsWith('/listing-category/');
-              
-              if (prevWasCategory) {
-                // Get category slugs
-                const prevCategory = prevPath.split('/')[2]?.split('?')[0];
-                const currentCategory = pathname.split('/')[2]?.split('?')[0];
-                
-                // If changing categories, clear search
-                if (prevCategory !== currentCategory) {
-                  setQuery('');
-                  setIsSearchActive(false);
-                  return;
-                }
-              } else {
-                // Coming from a non-category page, clear search unless there's a query param
-                if (!paramQuery) {
-                setQuery('');
-                  setIsSearchActive(false);
-                return;
+            } else if (fromParam?.startsWith('category:')) {
+              const categorySlug = fromParam.split(':')[1];
+              if (categorySlug) {
+                previousPathRef.current = `/listing-category/${categorySlug}`;
               }
             }
+          }
+          
+          // If we're on search results page and no return path is set, 
+          // set it to home or appropriate category
+          if (pathname === '/search' && !previousPathRef.current) {
+            // Check if a category is selected
+            const categoryParam = searchParams.get('category');
+            if (categoryParam) {
+              previousPathRef.current = `/listing-category/${categoryParam}`;
+            } else {
+              previousPathRef.current = '/';
           }
           }
           
@@ -72,11 +64,16 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     setQuery('');
             setIsSearchActive(false);
     }
-  }, [searchParams, pathname, categorySlug]);
+        }, [searchParams, pathname]);
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+          
+          // Store current path before navigating to search results
+          if (!previousPathRef.current && !pathname.startsWith('/search')) {
+            previousPathRef.current = pathname;
+          }
           
           setIsSearchActive(true);
     
@@ -89,8 +86,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
             // If coming from a category page, mark this search with the from param
             params.append('from', 'global-search');
     } else if (!pathname.startsWith('/search')) {
-            const currentFullUrl = `${pathname}${searchParams ? `?${searchParams.toString()}` : ''}`;
-      params.append('returnUrl', encodeURIComponent(currentFullUrl));
+            params.append('returnUrl', encodeURIComponent(pathname));
     }
     
     // Determine where to search
@@ -107,23 +103,29 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           setQuery('');
           setIsSearchActive(false);
           
-          // If there's an active search, clear it by navigating
-          if (searchParams?.has('q')) {
-            // Remove query parameter but keep other parameters
+          // Navigate back to previous page if we're on search results
+          if (pathname === '/search' && previousPathRef.current) {
+            router.push(previousPathRef.current);
+            return;
+          }
+          
+          // If in a category, just clear the search parameter
+          if (pathname.startsWith('/listing-category/')) {
+            router.push(pathname);
+            return;
+          }
+          
+          // Default: stay on current page but remove search parameter
             const newParams = new URLSearchParams();
             
-            searchParams.forEach((value, key) => {
+          searchParams?.forEach((value, key) => {
               if (key !== 'q') {
                 newParams.append(key, value);
               }
             });
             
-            // Determine base URL
-            const base = categorySlug ? `/listing-category/${categorySlug}` : pathname;
-            
             // Navigate with updated parameters
-            router.push(`${base}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
-          }
+          router.push(`${pathname}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
         };
   
   return (
