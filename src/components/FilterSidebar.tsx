@@ -59,25 +59,14 @@ export default function FilterSidebar({
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
   
-  // State to track if price was manually edited - improved to track specific types of edits
-  const [priceEdited, setPriceEdited] = useState({
+  // Simplified tracking of user edit intentions
+  const [userEditedPrice, setUserEditedPrice] = useState({
     min: false,
-    max: false,
-    // New tracking states to better manage price edit history
-    minManuallySet: false,
-    maxManuallySet: false,
-    minValue: '',
-    maxValue: ''
+    max: false
   });
   
-  // Track previous filter values to detect changes
-  const prevFiltersRef = useRef({
-    districts: [] as string[],
-    conditions: [] as string[],
-    rooms: [] as string[],
-    categories: [] as string[],
-    search: ''
-  });
+  // Flag to immediately force price update when filters change
+  const shouldUpdatePrices = useRef(false);
   
   // State for current filter options
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -107,54 +96,14 @@ export default function FilterSidebar({
       setSearchInputValue(paramQuery);
     }
     
-    // Only update price from URL if not manually edited or if it's initial load
-    if (minPriceParam !== null) {
+    // Update prices from URL if they exist and we're loading for the first time
+    if (minPriceParam !== null && isInitialLoadRef.current) {
         setMinPrice(minPriceParam);
-      
-      // On initial load, don't consider URL parameters as manual edits
-      if (isInitialLoadRef.current) {
-        setPriceEdited(prev => ({
-          ...prev,
-          min: false,
-          minManuallySet: false,
-          minValue: minPriceParam
-        }));
-      } else if (minPriceParam !== priceEdited.minValue) {
-        // If the URL parameter changes and it wasn't due to manual edit,
-        // update our tracking state
-        if (!priceEdited.minManuallySet) {
-          setPriceEdited(prev => ({
-            ...prev,
-            min: false,
-            minValue: minPriceParam
-          }));
-        }
       }
-    }
     
-    if (maxPriceParam !== null) {
+    if (maxPriceParam !== null && isInitialLoadRef.current) {
         setMaxPrice(maxPriceParam);
-      
-      // On initial load, don't consider URL parameters as manual edits
-      if (isInitialLoadRef.current) {
-        setPriceEdited(prev => ({
-          ...prev,
-          max: false,
-          maxManuallySet: false,
-          maxValue: maxPriceParam
-        }));
-      } else if (maxPriceParam !== priceEdited.maxValue) {
-        // If the URL parameter changes and it wasn't due to manual edit,
-        // update our tracking state
-        if (!priceEdited.maxManuallySet) {
-          setPriceEdited(prev => ({
-            ...prev,
-            max: false,
-            maxValue: maxPriceParam
-          }));
-        }
       }
-    }
     
     // Update selected filters from URL
     setSelectedCategories(searchParams.getAll('category'));
@@ -163,57 +112,43 @@ export default function FilterSidebar({
     setSelectedRooms(searchParams.getAll('rooms'));
     
     // After first load, mark as no longer initial
+    if (isInitialLoadRef.current) {
     isInitialLoadRef.current = false;
+    }
   }, [searchParams]);
   
-  // Check if non-price filters changed to manage price edit flags
+  // Fetch filter options immediately when any filter selection changes
   useEffect(() => {
-    const currentFilters = {
-      districts: selectedDistricts,
-      conditions: selectedConditions,
-      rooms: selectedRooms,
-      categories: selectedCategories,
-      search: searchInputValue
-    };
+    // This runs for every filter change
+    if (!isInitialLoadRef.current) {
+      shouldUpdatePrices.current = true;
     
-    // Check if non-price filters changed
-    const filtersChanged = 
-      prevFiltersRef.current.districts.join(',') !== currentFilters.districts.join(',') ||
-      prevFiltersRef.current.conditions.join(',') !== currentFilters.conditions.join(',') ||
-      prevFiltersRef.current.rooms.join(',') !== currentFilters.rooms.join(',') ||
-      prevFiltersRef.current.categories.join(',') !== currentFilters.categories.join(',') ||
-      prevFiltersRef.current.search !== currentFilters.search;
-    
-    // If non-price filters changed, we need to potentially update price ranges
-    // BUT we no longer reset the priceEdited flags entirely - this was causing manual price inputs to be lost
-    if (filtersChanged) {
-      // Instead of resetting the flags completely, we'll just indicate that 
-      // automatic updates from the API are allowed again, but we'll still 
-      // respect manually set values
-      setPriceEdited(prev => ({
-        ...prev,
-        // Reset these temporary flags that prevent API updates
-        min: false,
-        max: false
-        // We keep the "ManuallySet" flags to remember user's intent
-      }));
+      // Clear any existing timeout
+      if (filterChangeTimeoutRef.current) {
+        clearTimeout(filterChangeTimeoutRef.current);
+      }
+      
+      // Use a smaller timeout for filter changes to make it feel more responsive
+      filterChangeTimeoutRef.current = setTimeout(() => {
+        fetchFilterOptions();
+      }, 100);
     }
-    
-    // Update prev filters ref
-    prevFiltersRef.current = currentFilters;
-  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, searchInputValue]);
+  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories]);
   
-  // Fetch filter options on initial load and when filters change
+  // Fetch filter options for other changes (search, price, initial load)
    useEffect(() => {
+    // Skip if this is just a filter selection (handled by the other effect)
+    if (shouldUpdatePrices.current) return;
+    
     // Clear any existing timeout
     if (filterChangeTimeoutRef.current) {
       clearTimeout(filterChangeTimeoutRef.current);
     }
     
-    // Use a larger timeout for debouncing
+    // Standard debounce timeout
       filterChangeTimeoutRef.current = setTimeout(() => {
       fetchFilterOptions();
-    }, 300); // 300ms debounce
+    }, 300);
     
     return () => {
       if (filterChangeTimeoutRef.current) {
@@ -223,10 +158,6 @@ export default function FilterSidebar({
   }, [
     categorySlug,
     searchInputValue,
-    selectedCategories,
-    selectedDistricts,
-    selectedConditions,
-    selectedRooms,
     minPrice,
     maxPrice
   ]);
@@ -269,37 +200,23 @@ export default function FilterSidebar({
           const data = await res.json();
         setFilterOptions(data);
         
-        // Only update price ranges in the following cases:
-        // 1. When filter options first load (default min/max)
-        // 2. When a user hasn't manually set a price OR
-        // 3. When a user has cleared a price input (empty string)
-        
+        // Update price ranges based on available data
         const newMinPrice = data.priceRange.min;
-        if (newMinPrice !== undefined) {
-          // Only update min price if it hasn't been manually set
-          // or if it's been reset (empty string)
-          if ((!priceEdited.min && !priceEdited.minManuallySet) || minPrice === '') {
-          setMinPrice(newMinPrice.toString());
-            // Also update our tracking state
-            setPriceEdited(prev => ({
-              ...prev,
-              minValue: newMinPrice.toString()
-            }));
-          }
-            }
-      
         const newMaxPrice = data.priceRange.max;
-        if (newMaxPrice !== undefined) {
-          // Only update max price if it hasn't been manually set
-          // or if it's been reset (empty string)
-          if ((!priceEdited.max && !priceEdited.maxManuallySet) || maxPrice === '') {
-          setMaxPrice(newMaxPrice.toString());
-            // Also update our tracking state
-            setPriceEdited(prev => ({
-              ...prev,
-              maxValue: newMaxPrice.toString()
-            }));
+        
+        // Update price when filters change (especially when other filters are toggled)
+        if (shouldUpdatePrices.current || isInitialLoadRef.current) {
+          // When filter toggling happened, update price ranges (unless user edited them)
+          if (newMinPrice !== undefined && !userEditedPrice.min) {
+            setMinPrice(newMinPrice.toString());
           }
+          
+          if (newMaxPrice !== undefined && !userEditedPrice.max) {
+          setMaxPrice(newMaxPrice.toString());
+          }
+          
+          // Reset the update flag after updating
+          shouldUpdatePrices.current = false;
         }
         }
       } catch (error) {
@@ -342,6 +259,10 @@ export default function FilterSidebar({
     isApplyingRef.current = true;
     
     try {
+      // When user explicitly clicks Apply, respect their price entries
+      if (minPrice) setUserEditedPrice(prev => ({ ...prev, min: true }));
+      if (maxPrice) setUserEditedPrice(prev => ({ ...prev, max: true }));
+      
       const params = new URLSearchParams();
       
       // Add search query
@@ -361,29 +282,14 @@ export default function FilterSidebar({
       // Add price filters - only if they have values
       if (minPrice) {
         params.append('minPrice', minPrice);
-        
-        // When explicitly applying filters, consider any price values as "manually set"
-        setPriceEdited(prev => ({
-          ...prev,
-          minManuallySet: true,
-          minValue: minPrice
-        }));
       }
       
       if (maxPrice) {
         params.append('maxPrice', maxPrice);
-        
-        // When explicitly applying filters, consider any price values as "manually set"
-        setPriceEdited(prev => ({
-          ...prev,
-          maxManuallySet: true,
-          maxValue: maxPrice
-        }));
       }
       
-    // Add multi-select filters - ensure we're adding all categories
+      // Add multi-select filters
     if (selectedCategories.length > 0) {
-      // Add each category as a separate parameter
       selectedCategories.forEach((c) => params.append('category', c));
     }
     
@@ -432,15 +338,8 @@ export default function FilterSidebar({
       setSearchInputValue('');
     }
     
-    // Reset all price edited flags
-    setPriceEdited({
-      min: false,
-      max: false,
-      minManuallySet: false,
-      maxManuallySet: false,
-      minValue: filterOptions.priceRange.min?.toString() || '',
-      maxValue: filterOptions.priceRange.max?.toString() || ''
-    });
+    // Reset user edit flags
+    setUserEditedPrice({ min: false, max: false });
     
     // Create params preserving only global search if appropriate
     const params = new URLSearchParams();
@@ -467,8 +366,11 @@ export default function FilterSidebar({
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
   
-  // Handler functions for filter changes - without auto-apply
+  // Handler functions for filter changes
   const handleCategoryToggle = (slug: string) => {
+    // Flag to update prices when filter changes
+    shouldUpdatePrices.current = true;
+    
     setSelectedCategories(prev => {
       return prev.includes(slug) 
         ? prev.filter(s => s !== slug) 
@@ -477,6 +379,9 @@ export default function FilterSidebar({
   };
   
   const handleDistrictToggle = (district: string) => {
+    // Flag to update prices when filter changes
+    shouldUpdatePrices.current = true;
+    
     setSelectedDistricts(prev => {
       return prev.includes(district) 
         ? prev.filter(d => d !== district) 
@@ -485,6 +390,9 @@ export default function FilterSidebar({
   };
   
   const handleConditionToggle = (cond: string) => {
+    // Flag to update prices when filter changes
+    shouldUpdatePrices.current = true;
+    
     setSelectedConditions(prev => {
       return prev.includes(cond) 
         ? prev.filter(c => c !== cond) 
@@ -493,6 +401,9 @@ export default function FilterSidebar({
   };
   
   const handleRoomToggle = (room: string) => {
+    // Flag to update prices when filter changes
+    shouldUpdatePrices.current = true;
+    
     setSelectedRooms(prev => {
       return prev.includes(room)
         ? prev.filter(r => r !== room)
@@ -503,24 +414,12 @@ export default function FilterSidebar({
   const handlePriceChange = (type: 'min' | 'max', value: string) => {
     if (type === 'min') {
       setMinPrice(value);
-      // Mark as edited and manually set to prevent automatic updates
-      setPriceEdited(prev => ({ 
-        ...prev, 
-        min: true, 
-        minManuallySet: true,
-        // Store the value for comparison
-        minValue: value
-      }));
+      // Mark as user edited to prevent automatic updates
+      setUserEditedPrice(prev => ({ ...prev, min: true }));
     } else {
       setMaxPrice(value);
-      // Mark as edited and manually set to prevent automatic updates
-      setPriceEdited(prev => ({ 
-        ...prev, 
-        max: true, 
-        maxManuallySet: true,
-        // Store the value for comparison
-        maxValue: value 
-      }));
+      // Mark as user edited to prevent automatic updates
+      setUserEditedPrice(prev => ({ ...prev, max: true }));
     }
   };
   
