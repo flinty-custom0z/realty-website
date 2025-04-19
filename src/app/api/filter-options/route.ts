@@ -17,9 +17,18 @@ export async function GET(req: NextRequest) {
     const rooms = searchParams.getAll('rooms');
     const categories = searchParams.getAll('category');
 
-    // Build base filter for active listings only
-    // This includes category and search query but no other filters
-    const baseFilter: any = { status: 'active' };
+    // Build base filter for active listings plus search query
+    // For global search, the search query becomes part of the base filter
+    const baseFilterMinimal: any = { status: 'active' };
+    if (searchQuery && searchQuery.trim() !== '') {
+      baseFilterMinimal.OR = [
+        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
+      ];
+    }
+
+    // Build filter that includes category
+    const baseFilter = { ...baseFilterMinimal };
 
     // Add category filter if provided
     if (categorySlug) {
@@ -34,14 +43,6 @@ export async function GET(req: NextRequest) {
       if (cats.length > 0) {
         baseFilter.categoryId = { in: cats.map(c => c.id) };
       }
-    }
-
-    // Add search filter if provided
-    if (searchQuery && searchQuery.trim() !== '') {
-      baseFilter.OR = [
-        { title: { contains: searchQuery, mode: 'insensitive' } },
-        { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
-      ];
     }
 
     // Create the full filter with all current selections 
@@ -76,13 +77,13 @@ export async function GET(req: NextRequest) {
 
     // Run all queries in parallel
     const [
-      // Get all districts with counts using base filter
+      // Get ALL districts with counts using baseFilterMinimal (search is included)
       allDistricts,
-      // Get all conditions with counts using base filter
+      // Get ALL conditions with counts using baseFilterMinimal
       allConditions,
-      // Get all rooms with counts using base filter
+      // Get ALL rooms with counts using baseFilterMinimal
       allRooms,
-      // Get price range using base filter
+      // Get price range using base filter (category + search)
       priceRange,
       // Get total matches for full filter
       filteredTotal,
@@ -95,19 +96,19 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       prisma.listing.groupBy({
       by: ['district'],
-        where: { ...baseFilter, district: { not: null } },
+        where: { ...baseFilterMinimal, district: { not: null } },
       _count: { district: true },
       orderBy: { district: 'asc' },
       }),
       prisma.listing.groupBy({
       by: ['condition'],
-        where: { ...baseFilter, condition: { not: null } },
+        where: { ...baseFilterMinimal, condition: { not: null } },
       _count: { condition: true },
       orderBy: { condition: 'asc' },
       }),
       prisma.listing.groupBy({
       by: ['rooms'],
-        where: { ...baseFilter, rooms: { not: null } },
+        where: { ...baseFilterMinimal, rooms: { not: null } },
       _count: { rooms: true },
       orderBy: { rooms: 'asc' },
       }),

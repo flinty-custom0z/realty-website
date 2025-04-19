@@ -89,14 +89,19 @@ export default function FilterSidebar({
       setSearchInputValue(paramQuery);
     }
     
-    // Only update price from URL if not manually edited
-    if (minPriceParam && !priceEdited.min) {
+    // Only update price from URL if not manually edited or if it's initial load
+    // This prevents URL parameters from overriding user input during navigation
+    if (minPriceParam !== null) {
+      if (isInitialLoadRef.current || !priceEdited.min) {
         setMinPrice(minPriceParam);
       }
+    }
     
-    if (maxPriceParam && !priceEdited.max) {
+    if (maxPriceParam !== null) {
+      if (isInitialLoadRef.current || !priceEdited.max) {
         setMaxPrice(maxPriceParam);
       }
+    }
     
     // Update selected filters from URL
     setSelectedCategories(searchParams.getAll('category'));
@@ -104,6 +109,8 @@ export default function FilterSidebar({
     setSelectedConditions(searchParams.getAll('condition'));
     setSelectedRooms(searchParams.getAll('rooms'));
     
+    // After first load, mark as no longer initial
+    isInitialLoadRef.current = false;
   }, [searchParams]);
   
   // Fetch filter options on initial load and when filters change
@@ -116,7 +123,7 @@ export default function FilterSidebar({
     // Use a larger timeout for debouncing
       filterChangeTimeoutRef.current = setTimeout(() => {
       fetchFilterOptions();
-    }, 300); // Increased from 50ms to 300ms
+    }, 300); // 300ms debounce
     
     return () => {
       if (filterChangeTimeoutRef.current) {
@@ -172,13 +179,22 @@ export default function FilterSidebar({
           const data = await res.json();
         setFilterOptions(data);
         
-      // Always update price ranges unless they were manually edited
-            if (!priceEdited.min) {
-              setMinPrice(data.priceRange.min.toString());
+        // Intelligently update price ranges only when needed
+        // Only update min price if:
+        // 1. User hasn't edited it manually OR
+        // 2. Current min is empty OR
+        // 3. Current min is less than available min (to prevent impossible selections)
+        const newMinPrice = data.priceRange.min;
+        if (!priceEdited.min || minPrice === '' || 
+            (newMinPrice !== undefined && parseFloat(minPrice) < newMinPrice)) {
+          setMinPrice(newMinPrice.toString());
             }
       
-            if (!priceEdited.max) {
-            setMaxPrice(data.priceRange.max.toString());
+        // Same logic for max price
+        const newMaxPrice = data.priceRange.max;
+        if (!priceEdited.max || maxPrice === '' || 
+            (newMaxPrice !== undefined && parseFloat(maxPrice) > newMaxPrice)) {
+          setMaxPrice(newMaxPrice.toString());
         }
         }
       } catch (error) {
