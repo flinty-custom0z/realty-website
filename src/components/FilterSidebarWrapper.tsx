@@ -14,6 +14,8 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  count?: number;
+  available?: boolean;
 }
 
 interface FilterSidebarWrapperProps {

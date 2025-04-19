@@ -21,10 +21,11 @@
 
 ### NOW
 
-- Price and all the other filters are updated when doing global search but listings change only when press apply, but should do both
-- Also when selecting a category unavaliable filters disappear instead of graying out
-- Price still won't update in categories when applying filters
+- When I just open a category I don't need to see grayed out options, they only should be for when one or more filters are applied
 
+- Problem with prices is not fixed. They still won't update in categories when applying filters. They only update when I enter something in a local search field
+
+Everything works fine in global search tho, except when I select and apply then unselect one of the filters filter reset option disappears but results stay filtered
 
 ### Next
 

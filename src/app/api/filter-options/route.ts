@@ -92,7 +92,11 @@ export async function GET(req: NextRequest) {
       // Get available conditions with the full filter
       availableConditions,
       // Get available rooms with the full filter
-      availableRooms
+      availableRooms,
+      // NEW: Get all categories for filters
+      allCategories,
+      // NEW: Get available categories for graying out
+      availableCategories
     ] = await Promise.all([
       prisma.listing.groupBy({
       by: ['district'],
@@ -131,13 +135,42 @@ export async function GET(req: NextRequest) {
       prisma.listing.groupBy({
         by: ['rooms'],
         where: { ...fullFilter, rooms: { not: null } },
-      })
+      }),
+      // NEW: Get all categories with listing counts (for global search)
+      !categorySlug ? prisma.category.findMany({
+        where: {
+          listings: {
+            some: baseFilterMinimal
+          }
+        },
+        include: {
+          _count: {
+            select: { listings: { where: baseFilterMinimal } }
+          }
+        },
+        orderBy: { name: 'asc' }
+      }) : Promise.resolve([]),
+      // NEW: Get available categories with the filters applied
+      !categorySlug ? prisma.category.findMany({
+        where: {
+          listings: {
+            some: {
+              ...fullFilter,
+              // Remove category filter for availability check
+              categoryId: undefined
+            }
+          }
+        },
+        select: { slug: true }
+      }) : Promise.resolve([])
     ]);
 
     // Create sets of available values for fast lookups
     const availableDistrictSet = new Set(availableDistricts.map(d => d.district));
     const availableConditionSet = new Set(availableConditions.map(c => c.condition));
     const availableRoomSet = new Set(availableRooms.map(r => r.rooms?.toString()));
+    // NEW: Create set of available category slugs
+    const availableCategorySet = new Set(availableCategories.map(c => c.slug));
 
     // Process all options and mark availability
     const processedDistricts = allDistricts.map(d => ({
@@ -158,6 +191,15 @@ export async function GET(req: NextRequest) {
       available: availableRoomSet.has(r.rooms?.toString())
     }));
 
+    // NEW: Process categories with availability
+    const processedCategories = !categorySlug ? allCategories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: cat._count.listings,
+      available: availableCategorySet.has(cat.slug)
+    })) : [];
+
     // Set default values if no results
     const minPriceValue = priceRange._min.price !== null ? priceRange._min.price : 0;
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
@@ -171,6 +213,8 @@ export async function GET(req: NextRequest) {
       districts: processedDistricts,
       conditions: processedConditions,
       rooms: processedRooms,
+      // NEW: Add categories to response
+      categories: processedCategories,
       priceRange: {
         min: minPriceValue,
         max: maxPriceValue
@@ -184,6 +228,7 @@ export async function GET(req: NextRequest) {
       districts: [],
       conditions: [],
       rooms: [],
+      categories: [],
       priceRange: { min: 0, max: 30000000 },
       totalCount: 0,
       hasFiltersApplied: false,

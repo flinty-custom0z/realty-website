@@ -7,6 +7,8 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  count?: number;
+  available?: boolean;
 }
 
 interface FilterOption {
@@ -19,6 +21,7 @@ interface FilterOptions {
   districts: FilterOption[];
   conditions: FilterOption[];
   rooms: FilterOption[];
+  categories: Category[];
   priceRange: {
     min: number;
     max: number;
@@ -62,11 +65,21 @@ export default function FilterSidebar({
     max: false
   });
   
+  // Track previous filter values to detect changes
+  const prevFiltersRef = useRef({
+    districts: [] as string[],
+    conditions: [] as string[],
+    rooms: [] as string[],
+    categories: [] as string[],
+    search: ''
+  });
+  
   // State for current filter options
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     districts: [],
     conditions: [],
     rooms: [],
+    categories: [],
     priceRange: { min: 0, max: 30000000 },
     totalCount: 0,
     hasFiltersApplied: false
@@ -112,6 +125,33 @@ export default function FilterSidebar({
     // After first load, mark as no longer initial
     isInitialLoadRef.current = false;
   }, [searchParams]);
+  
+  // Check if non-price filters changed to reset price edit flags
+  useEffect(() => {
+    const currentFilters = {
+      districts: selectedDistricts,
+      conditions: selectedConditions,
+      rooms: selectedRooms,
+      categories: selectedCategories,
+      search: searchInputValue
+    };
+    
+    // Check if non-price filters changed
+    const filtersChanged = 
+      prevFiltersRef.current.districts.join(',') !== currentFilters.districts.join(',') ||
+      prevFiltersRef.current.conditions.join(',') !== currentFilters.conditions.join(',') ||
+      prevFiltersRef.current.rooms.join(',') !== currentFilters.rooms.join(',') ||
+      prevFiltersRef.current.categories.join(',') !== currentFilters.categories.join(',') ||
+      prevFiltersRef.current.search !== currentFilters.search;
+    
+    // If non-price filters changed, reset price edit flags
+    if (filtersChanged) {
+      setPriceEdited({ min: false, max: false });
+    }
+    
+    // Update prev filters ref
+    prevFiltersRef.current = currentFilters;
+  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, searchInputValue]);
   
   // Fetch filter options on initial load and when filters change
    useEffect(() => {
@@ -179,21 +219,15 @@ export default function FilterSidebar({
           const data = await res.json();
         setFilterOptions(data);
         
-        // Intelligently update price ranges only when needed
-        // Only update min price if:
-        // 1. User hasn't edited it manually OR
-        // 2. Current min is empty OR
-        // 3. Current min is less than available min (to prevent impossible selections)
+        // Always update price ranges when filters change
+        // This ensures prices reflect available inventory after filter changes
         const newMinPrice = data.priceRange.min;
-        if (!priceEdited.min || minPrice === '' || 
-            (newMinPrice !== undefined && parseFloat(minPrice) < newMinPrice)) {
+        if (newMinPrice !== undefined && (!priceEdited.min || minPrice === '')) {
           setMinPrice(newMinPrice.toString());
             }
       
-        // Same logic for max price
         const newMaxPrice = data.priceRange.max;
-        if (!priceEdited.max || maxPrice === '' || 
-            (newMaxPrice !== undefined && parseFloat(maxPrice) > newMaxPrice)) {
+        if (newMaxPrice !== undefined && (!priceEdited.max || maxPrice === '')) {
           setMaxPrice(newMaxPrice.toString());
         }
         }
@@ -391,6 +425,21 @@ export default function FilterSidebar({
     applyFilters();
   };
   
+  // Determine which categories are available
+  const getCategoryAvailability = (slug: string) => {
+    // In a category page, all categories are considered available
+    if (categorySlug) return true;
+    
+    // If we have availability data from the API, use it
+    if (filterOptions.categories && filterOptions.categories.length > 0) {
+      const category = filterOptions.categories.find(c => c.slug === slug);
+      return category ? category.available !== false : true;
+    }
+    
+    // Default to available if we don't have data
+    return true;
+  };
+  
   return (
     <div className="p-4 bg-white shadow rounded-md mb-6">
     {/* Category-specific search field - only show in category pages */}
@@ -428,7 +477,9 @@ export default function FilterSidebar({
       <div>
       <label className="block text-sm font-medium mb-1">Категории</label>
       <div className="flex flex-wrap gap-2">
-      {categories.map((cat) => (
+      {categories.map((cat) => {
+        const isAvailable = getCategoryAvailability(cat.slug);
+        return (
         <button
         key={cat.slug}
         type="button"
@@ -436,12 +487,16 @@ export default function FilterSidebar({
         className={`px-3 py-1 rounded-full border text-sm ${
           selectedCategories.includes(cat.slug)
           ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'
+            : isAvailable
+              ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
         }`}
+          disabled={!isAvailable && !selectedCategories.includes(cat.slug)}
         >
         {cat.name}
         </button>
-      ))}
+        );
+      })}
       </div>
       </div>
     )}
