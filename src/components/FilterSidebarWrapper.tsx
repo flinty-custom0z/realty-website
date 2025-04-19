@@ -32,29 +32,43 @@ export default function FilterSidebarWrapper({
   const [currentSearchQuery, setCurrentSearchQuery] = useState(searchQuery || '');
   const pathname = usePathname();
   
+  // Determine if we are on a category page
+  const isCategoryPage = pathname.startsWith('/listing-category/');
+
   return (
     <SearchParamsProvider>
       {(searchParams) => {
-  // Update search query when URL changes
-  useEffect(() => {
+        // Update search query when URL changes
+        useEffect(() => {
           if (!searchParams) return;
           
-    const urlQuery = searchParams.get('q');
-    if (urlQuery !== null) {
-      setCurrentSearchQuery(urlQuery);
-    } else if (currentSearchQuery && !urlQuery) {
-      setCurrentSearchQuery('');
-    }
-  }, [searchParams, currentSearchQuery]);
-  
-  return (
-    <Suspense fallback={<div className="w-full h-96 bg-gray-100 animate-pulse rounded"></div>}>
-      <FilterSidebar 
-        categorySlug={categorySlug}
-        searchQuery={currentSearchQuery}
-        categories={categories}
-      />
-    </Suspense>
+          if (isCategoryPage) {
+            // For category pages, use categoryQuery parameter
+            const categoryQueryParam = searchParams.get('categoryQuery');
+            if (categoryQueryParam !== null) {
+              setCurrentSearchQuery(categoryQueryParam);
+            } else if (currentSearchQuery && !categoryQueryParam) {
+              setCurrentSearchQuery('');
+            }
+          } else {
+            // For global search, use q parameter
+            const urlQuery = searchParams.get('q');
+            if (urlQuery !== null) {
+              setCurrentSearchQuery(urlQuery);
+            } else if (currentSearchQuery && !urlQuery) {
+              setCurrentSearchQuery('');
+            }
+          }
+        }, [searchParams, currentSearchQuery, isCategoryPage]);
+
+        return (
+          <Suspense fallback={<div className="w-full h-96 bg-gray-100 animate-pulse rounded"></div>}>
+            <FilterSidebar 
+              categorySlug={categorySlug}
+              searchQuery={currentSearchQuery}
+              categories={categories}
+            />
+          </Suspense>
         );
       }}
     </SearchParamsProvider>

@@ -43,11 +43,12 @@ async function getListings(
     status: 'active',
   };
   
-  // Apply search filters
-  if (searchParams.q) {
+  // Apply search filters - use categoryQuery, fallback to q for backward compatibility
+  const searchTerm = searchParams.categoryQuery || searchParams.q;
+  if (searchTerm) {
     filter.OR = [
-      { title: { contains: searchParams.q as string, mode: 'insensitive' } },
-      { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { title: { contains: searchTerm as string, mode: 'insensitive' } },
+      { publicDescription: { contains: searchTerm as string, mode: 'insensitive' } },
     ];
   }
   
@@ -159,8 +160,12 @@ export default async function CategoryPage({
   
   const { listings, pagination } = await getListings(category.id, resolvedSearchParams);
 
-  // Get search query if exists
-  const searchQuery = resolvedSearchParams.q as string || '';
+  // Get search query if exists (prioritize categoryQuery, fallback to q for backwards compatibility)
+  const categorySearchQuery = resolvedSearchParams.categoryQuery as string || '';
+  const globalSearchQuery = resolvedSearchParams.q as string || '';
+  
+  // Use the appropriate search query depending on context
+  const searchQuery = globalSearchQuery || '';
 
   // Determine if we should show back link
   const showBackLink = await shouldShowBackLink(resolvedSearchParams);
@@ -186,7 +191,7 @@ export default async function CategoryPage({
         <div className="w-full md:w-1/4">
           <FilterSidebarWrapper 
             categorySlug={slug}
-            searchQuery={searchQuery}
+            searchQuery={categorySearchQuery}
           />
         </div>
         

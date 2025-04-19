@@ -88,7 +88,7 @@ export default function FilterSidebar({
   useEffect(() => {
     if (!searchParams) return;
     
-    const paramQuery = searchParams.get('q');
+    const paramQuery = categorySlug ? searchParams.get('categoryQuery') : searchParams.get('q');
     const minPriceParam = searchParams.get('minPrice');
     const maxPriceParam = searchParams.get('maxPrice');
     
@@ -175,7 +175,12 @@ export default function FilterSidebar({
       }
       
       if (searchInputValue.trim()) {
-        params.append('q', searchInputValue);
+        // Use categoryQuery for category pages, q for global search
+        if (categorySlug) {
+          params.append('categoryQuery', searchInputValue);
+        } else {
+          params.append('q', searchInputValue);
+        }
       }
       
     // Add all selected filters
@@ -266,9 +271,9 @@ export default function FilterSidebar({
       
       // Add search query
       if (categorySlug) {
-        // In category, use local search input
+        // In category, use ONLY the local search input with a DIFFERENT parameter name
         if (searchInputValue.trim()) {
-          params.append('q', searchInputValue);
+          params.append('categoryQuery', searchInputValue);
         }
       } else {
         // In global search, preserve the query parameter
@@ -288,10 +293,10 @@ export default function FilterSidebar({
       }
       
       // Add multi-select filters
-    if (selectedCategories.length > 0) {
-      selectedCategories.forEach((c) => params.append('category', c));
-    }
-    
+      if (selectedCategories.length > 0) {
+        selectedCategories.forEach((c) => params.append('category', c));
+      }
+      
       selectedDistricts.forEach((d) => params.append('district', d));
       selectedConditions.forEach((c) => params.append('condition', c));
       selectedRooms.forEach((r) => params.append('rooms', r));
@@ -343,9 +348,9 @@ export default function FilterSidebar({
     // Create params preserving only global search if appropriate
     const params = new URLSearchParams();
     
-  // Always preserve global search query
-      const currentQuery = searchParams?.get('q');
-  if (currentQuery && (!categorySlug || pathname === '/search')) {
+    // Always preserve global search query (q), not local category search (categoryQuery)
+    const currentQuery = searchParams?.get('q');
+    if (currentQuery && pathname === '/search') {
         params.append('q', currentQuery);
     }
     
