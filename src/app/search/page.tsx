@@ -39,13 +39,33 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
     ];
   }
 
-  // Multi‑category support  — handles `?category=houses&category=land`
+  // Multi‑category support - more robust handling
   const categoryParams = searchParams.category;
   if (categoryParams) {
-    const slugs = Array.isArray(categoryParams) ? categoryParams : [categoryParams];
-    const cats = await prisma.category.findMany({ where: { slug: { in: slugs } }, select: { id: true } });
-    if (cats.length) {
+    // Ensure we have an array of category slugs regardless of input format
+    let categorySlugs: string[] = [];
+    
+    if (Array.isArray(categoryParams)) {
+      // If it's already an array, use all values
+      categorySlugs = categoryParams.filter(Boolean);
+    } else if (typeof categoryParams === 'string') {
+      // If it's a single string, check if it contains commas (CSV format)
+      if (categoryParams.includes(',')) {
+        categorySlugs = categoryParams.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        categorySlugs = [categoryParams];
+      }
+    }
+    
+    if (categorySlugs.length > 0) {
+      const cats = await prisma.category.findMany({ 
+        where: { slug: { in: categorySlugs } }, 
+        select: { id: true } 
+      });
+      
+      if (cats.length > 0) {
       filter.categoryId = { in: cats.map((c) => c.id) };
+      }
     }
   }
 
@@ -60,7 +80,7 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
   const roomParams = searchParams.rooms;
   if (roomParams) {
     const roomsArr = Array.isArray(roomParams) ? roomParams : [roomParams];
-    const values = roomsArr.map((r) => parseInt(r)).filter(Boolean);
+    const values = roomsArr.map((r) => parseInt(r as string)).filter(Boolean);
     if (values.length) filter.rooms = { in: values };
   }
 

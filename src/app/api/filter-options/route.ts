@@ -7,15 +7,14 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     
-    // Get all filter parameters
-    const categorySlug = searchParams.get('category');
+    // Get all filter parameters - using getAll consistently for categories
+    const categoryParams = searchParams.getAll('category');
     const searchQuery = searchParams.get('q');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const districts = searchParams.getAll('district');
     const conditions = searchParams.getAll('condition');
     const rooms = searchParams.getAll('rooms');
-    const categories = searchParams.getAll('category');
 
     // Build base filter for active listings plus search query
     const baseFilterMinimal: any = { status: 'active' };
@@ -30,13 +29,10 @@ export async function GET(req: NextRequest) {
     const baseFilter = { ...baseFilterMinimal };
 
     // Add category filter if provided
-    if (categorySlug) {
-      const cat = await prisma.category.findUnique({ where: { slug: categorySlug } });
-      if (cat) baseFilter.categoryId = cat.id;
-    } else if (categories.length > 0) {
-      // For multi-category selection in global search
+    if (categoryParams.length > 0) {
+      // For multi-category selection, get all matching categories
       const cats = await prisma.category.findMany({
-        where: { slug: { in: categories } },
+        where: { slug: { in: categoryParams } },
           select: { id: true }
         });
       if (cats.length > 0) {
@@ -139,7 +135,7 @@ export async function GET(req: NextRequest) {
         by: ['rooms'],
         where: { ...(hasFiltersApplied ? fullFilter : baseFilter), rooms: { not: null } },
       }),
-      !categorySlug ? prisma.category.findMany({
+      !categoryParams ? prisma.category.findMany({
         where: {
           listings: {
             some: baseFilterMinimal
@@ -152,7 +148,7 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { name: 'asc' }
       }) : Promise.resolve([]),
-      !categorySlug ? prisma.category.findMany({
+      !categoryParams ? prisma.category.findMany({
         where: {
           listings: {
             some: {
@@ -191,7 +187,7 @@ export async function GET(req: NextRequest) {
     }));
 
     // Process categories with availability
-    const processedCategories = !categorySlug ? allCategories.map(cat => ({
+    const processedCategories = !categoryParams ? allCategories.map(cat => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,

@@ -296,8 +296,12 @@ export default function FilterSidebar({
         params.append('maxPrice', maxPrice);
       }
       
-      // Add multi-select filters
+    // Add multi-select filters - ensure we're adding all categories
+    if (selectedCategories.length > 0) {
+      // Add each category as a separate parameter
       selectedCategories.forEach((c) => params.append('category', c));
+    }
+    
       selectedDistricts.forEach((d) => params.append('district', d));
       selectedConditions.forEach((c) => params.append('condition', c));
       selectedRooms.forEach((r) => params.append('rooms', r));
