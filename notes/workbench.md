@@ -24,9 +24,6 @@
 Here are the errors I need you to help me fix: 
 
 ```
-- When opening a category and selecting a filter the price won't update. It only updates when I enter something in the local search field
-
-- When I enter a price manually e.g. from 1k till 4.5M (but there's a listing for 192) - it resets the price when applying another filter, but it shouldn't. It also won't show the other listings until I press apply twice, even tho the price resets right away.
 
 ```
 
@@ -35,6 +32,7 @@ Please read the code, check the attached project and help me fix it. Return the 
 
 
 
+- When opening a category and selecting/applying a filter the price ranges won't update. It only updates when I enter something in the local search field. I need it to adjust based on avaliable listings unless user manually entered the min/max price
 
 - Local search query is copied to global one, when it shouldn't be. They should be independant
 

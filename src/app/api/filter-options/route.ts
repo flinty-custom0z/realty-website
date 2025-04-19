@@ -74,23 +74,38 @@ export async function GET(req: NextRequest) {
     const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
                               rooms.length > 0 || minPrice !== null || maxPrice !== null;
 
+    // Helper: Build filter for available options, excluding a specific group
+    function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms') {
+      const filter: any = { ...baseFilter };
+      // Always include price filter if set
+      if (minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
+      if (maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
+      if (exclude !== 'district' && districts.length > 0) filter.district = { in: districts };
+      if (exclude !== 'condition' && conditions.length > 0) filter.condition = { in: conditions };
+      if (exclude !== 'rooms' && rooms.length > 0) {
+        const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
+        if (roomValues.length > 0) filter.rooms = { in: roomValues };
+      }
+      return filter;
+    }
+
     // Run all queries in parallel
     const [
-      // CHANGED: Get only districts within the current category context
+      // All districts (with counts, ignoring district filter)
       allDistricts,
-      // CHANGED: Get only conditions within the current category context
+      // All conditions (with counts, ignoring condition filter)
       allConditions,
-      // CHANGED: Get only rooms within the current category context
+      // All rooms (with counts, ignoring rooms filter)
       allRooms,
-      // Get price range using base filter (category + search)
+      // Price range (as before)
       priceRange,
       // Get total matches for full filter
       filteredTotal,
-      // Get available districts with the full filter when filters are applied
+      // Available districts (with all filters except district)
       availableDistricts,
-      // Get available conditions with the full filter when filters are applied
+      // Available conditions (with all filters except condition)
       availableConditions,
-      // Get available rooms with the full filter when filters are applied
+      // Available rooms (with all filters except rooms)
       availableRooms,
       // Get all categories for filters
       allCategories,
@@ -98,42 +113,45 @@ export async function GET(req: NextRequest) {
       availableCategories
     ] = await Promise.all([
       prisma.listing.groupBy({
-      by: ['district'],
-        where: { ...baseFilter, district: { not: null } }, // CHANGED: Use baseFilter to restrict to category
-      _count: { district: true },
-      orderBy: { district: 'asc' },
+        by: ['district'],
+        where: { ...buildAvailableFilter('district'), district: { not: null } },
+        _count: { district: true },
+        orderBy: { district: 'asc' },
       }),
       prisma.listing.groupBy({
-      by: ['condition'],
-        where: { ...baseFilter, condition: { not: null } }, // CHANGED: Use baseFilter to restrict to category
-      _count: { condition: true },
-      orderBy: { condition: 'asc' },
+        by: ['condition'],
+        where: { ...buildAvailableFilter('condition'), condition: { not: null } },
+        _count: { condition: true },
+        orderBy: { condition: 'asc' },
       }),
       prisma.listing.groupBy({
-      by: ['rooms'],
-        where: { ...baseFilter, rooms: { not: null } }, // CHANGED: Use baseFilter to restrict to category
-      _count: { rooms: true },
-      orderBy: { rooms: 'asc' },
+        by: ['rooms'],
+        where: { ...buildAvailableFilter('rooms'), rooms: { not: null } },
+        _count: { rooms: true },
+        orderBy: { rooms: 'asc' },
       }),
       prisma.listing.aggregate({
-        where: baseFilter,
-      _min: { price: true },
-      _max: { price: true },
+        where: hasFiltersApplied ? { 
+          ...fullFilter, 
+          price: undefined 
+        } : baseFilter,
+        _min: { price: true },
+        _max: { price: true },
       }),
       prisma.listing.count({
         where: fullFilter
       }),
       prisma.listing.groupBy({
         by: ['district'],
-        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), district: { not: null } },
+        where: { ...buildAvailableFilter('district'), district: { not: null } },
       }),
       prisma.listing.groupBy({
         by: ['condition'],
-        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), condition: { not: null } },
+        where: { ...buildAvailableFilter('condition'), condition: { not: null } },
       }),
       prisma.listing.groupBy({
         by: ['rooms'],
-        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), rooms: { not: null } },
+        where: { ...buildAvailableFilter('rooms'), rooms: { not: null } },
       }),
       !categoryParams ? prisma.category.findMany({
         where: {

@@ -214,15 +214,14 @@ export default function FilterSidebar({
           if (newMaxPrice !== undefined && !userEditedPrice.max) {
           setMaxPrice(newMaxPrice.toString());
           }
-          
-          // Reset the update flag after updating
-          shouldUpdatePrices.current = false;
         }
         }
       } catch (error) {
           console.error("Error fetching filter options:", error);
       } finally {
         setIsLoading(false);
+        // Reset the update flag after the entire operation is complete
+        shouldUpdatePrices.current = false;
       }
     };
     
@@ -541,19 +540,20 @@ export default function FilterSidebar({
       <div className="flex flex-wrap gap-2 max-h-40 overflow-auto">
       {filterOptions.districts.map((dist) => (
         <button
-                  key={dist.value}
-        type="button"
-                  onClick={() => handleDistrictToggle(dist.value)}
-        className={`px-3 py-1 rounded-full text-sm border ${
-                    selectedDistricts.includes(dist.value)
-          ? 'bg-blue-500 text-white border-blue-500'
-                    : dist.available 
-                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
-        }`}
-                  disabled={!dist.available && !selectedDistricts.includes(dist.value)}
+          key={dist.value}
+          type="button"
+          onClick={() => handleDistrictToggle(dist.value)}
+          className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${
+            selectedDistricts.includes(dist.value)
+              ? 'bg-blue-500 text-white border-blue-500'
+              : dist.count === 0
+                ? 'bg-gray-100 text-gray-400 border-gray-200 opacity-60'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+          disabled={false}
         >
-                  {dist.value}
+          {dist.value}
+          <span className="ml-1 text-xs text-gray-500">({dist.count})</span>
         </button>
       ))}
       </div>
@@ -567,19 +567,20 @@ export default function FilterSidebar({
       <div className="flex flex-wrap gap-2">
       {filterOptions.conditions.map((cond) => (
         <button
-                  key={cond.value}
-        type="button"
-                  onClick={() => handleConditionToggle(cond.value)}
-        className={`px-3 py-1 rounded-full text-sm border ${
-                    selectedConditions.includes(cond.value)
-          ? 'bg-blue-500 text-white border-blue-500'
-                    : cond.available 
-                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
-        }`}
-                  disabled={!cond.available && !selectedConditions.includes(cond.value)}
+          key={cond.value}
+          type="button"
+          onClick={() => handleConditionToggle(cond.value)}
+          className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${
+            selectedConditions.includes(cond.value)
+              ? 'bg-blue-500 text-white border-blue-500'
+              : cond.count === 0
+                ? 'bg-gray-100 text-gray-400 border-gray-200 opacity-60'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+          disabled={false}
         >
-                  {cond.value}
+          {cond.value}
+          <span className="ml-1 text-xs text-gray-500">({cond.count})</span>
         </button>
       ))}
       </div>
@@ -593,19 +594,20 @@ export default function FilterSidebar({
       <div className="flex flex-wrap gap-2">
       {filterOptions.rooms.map((room) => (
         <button
-                  key={room.value}
-        type="button"
-                  onClick={() => handleRoomToggle(room.value)}
-        className={`px-3 py-1 rounded-full text-sm border ${
-                    selectedRooms.includes(room.value)
-          ? 'bg-blue-500 text-white border-blue-500'
-                    : room.available 
-                      ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      : 'bg-gray-100 text-gray-500 border-gray-200 opacity-60'
-        }`}
-                  disabled={!room.available && !selectedRooms.includes(room.value)}
+          key={room.value}
+          type="button"
+          onClick={() => handleRoomToggle(room.value)}
+          className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${
+            selectedRooms.includes(room.value)
+              ? 'bg-blue-500 text-white border-blue-500'
+              : room.count === 0
+                ? 'bg-gray-100 text-gray-400 border-gray-200 opacity-60'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+          disabled={false}
         >
-                  {room.value}
+          {room.value}
+          <span className="ml-1 text-xs text-gray-500">({room.count})</span>
         </button>
       ))}
       </div>
