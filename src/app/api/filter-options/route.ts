@@ -18,7 +18,6 @@ export async function GET(req: NextRequest) {
     const categories = searchParams.getAll('category');
 
     // Build base filter for active listings plus search query
-    // For global search, the search query becomes part of the base filter
     const baseFilterMinimal: any = { status: 'active' };
     if (searchQuery && searchQuery.trim() !== '') {
       baseFilterMinimal.OR = [
@@ -75,44 +74,48 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Calculate if any filters are applied beyond category/search
+    const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
+                              rooms.length > 0 || minPrice !== null || maxPrice !== null;
+
     // Run all queries in parallel
     const [
-      // Get ALL districts with counts using baseFilterMinimal (search is included)
+      // CHANGED: Get only districts within the current category context
       allDistricts,
-      // Get ALL conditions with counts using baseFilterMinimal
+      // CHANGED: Get only conditions within the current category context
       allConditions,
-      // Get ALL rooms with counts using baseFilterMinimal
+      // CHANGED: Get only rooms within the current category context
       allRooms,
       // Get price range using base filter (category + search)
       priceRange,
       // Get total matches for full filter
       filteredTotal,
-      // Get available districts with the full filter
+      // Get available districts with the full filter when filters are applied
       availableDistricts,
-      // Get available conditions with the full filter
+      // Get available conditions with the full filter when filters are applied
       availableConditions,
-      // Get available rooms with the full filter
+      // Get available rooms with the full filter when filters are applied
       availableRooms,
-      // NEW: Get all categories for filters
+      // Get all categories for filters
       allCategories,
-      // NEW: Get available categories for graying out
+      // Get available categories for graying out
       availableCategories
     ] = await Promise.all([
       prisma.listing.groupBy({
       by: ['district'],
-        where: { ...baseFilterMinimal, district: { not: null } },
+        where: { ...baseFilter, district: { not: null } }, // CHANGED: Use baseFilter to restrict to category
       _count: { district: true },
       orderBy: { district: 'asc' },
       }),
       prisma.listing.groupBy({
       by: ['condition'],
-        where: { ...baseFilterMinimal, condition: { not: null } },
+        where: { ...baseFilter, condition: { not: null } }, // CHANGED: Use baseFilter to restrict to category
       _count: { condition: true },
       orderBy: { condition: 'asc' },
       }),
       prisma.listing.groupBy({
       by: ['rooms'],
-        where: { ...baseFilterMinimal, rooms: { not: null } },
+        where: { ...baseFilter, rooms: { not: null } }, // CHANGED: Use baseFilter to restrict to category
       _count: { rooms: true },
       orderBy: { rooms: 'asc' },
       }),
@@ -126,17 +129,16 @@ export async function GET(req: NextRequest) {
       }),
       prisma.listing.groupBy({
         by: ['district'],
-        where: { ...fullFilter, district: { not: null } },
+        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), district: { not: null } },
       }),
       prisma.listing.groupBy({
         by: ['condition'],
-        where: { ...fullFilter, condition: { not: null } },
+        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), condition: { not: null } },
       }),
       prisma.listing.groupBy({
         by: ['rooms'],
-        where: { ...fullFilter, rooms: { not: null } },
+        where: { ...(hasFiltersApplied ? fullFilter : baseFilter), rooms: { not: null } },
       }),
-      // NEW: Get all categories with listing counts (for global search)
       !categorySlug ? prisma.category.findMany({
         where: {
           listings: {
@@ -150,13 +152,11 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { name: 'asc' }
       }) : Promise.resolve([]),
-      // NEW: Get available categories with the filters applied
       !categorySlug ? prisma.category.findMany({
         where: {
           listings: {
             some: {
-              ...fullFilter,
-              // Remove category filter for availability check
+              ...(hasFiltersApplied ? fullFilter : baseFilter),
               categoryId: undefined
             }
           }
@@ -169,51 +169,45 @@ export async function GET(req: NextRequest) {
     const availableDistrictSet = new Set(availableDistricts.map(d => d.district));
     const availableConditionSet = new Set(availableConditions.map(c => c.condition));
     const availableRoomSet = new Set(availableRooms.map(r => r.rooms?.toString()));
-    // NEW: Create set of available category slugs
     const availableCategorySet = new Set(availableCategories.map(c => c.slug));
 
     // Process all options and mark availability
     const processedDistricts = allDistricts.map(d => ({
       value: d.district,
       count: d._count.district,
-      available: availableDistrictSet.has(d.district)
+      available: hasFiltersApplied ? availableDistrictSet.has(d.district) : true // CHANGED: Always available if no filters
     }));
 
     const processedConditions = allConditions.map(c => ({
       value: c.condition,
       count: c._count.condition,
-      available: availableConditionSet.has(c.condition)
+      available: hasFiltersApplied ? availableConditionSet.has(c.condition) : true // CHANGED: Always available if no filters
     }));
 
     const processedRooms = allRooms.map(r => ({
       value: r.rooms?.toString(),
       count: r._count.rooms,
-      available: availableRoomSet.has(r.rooms?.toString())
+      available: hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true // CHANGED: Always available if no filters
     }));
 
-    // NEW: Process categories with availability
+    // Process categories with availability
     const processedCategories = !categorySlug ? allCategories.map(cat => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,
       count: cat._count.listings,
-      available: availableCategorySet.has(cat.slug)
+      available: hasFiltersApplied ? availableCategorySet.has(cat.slug) : true // CHANGED: Always available if no filters
     })) : [];
 
     // Set default values if no results
     const minPriceValue = priceRange._min.price !== null ? priceRange._min.price : 0;
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
 
-    // Calculate if any filters are applied beyond category/search
-    const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
-                              rooms.length > 0 || minPrice !== null || maxPrice !== null;
-
     // Return the filter options
     return NextResponse.json({
       districts: processedDistricts,
       conditions: processedConditions,
       rooms: processedRooms,
-      // NEW: Add categories to response
       categories: processedCategories,
       priceRange: {
         min: minPriceValue,
