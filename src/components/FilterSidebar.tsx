@@ -59,10 +59,15 @@ export default function FilterSidebar({
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
   
-  // State to track if price was manually edited
+  // State to track if price was manually edited - improved to track specific types of edits
   const [priceEdited, setPriceEdited] = useState({
     min: false,
-    max: false
+    max: false,
+    // New tracking states to better manage price edit history
+    minManuallySet: false,
+    maxManuallySet: false,
+    minValue: '',
+    maxValue: ''
   });
   
   // Track previous filter values to detect changes
@@ -103,16 +108,51 @@ export default function FilterSidebar({
     }
     
     // Only update price from URL if not manually edited or if it's initial load
-    // This prevents URL parameters from overriding user input during navigation
     if (minPriceParam !== null) {
-      if (isInitialLoadRef.current || !priceEdited.min) {
         setMinPrice(minPriceParam);
+      
+      // On initial load, don't consider URL parameters as manual edits
+      if (isInitialLoadRef.current) {
+        setPriceEdited(prev => ({
+          ...prev,
+          min: false,
+          minManuallySet: false,
+          minValue: minPriceParam
+        }));
+      } else if (minPriceParam !== priceEdited.minValue) {
+        // If the URL parameter changes and it wasn't due to manual edit,
+        // update our tracking state
+        if (!priceEdited.minManuallySet) {
+          setPriceEdited(prev => ({
+            ...prev,
+            min: false,
+            minValue: minPriceParam
+          }));
+        }
       }
     }
     
     if (maxPriceParam !== null) {
-      if (isInitialLoadRef.current || !priceEdited.max) {
         setMaxPrice(maxPriceParam);
+      
+      // On initial load, don't consider URL parameters as manual edits
+      if (isInitialLoadRef.current) {
+        setPriceEdited(prev => ({
+          ...prev,
+          max: false,
+          maxManuallySet: false,
+          maxValue: maxPriceParam
+        }));
+      } else if (maxPriceParam !== priceEdited.maxValue) {
+        // If the URL parameter changes and it wasn't due to manual edit,
+        // update our tracking state
+        if (!priceEdited.maxManuallySet) {
+          setPriceEdited(prev => ({
+            ...prev,
+            max: false,
+            maxValue: maxPriceParam
+          }));
+        }
       }
     }
     
@@ -126,7 +166,7 @@ export default function FilterSidebar({
     isInitialLoadRef.current = false;
   }, [searchParams]);
   
-  // Check if non-price filters changed to reset price edit flags
+  // Check if non-price filters changed to manage price edit flags
   useEffect(() => {
     const currentFilters = {
       districts: selectedDistricts,
@@ -144,9 +184,19 @@ export default function FilterSidebar({
       prevFiltersRef.current.categories.join(',') !== currentFilters.categories.join(',') ||
       prevFiltersRef.current.search !== currentFilters.search;
     
-    // If non-price filters changed, reset price edit flags
+    // If non-price filters changed, we need to potentially update price ranges
+    // BUT we no longer reset the priceEdited flags entirely - this was causing manual price inputs to be lost
     if (filtersChanged) {
-      setPriceEdited({ min: false, max: false });
+      // Instead of resetting the flags completely, we'll just indicate that 
+      // automatic updates from the API are allowed again, but we'll still 
+      // respect manually set values
+      setPriceEdited(prev => ({
+        ...prev,
+        // Reset these temporary flags that prevent API updates
+        min: false,
+        max: false
+        // We keep the "ManuallySet" flags to remember user's intent
+      }));
     }
     
     // Update prev filters ref
@@ -219,16 +269,37 @@ export default function FilterSidebar({
           const data = await res.json();
         setFilterOptions(data);
         
-        // Always update price ranges when filters change
-        // This ensures prices reflect available inventory after filter changes
+        // Only update price ranges in the following cases:
+        // 1. When filter options first load (default min/max)
+        // 2. When a user hasn't manually set a price OR
+        // 3. When a user has cleared a price input (empty string)
+        
         const newMinPrice = data.priceRange.min;
-        if (newMinPrice !== undefined && (!priceEdited.min || minPrice === '')) {
+        if (newMinPrice !== undefined) {
+          // Only update min price if it hasn't been manually set
+          // or if it's been reset (empty string)
+          if ((!priceEdited.min && !priceEdited.minManuallySet) || minPrice === '') {
           setMinPrice(newMinPrice.toString());
+            // Also update our tracking state
+            setPriceEdited(prev => ({
+              ...prev,
+              minValue: newMinPrice.toString()
+            }));
+          }
             }
       
         const newMaxPrice = data.priceRange.max;
-        if (newMaxPrice !== undefined && (!priceEdited.max || maxPrice === '')) {
+        if (newMaxPrice !== undefined) {
+          // Only update max price if it hasn't been manually set
+          // or if it's been reset (empty string)
+          if ((!priceEdited.max && !priceEdited.maxManuallySet) || maxPrice === '') {
           setMaxPrice(newMaxPrice.toString());
+            // Also update our tracking state
+            setPriceEdited(prev => ({
+              ...prev,
+              maxValue: newMaxPrice.toString()
+            }));
+          }
         }
         }
       } catch (error) {
@@ -290,10 +361,24 @@ export default function FilterSidebar({
       // Add price filters - only if they have values
       if (minPrice) {
         params.append('minPrice', minPrice);
+        
+        // When explicitly applying filters, consider any price values as "manually set"
+        setPriceEdited(prev => ({
+          ...prev,
+          minManuallySet: true,
+          minValue: minPrice
+        }));
       }
       
       if (maxPrice) {
         params.append('maxPrice', maxPrice);
+        
+        // When explicitly applying filters, consider any price values as "manually set"
+        setPriceEdited(prev => ({
+          ...prev,
+          maxManuallySet: true,
+          maxValue: maxPrice
+        }));
       }
       
     // Add multi-select filters - ensure we're adding all categories
@@ -347,8 +432,15 @@ export default function FilterSidebar({
       setSearchInputValue('');
     }
     
-    // Reset price edited flags
-    setPriceEdited({ min: false, max: false });
+    // Reset all price edited flags
+    setPriceEdited({
+      min: false,
+      max: false,
+      minManuallySet: false,
+      maxManuallySet: false,
+      minValue: filterOptions.priceRange.min?.toString() || '',
+      maxValue: filterOptions.priceRange.max?.toString() || ''
+    });
     
     // Create params preserving only global search if appropriate
     const params = new URLSearchParams();
@@ -411,10 +503,24 @@ export default function FilterSidebar({
   const handlePriceChange = (type: 'min' | 'max', value: string) => {
     if (type === 'min') {
       setMinPrice(value);
-      setPriceEdited(prev => ({ ...prev, min: true }));
+      // Mark as edited and manually set to prevent automatic updates
+      setPriceEdited(prev => ({ 
+        ...prev, 
+        min: true, 
+        minManuallySet: true,
+        // Store the value for comparison
+        minValue: value
+      }));
     } else {
       setMaxPrice(value);
-      setPriceEdited(prev => ({ ...prev, max: true }));
+      // Mark as edited and manually set to prevent automatic updates
+      setPriceEdited(prev => ({ 
+        ...prev, 
+        max: true, 
+        maxManuallySet: true,
+        // Store the value for comparison
+        maxValue: value 
+      }));
     }
   };
   
