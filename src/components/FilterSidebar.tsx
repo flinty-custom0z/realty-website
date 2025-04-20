@@ -85,6 +85,7 @@ export default function FilterSidebar({
   const isInitialLoadRef = useRef(true);
   
   const abortControllerRef = useRef<AbortController | null>(null);
+  const requestCounter = useRef(0);
   
   // Helper to determine if price filter should be applied
   const shouldApplyPriceFilter = () => {
@@ -184,6 +185,9 @@ export default function FilterSidebar({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    requestCounter.current += 1;
+    const currentRequest = requestCounter.current;
+
     // Build query params with all current active filters
     const params = new URLSearchParams();
 
@@ -222,15 +226,14 @@ export default function FilterSidebar({
 
     try {
       const res = await fetch(`/api/filter-options?${params.toString()}`, { signal: controller.signal });
-      if (res.ok) {
-        const data = await res.json();
+      if (!res.ok) return;
+      const data = await res.json();
+      // Only update state if this is the latest request
+      if (currentRequest === requestCounter.current) {
         setFilterOptions(data);
-
         // Update price ranges based on available data
         const newMinPrice = data.priceRange.min;
         const newMaxPrice = data.priceRange.max;
-
-        // Update price when filters change (especially when other filters are toggled)
         if (shouldUpdatePrices.current || isInitialLoadRef.current) {
           if (newMinPrice !== undefined && !userEditedPrice.min) {
             setMinPrice(newMinPrice.toString());
@@ -241,11 +244,13 @@ export default function FilterSidebar({
         }
       }
     } catch (error: any) {
-      if (error.name === 'AbortError') return; // Ignore aborted requests
+      if (error.name === 'AbortError') return;
       console.error('Error fetching filter options:', error);
     } finally {
-      setIsLoading(false);
-      shouldUpdatePrices.current = false;
+      if (currentRequest === requestCounter.current) {
+        setIsLoading(false);
+        shouldUpdatePrices.current = false;
+      }
     }
   };
     
