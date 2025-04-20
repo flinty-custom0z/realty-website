@@ -14,6 +14,7 @@ export const GET = withAuth(async (req: NextRequest) => {
         name: true,
         username: true,
         phone: true,
+        photo: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -30,18 +31,19 @@ export const GET = withAuth(async (req: NextRequest) => {
 export const POST = withAuth(async (req: NextRequest) => {
   try {
     const data = await req.json();
-    const { name, username, password, phone } = data;
+    const { name, username, password, phone, photo } = data;
     if (!name || !username || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, username, password: hashedPassword, phone },
+      data: { name, username, password: hashedPassword, phone, photo },
       select: {
         id: true,
         name: true,
         username: true,
         phone: true,
+        photo: true,
         createdAt: true,
         updatedAt: true,
       },

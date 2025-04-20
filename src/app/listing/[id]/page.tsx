@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ImageGallery from '@/components/ImageGallery';
 import AdminListingActions from '@/components/AdminListingActions';
 import jwt from 'jsonwebtoken';
+import ClientImage from '@/components/ClientImage';
 
 // always render on‑demand so we can read the Referer header
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ async function fetchListing(id: string) {
     where: { id },
     include: {
       category: true,
-      user: { select: { id: true, name: true, phone: true } },
+      user: { select: { id: true, name: true, phone: true, photo: true } },
       images: true,
     },
   });
@@ -225,7 +226,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <div className="bg-white shadow rounded-md p-6 sticky top-4">
     <div className="flex items-center mb-4">
     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-    <span className="text-3xl text-blue-500">{listing.user.name.charAt(0)}</span>
+    {listing.user.photo ? (
+      <ClientImage src={listing.user.photo} alt={listing.user.name} className="w-16 h-16 rounded-full object-cover" fill={false} />
+    ) : (
+      <span className="text-3xl text-blue-500">{listing.user.name.charAt(0)}</span>
+    )}
     </div>
     <div>
     <h3 className="font-bold">{listing.user.name}</h3>
@@ -239,7 +244,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     {listing.user.phone}
     </a>
     </p>
-    <p className="text-gray-500">Позвонить: {listing.user.phone}</p>
     </div>
     </div>
     </aside>

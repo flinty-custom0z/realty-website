@@ -15,6 +15,7 @@ export const GET = withAuth(async (req: NextRequest, { params }: { params: { id:
         name: true,
         username: true,
         phone: true,
+        photo: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -31,7 +32,7 @@ export const GET = withAuth(async (req: NextRequest, { params }: { params: { id:
 export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const data = await req.json();
-    const { name, username, password, phone } = data;
+    const { name, username, password, phone, photo } = data;
     const updateData: any = {};
     if (name) updateData.name = name;
     if (username) updateData.username = username;
@@ -40,6 +41,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       updateData.password = hashedPassword;
     }
     if (phone !== undefined) updateData.phone = phone;
+    if (photo !== undefined) updateData.photo = photo;
     const user = await prisma.user.update({
       where: { id: params.id },
       data: updateData,
@@ -48,6 +50,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         name: true,
         username: true,
         phone: true,
+        photo: true,
         createdAt: true,
         updatedAt: true,
       },

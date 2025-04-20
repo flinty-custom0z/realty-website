@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import ClientImage from '@/components/ClientImage';
 
 interface User {
   id: string;
   name: string;
   username: string;
   phone?: string;
+  photo?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,7 +20,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
-  const [form, setForm] = useState({ name: '', username: '', phone: '', password: '' });
+  const [form, setForm] = useState({ name: '', username: '', phone: '', password: '', photo: '' });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -54,24 +56,44 @@ export default function AdminUsersPage() {
 
   const openAdd = () => {
     setEditUser(null);
-    setForm({ name: '', username: '', phone: '', password: '' });
+    setForm({ name: '', username: '', phone: '', password: '', photo: '' });
     setFormError('');
     setShowForm(true);
   };
   const openEdit = (user: User) => {
     setEditUser(user);
-    setForm({ name: user.name, username: user.username, phone: user.phone || '', password: '' });
+    setForm({ name: user.name, username: user.username, phone: user.phone || '', password: '', photo: user.photo || '' });
     setFormError('');
     setShowForm(true);
   };
   const closeForm = () => {
     setShowForm(false);
     setEditUser(null);
-    setForm({ name: '', username: '', phone: '', password: '' });
+    setForm({ name: '', username: '', phone: '', password: '', photo: '' });
     setFormError('');
   };
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/admin/users/upload-photo', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.path) {
+        setForm((prev) => ({ ...prev, photo: data.path }));
+      } else {
+        setFormError(data.error || 'Ошибка загрузки фото');
+      }
+    } catch {
+      setFormError('Ошибка загрузки фото');
+    }
   };
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +105,7 @@ export default function AdminUsersPage() {
         setFormLoading(false);
         return;
       }
-      const payload = { name: form.name, username: form.username, phone: form.phone, password: form.password };
+      const payload = { name: form.name, username: form.username, phone: form.phone, password: form.password, photo: form.photo };
       let res;
       if (editUser) {
         res = await fetch(`/api/admin/users/${editUser.id}`, {
@@ -143,6 +165,15 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium mb-1">Пароль {editUser ? '(оставьте пустым для без изменений)' : '*'}</label>
                 <input name="password" type="password" value={form.password} onChange={handleFormChange} className="w-full p-2 border rounded" autoComplete="new-password" />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Фото</label>
+                <input type="file" accept="image/*" onChange={handlePhotoChange} className="w-full p-2 border rounded" />
+                {form.photo && (
+                  <div className="mt-2">
+                    <ClientImage src={form.photo} alt={form.name || 'Фото'} className="w-16 h-16 rounded-full object-cover" fill={false} />
+                  </div>
+                )}
+              </div>
               {formError && <div className="text-red-600 text-sm">{formError}</div>}
               <div className="flex justify-end gap-2">
                 <button type="button" className="px-4 py-2 rounded bg-gray-200" onClick={closeForm}>Отмена</button>
@@ -161,6 +192,7 @@ export default function AdminUsersPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 border-b">
+                <th className="py-3 px-4 font-medium">Фото</th>
                 <th className="py-3 px-4 font-medium">Имя</th>
                 <th className="py-3 px-4 font-medium">Логин</th>
                 <th className="py-3 px-4 font-medium">Телефон</th>
@@ -170,6 +202,13 @@ export default function AdminUsersPage() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    {user.photo ? (
+                      <ClientImage src={user.photo} alt={user.name} className="w-10 h-10 rounded-full object-cover" fill={false} />
+                    ) : (
+                      <span className="inline-block w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center font-bold">{user.name.charAt(0)}</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4">{user.name}</td>
                   <td className="py-3 px-4">{user.username}</td>
                   <td className="py-3 px-4">{user.phone || "-"}</td>
