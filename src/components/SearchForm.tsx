@@ -4,6 +4,20 @@ import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import SearchParamsProvider from '@/components/SearchParamsProvider';
 
+// Debounce utility
+function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
+  let timer: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+interface Suggestion {
+  id: string;
+  title: string;
+}
+
 interface SearchFormProps {
   categorySlug?: string;
   initialQuery?: string;
@@ -15,6 +29,12 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const [query, setQuery] = useState(initialQuery);
   const previousPathRef = useRef<string | null>(null);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   
   return (
     <SearchParamsProvider>
@@ -128,37 +148,151 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           router.push(`${pathname}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
         };
   
+  // Fetch suggestions (debounced)
+  const fetchSuggestions = debounce(async (q: string) => {
+    if (!q || q.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setIsLoadingSuggestions(true);
+    try {
+      const res = await fetch(`/api/listings/suggestions?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+      setShowSuggestions(true);
+    } catch (e) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, 250);
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    fetchSuggestions(e.target.value);
+    setHighlightedIndex(-1);
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    setQuery(suggestion.title);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setIsSearchActive(true);
+    // Submit search
+    handleSubmitInternal(suggestion.title);
+  };
+
+  // Handle keyboard navigation
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+        e.preventDefault();
+        handleSuggestionClick(suggestions[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Hide suggestions on blur (with delay to allow click)
+  const handleInputBlur = () => {
+    setTimeout(() => setShowSuggestions(false), 100);
+  };
+
+  // Submit handler (internal, can be called from suggestion click)
+  const handleSubmitInternal = (searchValue: string) => {
+    if (!searchValue.trim()) return;
+    // ... existing code ...
+    const params = new URLSearchParams();
+    params.append('q', searchValue);
+    if (pathname.startsWith('/listing-category/') && categorySlug) {
+      params.append('from', 'global-search');
+    } else if (!pathname.startsWith('/search')) {
+      params.append('returnUrl', encodeURIComponent(pathname));
+    }
+    if (categorySlug) {
+      router.push(`/listing-category/${categorySlug}?${params}`);
+    } else {
+      router.push(`/search?${params}`);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="w-full">
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmitInternal(query); }} className="w-full">
       <div className="flex">
-              <div className="relative flex-grow">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
-                  className="w-full p-2 border rounded-l"
-        />
-                {query && (
-                  <button 
-                    type="button"
-                    onClick={handleClearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    aria-label="Очистить поиск"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              <button 
-                type="submit" 
-                className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
-              >
+        <div className="relative flex-grow">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
+            onBlur={handleInputBlur}
+            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+            placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
+            className="w-full p-2 border rounded-l"
+            autoComplete="off"
+            aria-autocomplete="list"
+            aria-controls="search-suggestions-list"
+            aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Очистить поиск"
+            >
+              ×
+            </button>
+          )}
+          {/* Suggestions dropdown */}
+          {showSuggestions && (suggestions.length > 0 || isLoadingSuggestions) && (
+            <ul
+              ref={suggestionsRef}
+              id="search-suggestions-list"
+              className="absolute z-10 left-0 right-0 bg-white border border-t-0 rounded-b shadow-lg max-h-60 overflow-y-auto mt-1"
+              role="listbox"
+            >
+              {isLoadingSuggestions && (
+                <li className="px-4 py-2 text-gray-400">Загрузка...</li>
+              )}
+              {suggestions.map((s, idx) => (
+                <li
+                  key={s.id}
+                  id={`suggestion-${idx}`}
+                  role="option"
+                  aria-selected={highlightedIndex === idx}
+                  className={`px-4 py-2 cursor-pointer hover:bg-blue-100 ${highlightedIndex === idx ? 'bg-blue-100' : ''}`}
+                  onMouseDown={() => handleSuggestionClick(s)}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                >
+                  {s.title}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
+        >
           Искать
         </button>
       </div>
     </form>
-        );
+  );
       }}
     </SearchParamsProvider>
   );
