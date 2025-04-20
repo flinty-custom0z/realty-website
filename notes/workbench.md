@@ -21,21 +21,10 @@
 
 ### NOW
 
-Here are the errors I need you to help me fix: 
-
-```
-
-```
-
-Please read the code, check the attached project and help me fix it. Return the full fixed version for every file I need to fix. Don't be cheap and read as much as you can. It's very important.
-
 
 ### Next
 
 - Dynamic suggestions when entering search query
-
-
-- Status for listing? (active/not active)
 
 - Add a slider to filter price as well
 

@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { Range } from 'react-range';
 
 interface Category {
   id: string;
@@ -461,6 +462,21 @@ export default function FilterSidebar({
     return true;
   };
   
+  // Add a helper to format numbers with spaces as thousands separators
+  function formatPriceInput(value: string) {
+    if (!value) return '';
+    // Remove all non-digit characters
+    const numeric = value.replace(/\D/g, '');
+    if (!numeric) return '';
+    // Format with spaces
+    return parseInt(numeric, 10).toLocaleString('ru-RU');
+  }
+
+  // Add a helper to parse formatted input back to a number string
+  function parsePriceInput(formatted: string) {
+    return formatted.replace(/\D/g, '');
+  }
+  
   return (
     <div className="p-4 bg-white shadow rounded-md mb-6">
     {/* Category-specific search field - only show in category pages */}
@@ -523,27 +539,94 @@ export default function FilterSidebar({
     )}
     
     {/* Price Range */}
-    <div className="flex space-x-2">
-    <div className="flex-1">
-    <label className="block text-sm font-medium mb-1">Мин. цена</label>
-    <input
-    type="number"
-    value={minPrice}
-    onChange={(e) => handlePriceChange('min', e.target.value)}
-              min={0}
-    className="w-full p-2 border rounded"
-    />
-    </div>
-    <div className="flex-1">
-    <label className="block text-sm font-medium mb-1">Макс. цена</label>
-    <input
-    type="number"
-    value={maxPrice}
-    onChange={(e) => handlePriceChange('max', e.target.value)}
-              min={0}
-    className="w-full p-2 border rounded"
-    />
-    </div>
+    <div className="flex flex-col gap-2">
+      <div className="flex space-x-2">
+        <div className="flex-1">
+          <label className="block text-sm font-medium mb-1">Мин. цена</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={formatPriceInput(minPrice)}
+            onChange={(e) => handlePriceChange('min', parsePriceInput(e.target.value))}
+            min={0}
+            className="w-full p-2 border rounded"
+            placeholder="0"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium mb-1">Макс. цена</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={formatPriceInput(maxPrice)}
+            onChange={(e) => handlePriceChange('max', parsePriceInput(e.target.value))}
+            min={0}
+            className="w-full p-2 border rounded"
+            placeholder="0"
+          />
+        </div>
+      </div>
+      {/* Price Range Slider */}
+      <div className="px-2 py-2">
+        <Range
+          step={10000}
+          min={filterOptions.priceRange.min}
+          max={filterOptions.priceRange.max}
+          values={[
+            minPrice ? parseInt(minPrice) : filterOptions.priceRange.min,
+            maxPrice ? parseInt(maxPrice) : filterOptions.priceRange.max,
+          ]}
+          onChange={([newMin, newMax]) => {
+            // Snap to nearest 10,000 except for min and max
+            const snap = (val: number, bound: number) => {
+              if (val === bound) return val;
+              return Math.round(val / 10000) * 10000;
+            };
+            const snappedMin = snap(newMin, filterOptions.priceRange.min);
+            const snappedMax = snap(newMax, filterOptions.priceRange.max);
+            setMinPrice(snappedMin.toString());
+            setMaxPrice(snappedMax.toString());
+            setUserEditedPrice({ min: true, max: true });
+          }}
+          renderTrack={({ props, children }) => (
+            <div
+              {...props}
+              style={{
+                ...props.style,
+                height: '6px',
+                background: '#e5e7eb',
+                borderRadius: '4px',
+                margin: '16px 0',
+              }}
+            >
+              {children}
+            </div>
+          )}
+          renderThumb={({ props }) => (
+            <div
+              {...props}
+              style={{
+                ...props.style,
+                height: '24px',
+                width: '24px',
+                borderRadius: '50%',
+                backgroundColor: '#2563eb',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                boxShadow: '0 2px 6px #aaa',
+                outline: 'none',
+              }}
+            >
+              {/* No label inside the thumb */}
+            </div>
+          )}
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>{filterOptions.priceRange.min.toLocaleString()} ₽</span>
+          <span>{filterOptions.priceRange.max.toLocaleString()} ₽</span>
+        </div>
+      </div>
     </div>
     
         {/* Available Districts */}
