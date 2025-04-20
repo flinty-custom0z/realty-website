@@ -16,6 +16,7 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
 interface Suggestion {
   id: string;
   title: string;
+  address?: string | null;
 }
 
 interface SearchFormProps {
@@ -278,7 +279,10 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
                   onMouseDown={() => handleSuggestionClick(s)}
                   onMouseEnter={() => setHighlightedIndex(idx)}
                 >
-                  {s.title}
+                  <div className="font-medium">{s.title}</div>
+                  {s.address && (
+                    <div className="text-xs text-gray-500 truncate">{s.address}</div>
+                  )}
                 </li>
               ))}
             </ul>

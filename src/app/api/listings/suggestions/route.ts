@@ -12,18 +12,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Find up to 10 listings with titles matching the query
+    // Find up to 10 listings with titles or addresses matching the query
     const suggestions = await prisma.listing.findMany({
       where: {
         status: 'active',
-        title: {
-          contains: q,
-          mode: 'insensitive',
-        },
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { address: { contains: q, mode: 'insensitive' } },
+        ],
       },
       select: {
         id: true,
         title: true,
+        address: true,
       },
       orderBy: { dateAdded: 'desc' },
       take: 10,
