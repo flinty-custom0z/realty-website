@@ -77,9 +77,6 @@ export async function GET(req: NextRequest) {
     // Helper: Build filter for available options, excluding a specific group
     function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms') {
       const filter: any = { ...baseFilter };
-      // Always include price filter if set
-      if (minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
-      if (maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
       if (exclude !== 'district' && districts.length > 0) filter.district = { in: districts };
       if (exclude !== 'condition' && conditions.length > 0) filter.condition = { in: conditions };
       if (exclude !== 'rooms' && rooms.length > 0) {
