@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
     const conditions = searchParams.getAll('condition');
     const rooms = searchParams.getAll('rooms');
 
+    // Read flag from frontend: only apply price filter for available options if user has edited price
+    const applyPriceFilter = searchParams.get('applyPriceFilter') === 'true';
+
     // Build base filter for active listings plus search query
     const baseFilterMinimal: any = { status: 'active' };
     if (searchQuery && searchQuery.trim() !== '') {
@@ -77,6 +80,9 @@ export async function GET(req: NextRequest) {
     // Helper: Build filter for available options, excluding a specific group
     function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms') {
       const filter: any = { ...baseFilter };
+      // Only include price filters if applyPriceFilter is true
+      if (applyPriceFilter && minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
+      if (applyPriceFilter && maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
       if (exclude !== 'district' && districts.length > 0) filter.district = { in: districts };
       if (exclude !== 'condition' && conditions.length > 0) filter.condition = { in: conditions };
       if (exclude !== 'rooms' && rooms.length > 0) {
