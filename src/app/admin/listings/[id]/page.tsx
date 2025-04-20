@@ -12,6 +12,7 @@ interface ListingFormData {
   adminComment: string,
   categoryId: string;
   district: string;
+  address: string;
   rooms: string;
   floor: string;
   totalFloors: string;
@@ -86,6 +87,7 @@ export default function EditListingPage() {
     adminComment: '',
     categoryId: '',
     district: '',
+    address: '',
     rooms: '',
     floor: '',
     totalFloors: '',
@@ -123,6 +125,7 @@ export default function EditListingPage() {
           adminComment: listingData.adminComment || '',
           categoryId: listingData.categoryId,
           district: listingData.district || '',
+          address: listingData.address || '',
           rooms: listingData.rooms?.toString() || '',
           floor: listingData.floor?.toString() || '',
           totalFloors: listingData.totalFloors?.toString() || '',
@@ -418,6 +421,20 @@ export default function EditListingPage() {
                 id="district"
                 name="district"
                 value={formData.district}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                Адрес
+              </label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                value={formData.address}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
               />
