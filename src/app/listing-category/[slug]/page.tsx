@@ -216,6 +216,7 @@ export default async function CategoryPage({
                 title={listing.title}
                 price={listing.price}
                 district={listing.district || undefined}
+                address={listing.address || undefined}
                 rooms={listing.rooms || undefined}
                 area={listing.houseArea || undefined}
                 floor={listing.floor || undefined}

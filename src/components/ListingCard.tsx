@@ -6,6 +6,7 @@ interface ListingCardProps {
   title: string;
   price: number;
   district?: string;
+  address?: string;
   rooms?: number;
   area?: number;
   floor?: number;
@@ -22,6 +23,7 @@ export default function ListingCard({
   title,
   price,
   district,
+  address,
   rooms,
   area,
   floor,
@@ -64,7 +66,7 @@ export default function ListingCard({
         </div>
         <div className="p-4">
           <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-500">{title}</h3>
-          
+          {address && <div className="text-xs text-gray-500 mb-1 truncate">{address}</div>}
           <div className="mt-2 text-sm text-gray-600">
             {district && <p>Район: {district}</p>}
             {rooms && <p>Комнат: {rooms}</p>}

@@ -167,6 +167,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
     <div>
     <Info label="Район" value={listing.district} />
+    <Info label="Адрес" value={listing.address} />
     <Info label="Комнат" value={listing.rooms} />
     <Info
     label="Этаж"

@@ -77,6 +77,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const price = parseFloat(formData.get('price') as string);
     const status = formData.get('status') as string;
     const district = formData.get('district') as string;
+    const address = formData.get('address') as string;
     const rooms = formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null;
     const floor = formData.get('floor') ? parseInt(formData.get('floor') as string) : null;
     const totalFloors = formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null;
@@ -95,13 +96,14 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const featuredImageId = formData.get('featuredImageId') as string;
 
     // Update listing info
-    await prisma.listing.update({
+    const updatedListing = await prisma.listing.update({
       where: { id: listingId },
       data: {
         title,
         price,
         status,
         district,
+        address,
         rooms,
         floor,
         totalFloors,
@@ -114,7 +116,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         adminComment,
         noEncumbrances,
         noKids,
-        ...(userId ? { userId } : {}),
+        userId,
       },
     });
 
@@ -169,11 +171,6 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         data: { isFeatured: true },
       });
     }
-
-    const updatedListing = await prisma.listing.findUnique({
-      where: { id: listingId },
-      include: { images: true },
-    });
 
     return NextResponse.json(updatedListing);
   } catch (err) {

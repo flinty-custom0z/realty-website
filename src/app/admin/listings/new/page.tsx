@@ -38,6 +38,7 @@ export default function CreateListingPage() {
     adminComment: '',
     categoryId: '',
     district: '',
+    address: '',
     rooms: '',
     floor: '',
     totalFloors: '',
@@ -256,6 +257,20 @@ export default function CreateListingPage() {
               id="district"
               name="district"
               value={formData.district}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+              Адрес
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             />

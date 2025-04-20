@@ -52,6 +52,7 @@ async function handleCreateListing(req: NextRequest) {
     const categoryId = formData.get('categoryId') as string;
     const price = parseFloat(formData.get('price') as string);
     const district = formData.get('district') as string;
+    const address = formData.get('address') as string;
     const userId = formData.get('userId') as string;
     
     // Parse numeric values with fallbacks
@@ -80,13 +81,15 @@ async function handleCreateListing(req: NextRequest) {
 
     // Create listing
     console.log("Creating listing in database");
-    const listing = await prisma.listing.create({
+    const newListing = await prisma.listing.create({
       data: {
         title,
         publicDescription,
         adminComment,
         categoryId,
+        price,
         district,
+        address,
         rooms,
         floor,
         totalFloors,
@@ -96,12 +99,12 @@ async function handleCreateListing(req: NextRequest) {
         yearBuilt,
         noEncumbrances,
         noKids,
-        price,
+        status: 'active',
+        userId,
         listingCode,
-        userId: userId || user.id,
       },
     });
-    console.log("Listing created with ID:", listing.id);
+    console.log("Listing created with ID:", newListing.id);
 
     // Handle image uploads
     const images = formData.getAll('images');
@@ -115,7 +118,7 @@ async function handleCreateListing(req: NextRequest) {
             console.log(`Image ${index + 1} saved at path: ${imagePath}`);
         return prisma.image.create({
           data: {
-            listingId: listing.id,
+            listingId: newListing.id,
             path: imagePath,
             isFeatured: index === 0, // First image is featured
           },
@@ -140,7 +143,7 @@ async function handleCreateListing(req: NextRequest) {
       
       await prisma.image.create({
         data: {
-          listingId: listing.id,
+          listingId: newListing.id,
           path: placeholderPath,
           isFeatured: true,
         },
@@ -148,7 +151,7 @@ async function handleCreateListing(req: NextRequest) {
     }
 
     console.log("Listing creation complete, returning response");
-    return NextResponse.json(listing, { 
+    return NextResponse.json(newListing, { 
       status: 201,
       headers: {
         'Content-Type': 'application/json'

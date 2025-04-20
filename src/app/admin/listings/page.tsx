@@ -20,6 +20,8 @@ interface Listing {
   _count: {
     comments: number;
   };
+  district: string;
+  address: string;
 }
 
 interface PaginationData {
@@ -174,6 +176,8 @@ export default function AdminListingsPage() {
                     <th className="py-3 px-4 font-medium">Название</th>
                     <th className="py-3 px-4 font-medium">Категория</th>
                     <th className="py-3 px-4 font-medium">Код</th>
+                    <th className="py-3 px-4 font-medium">Район</th>
+                    <th className="py-3 px-4 font-medium">Адрес</th>
                     <th className="py-3 px-4 font-medium">Цена</th>
                     <th className="py-3 px-4 font-medium">Статус</th>
                     <th className="py-3 px-4 font-medium">Дата</th>
@@ -208,6 +212,8 @@ export default function AdminListingsPage() {
                       </td>
                       <td className="py-3 px-4">{listing.category.name}</td>
                       <td className="py-3 px-4">{listing.listingCode}</td>
+                      <td className="py-3 px-4">{listing.district}</td>
+                      <td className="py-3 px-4">{listing.address}</td>
                       <td className="py-3 px-4">{listing.price.toLocaleString()} ₽</td>
                       <td className="py-3 px-4">
                         <span 

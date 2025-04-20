@@ -293,6 +293,7 @@ export default async function SearchPage({
                 title={l.title}
                 price={l.price}
                 district={l.district || undefined}
+                address={l.address || undefined}
                 rooms={l.rooms || undefined}
                 area={l.houseArea || undefined}
                 floor={l.floor || undefined}
