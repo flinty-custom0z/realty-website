@@ -84,6 +84,17 @@ export default function FilterSidebar({
   const filterChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
   
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Helper to determine if price filter should be applied
+  const shouldApplyPriceFilter = () => {
+    // Only apply if user has entered a value different from the default
+    return (
+      (minPrice && filterOptions.priceRange.min !== undefined && minPrice !== filterOptions.priceRange.min.toString()) ||
+      (maxPrice && filterOptions.priceRange.max !== undefined && maxPrice !== filterOptions.priceRange.max.toString())
+    );
+  };
+  
   // Sync with URL parameters
   useEffect(() => {
     if (!searchParams) return;
@@ -164,75 +175,79 @@ export default function FilterSidebar({
   
   // Fetch filtered options based on current selections
   const fetchFilterOptions = async () => {
-      setIsLoading(true);
-      
-      // Build query params with all current active filters
-      const params = new URLSearchParams();
-      
-      // Base filters
+    setIsLoading(true);
+
+    // Cancel previous fetch if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Build query params with all current active filters
+    const params = new URLSearchParams();
+
+    // Base filters
+    if (categorySlug) {
+      params.append('category', categorySlug);
+    }
+
+    if (searchInputValue.trim()) {
+      // Use categoryQuery for category pages, q for global search
       if (categorySlug) {
-        params.append('category', categorySlug);
+        params.append('categoryQuery', searchInputValue);
+      } else {
+        params.append('q', searchInputValue);
       }
-      
-      if (searchInputValue.trim()) {
-        // Use categoryQuery for category pages, q for global search
-        if (categorySlug) {
-          params.append('categoryQuery', searchInputValue);
-        } else {
-          params.append('q', searchInputValue);
-        }
-      }
-      
+    }
+
     // Add all selected filters
-        selectedCategories.forEach(c => params.append('category', c));
-        selectedDistricts.forEach(d => params.append('district', d));
-        selectedConditions.forEach(c => params.append('condition', c));
-        selectedRooms.forEach(r => params.append('rooms', r));
-      
-      // Add current price if provided
-      if (minPrice) {
-        params.append('minPrice', minPrice);
-      }
-      
-      if (maxPrice) {
-        params.append('maxPrice', maxPrice);
-      }
-      
-      if (userEditedPrice.min || userEditedPrice.max) {
-        params.append('applyPriceFilter', 'true');
-      }
-      
-      try {
-      const res = await fetch(`/api/filter-options?${params.toString()}`);
-        
-        if (res.ok) {
-          const data = await res.json();
+    selectedCategories.forEach(c => params.append('category', c));
+    selectedDistricts.forEach(d => params.append('district', d));
+    selectedConditions.forEach(c => params.append('condition', c));
+    selectedRooms.forEach(r => params.append('rooms', r));
+
+    // Add current price if provided
+    if (minPrice) {
+      params.append('minPrice', minPrice);
+    }
+    if (maxPrice) {
+      params.append('maxPrice', maxPrice);
+    }
+
+    // Only send applyPriceFilter if price is actually set and different from default
+    if (shouldApplyPriceFilter()) {
+      params.append('applyPriceFilter', 'true');
+    }
+
+    try {
+      const res = await fetch(`/api/filter-options?${params.toString()}`, { signal: controller.signal });
+      if (res.ok) {
+        const data = await res.json();
         setFilterOptions(data);
-        
+
         // Update price ranges based on available data
         const newMinPrice = data.priceRange.min;
         const newMaxPrice = data.priceRange.max;
-        
+
         // Update price when filters change (especially when other filters are toggled)
         if (shouldUpdatePrices.current || isInitialLoadRef.current) {
-          // When filter toggling happened, update price ranges (unless user edited them)
           if (newMinPrice !== undefined && !userEditedPrice.min) {
             setMinPrice(newMinPrice.toString());
           }
-          
           if (newMaxPrice !== undefined && !userEditedPrice.max) {
-          setMaxPrice(newMaxPrice.toString());
+            setMaxPrice(newMaxPrice.toString());
           }
         }
-        }
-      } catch (error) {
-          console.error("Error fetching filter options:", error);
-      } finally {
-        setIsLoading(false);
-        // Reset the update flag after the entire operation is complete
-        shouldUpdatePrices.current = false;
       }
-    };
+    } catch (error: any) {
+      if (error.name === 'AbortError') return; // Ignore aborted requests
+      console.error('Error fetching filter options:', error);
+    } finally {
+      setIsLoading(false);
+      shouldUpdatePrices.current = false;
+    }
+  };
     
   // Determine if custom filters are applied
   const hasCustomFilters = () => {
@@ -374,49 +389,33 @@ export default function FilterSidebar({
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
   
-  // Handler functions for filter changes
+  // Handler functions for filter changes (use functional updates)
   const handleCategoryToggle = (slug: string) => {
-    // Flag to update prices when filter changes
     shouldUpdatePrices.current = true;
-    
-    setSelectedCategories(prev => {
-      return prev.includes(slug) 
-        ? prev.filter(s => s !== slug) 
-      : [...prev, slug];
-    });
+    setSelectedCategories(prev =>
+      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+    );
   };
   
   const handleDistrictToggle = (district: string) => {
-    // Flag to update prices when filter changes
     shouldUpdatePrices.current = true;
-    
-    setSelectedDistricts(prev => {
-      return prev.includes(district) 
-        ? prev.filter(d => d !== district) 
-      : [...prev, district];
-    });
+    setSelectedDistricts(prev =>
+      prev.includes(district) ? prev.filter(d => d !== district) : [...prev, district]
+    );
   };
   
   const handleConditionToggle = (cond: string) => {
-    // Flag to update prices when filter changes
     shouldUpdatePrices.current = true;
-    
-    setSelectedConditions(prev => {
-      return prev.includes(cond) 
-        ? prev.filter(c => c !== cond) 
-      : [...prev, cond];
-    });
+    setSelectedConditions(prev =>
+      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
+    );
   };
   
   const handleRoomToggle = (room: string) => {
-    // Flag to update prices when filter changes
     shouldUpdatePrices.current = true;
-    
-    setSelectedRooms(prev => {
-      return prev.includes(room)
-        ? prev.filter(r => r !== room)
-      : [...prev, room];
-    });
+    setSelectedRooms(prev =>
+      prev.includes(room) ? prev.filter(r => r !== room) : [...prev, room]
+    );
   };
   
   const handlePriceChange = (type: 'min' | 'max', value: string) => {
