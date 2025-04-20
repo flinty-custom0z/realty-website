@@ -30,13 +30,6 @@ Here are the errors I need you to help me fix:
 Please read the code, check the attached project and help me fix it. Return the full fixed version for every file I need to fix. Don't be cheap and read as much as you can. It's very important.
 
 
-- Edit "Риелтор" - contact details - add a contact details property and let them choose one of the people, let admin edit the list of people
-
-- Add a pic to realtor
-
-- Redirect after logout
-
-
 ### Next
 
 - Dynamic suggestions when entering search query
