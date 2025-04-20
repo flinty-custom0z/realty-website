@@ -131,15 +131,21 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   
   const isAdmin = await currentUserIsAdmin();
   const backHref = await buildBackHref(listing!.category.slug);
-  const backLinkText = await getBackLinkText(backHref); // Add this line
+  const backLinkText = await getBackLinkText(backHref);
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');
   
+  // Ensure main image is first
+  const sortedImages = listing.images.slice().sort((a, b) => {
+    if (a.isFeatured === b.isFeatured) return 0;
+    return a.isFeatured ? -1 : 1;
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
     {/* top bar */}
     <div className="mb-4 flex justify-between items-center">
     <Link href={backHref} className="text-blue-500 hover:underline">
-    ← {backLinkText} {/* Change this line */}
+    ← {backLinkText}
     </Link>
     {isAdmin && (
       <AdminListingActions listingId={listing.id} categorySlug={listing.category.slug} />
@@ -148,7 +154,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     
     {/* title & gallery */}
     <h1 className="text-2xl font-bold mb-4">{listing.title}</h1>
-    <ImageGallery images={listing.images} title={listing.title} />
+    <ImageGallery images={sortedImages} title={listing.title} />
     <p className="text-gray-500 mt-2 mb-6">Добавлено: {dateAdded}</p>
     
     <div className="flex flex-col md:flex-row gap-8">

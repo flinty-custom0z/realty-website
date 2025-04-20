@@ -591,7 +591,10 @@ export default function EditListingPage() {
               <div className="mb-4">
                 <p className="text-sm text-gray-700 mb-2">Текущие фотографии:</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {listing.images.map(image => (
+                  {(listing.images.slice().sort((a, b) => {
+                    if (a.isFeatured === b.isFeatured) return 0;
+                    return a.isFeatured ? -1 : 1;
+                  })).map(image => (
                     <AdminImagePreview
                     key={image.id}
                       image={image}
