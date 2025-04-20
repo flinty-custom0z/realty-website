@@ -36,6 +36,12 @@ interface ImageData {
   isFeatured: boolean;
 }
 
+interface User {
+  id: string;
+  name: string;
+  phone?: string;
+}
+
 interface ListingData extends ListingFormData {
   id: string;
   listingCode: string;
@@ -65,6 +71,7 @@ export default function EditListingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
   
   // For image uploads
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -72,10 +79,8 @@ export default function EditListingPage() {
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [featuredImageId, setFeaturedImageId] = useState<string>('');
   
-  // For comments - simplified to use adminComment field
-  
   // Form data
-  const [formData, setFormData] = useState<ListingFormData>({
+  const [formData, setFormData] = useState<ListingFormData & { userId?: string }>({
     title: '',
     publicDescription: '',
     adminComment: '',
@@ -92,12 +97,17 @@ export default function EditListingPage() {
     noKids: false,
     price: '',
     status: 'active',
+    userId: '',
   });
   
-  // Fetch listing data
+  // Fetch users (realtors) and listing data
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch users
+        const usersRes = await fetch('/api/admin/users');
+        const usersData = usersRes.ok ? await usersRes.json() : [];
+        setUsers(usersData);
         // Fetch listing
         const listingRes = await fetch(`/api/admin/listings/${params.id}`);
         if (!listingRes.ok) {
@@ -124,6 +134,7 @@ export default function EditListingPage() {
           noKids: listingData.noKids || false,
           price: listingData.price.toString(),
           status: listingData.status,
+          userId: listingData.user?.id || (usersData[0]?.id ?? ''),
         });
         
         // Set featured image
@@ -212,7 +223,7 @@ export default function EditListingPage() {
       
       // Add all form fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value.toString());
+        formDataToSend.append(key, value?.toString() ?? '');
       });
       
       // Add new images to FormData
@@ -555,6 +566,27 @@ export default function EditListingPage() {
                   Без детей
                 </label>
               </div>
+            </div>
+            
+            <div>
+              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
+                Риелтор (контактное лицо) *
+              </label>
+              <select
+                id="userId"
+                name="userId"
+                value={formData.userId}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+                required
+              >
+                {users.length === 0 && <option value="">Загрузка риелторов...</option>}
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} {user.phone ? `(${user.phone})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           

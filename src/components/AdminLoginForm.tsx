@@ -29,8 +29,8 @@ export default function AdminLoginForm() {
         throw new Error(data.error || 'Ошибка входа');
       }
 
-      // Redirect to admin dashboard or the specified redirect URL
-      router.push(redirectTo);
+      // Redirect to admin dashboard or the specified redirect URL (full reload)
+      window.location.href = redirectTo;
     } catch (err) {
       setError((err as Error).message || 'Произошла ошибка при входе');
     } finally {

@@ -52,6 +52,7 @@ async function handleCreateListing(req: NextRequest) {
     const categoryId = formData.get('categoryId') as string;
     const price = parseFloat(formData.get('price') as string);
     const district = formData.get('district') as string;
+    const userId = formData.get('userId') as string;
     
     // Parse numeric values with fallbacks
     const rooms = formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null;
@@ -97,7 +98,7 @@ async function handleCreateListing(req: NextRequest) {
         noKids,
         price,
         listingCode,
-        userId: user.id,
+        userId: userId || user.id,
       },
     });
     console.log("Listing created with ID:", listing.id);

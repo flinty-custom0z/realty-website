@@ -15,6 +15,12 @@ interface ImagePreview {
   url: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  phone?: string;
+}
+
 export default function CreateListingPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +29,7 @@ export default function CreateListingPage() {
   const [success, setSuccess] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -41,6 +48,7 @@ export default function CreateListingPage() {
     noEncumbrances: false,
     noKids: false,
     price: '',
+    userId: '',
   });
   
   // Fetch categories on mount
@@ -68,6 +76,24 @@ export default function CreateListingPage() {
     };
     
     fetchCategories();
+  }, []);
+  
+  // Fetch users (realtors) on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/admin/users');
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const data = await response.json();
+        setUsers(data);
+        if (data.length > 0) {
+          setFormData((prev) => ({ ...prev, userId: data[0].id }));
+        }
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchUsers();
   }, []);
   
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -378,6 +404,27 @@ export default function CreateListingPage() {
                 Без детей
               </label>
             </div>
+          </div>
+          
+          <div>
+            <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
+              Риелтор (контактное лицо) *
+            </label>
+            <select
+              id="userId"
+              name="userId"
+              value={formData.userId}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              required
+            >
+              {users.length === 0 && <option value="">Загрузка риелторов...</option>}
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} {user.phone ? `(${user.phone})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         

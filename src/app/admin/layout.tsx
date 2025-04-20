@@ -73,6 +73,11 @@ export default async function AdminLayout({
                 Добавить объявление
               </Link>
             </li>
+            <li>
+              <Link href="/admin/users" className="block p-2 hover:bg-gray-100 rounded">
+                Риелторы
+              </Link>
+            </li>
               <li className="border-t pt-2 mt-4">
                 <form action="/api/auth/logout" method="post">
                 <button

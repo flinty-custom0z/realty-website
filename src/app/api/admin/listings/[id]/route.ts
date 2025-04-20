@@ -89,6 +89,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const adminComment = formData.get('adminComment') as string;
     const noEncumbrances = formData.get('noEncumbrances') === 'true';
     const noKids = formData.get('noKids') === 'true';
+    const userId = formData.get('userId') as string;
 
     const imagesToDelete = JSON.parse(formData.get('imagesToDelete') as string || '[]');
     const featuredImageId = formData.get('featuredImageId') as string;
@@ -112,7 +113,8 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         publicDescription,
         adminComment,
         noEncumbrances,
-        noKids
+        noKids,
+        ...(userId ? { userId } : {}),
       },
     });
 
