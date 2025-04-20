@@ -198,6 +198,10 @@ export default function FilterSidebar({
         params.append('maxPrice', maxPrice);
       }
       
+      if (userEditedPrice.min || userEditedPrice.max) {
+        params.append('applyPriceFilter', 'true');
+      }
+      
       try {
       const res = await fetch(`/api/filter-options?${params.toString()}`);
         
