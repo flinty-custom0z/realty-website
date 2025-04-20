@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
+import SortSelector from '@/components/SortSelector';
 
 // Force dynamic rendering so every request is fresh
 export const dynamic = 'force-dynamic';
@@ -280,12 +281,7 @@ export default async function SearchPage({
                   )} из ${pagination.total} результатов`
                 : 'Нет результатов'}
             </p>
-            {/* TODO: hook up sort selector */}
-            <select defaultValue="dateAdded_desc" className="border rounded p-2 text-sm">
-              <option value="dateAdded_desc">Дата (новые)</option>
-              <option value="price_asc">Цена (от низкой)</option>
-              <option value="price_desc">Цена (от высокой)</option>
-            </select>
+            <SortSelector />
           </div>
           
           {/* Cards */}

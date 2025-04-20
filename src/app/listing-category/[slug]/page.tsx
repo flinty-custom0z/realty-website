@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
 import { headers } from 'next/headers';
+import SortSelector from '@/components/SortSelector';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -204,15 +205,7 @@ export default async function CategoryPage({
                 ${Math.min(pagination.page * pagination.limit, pagination.total)} из ${pagination.total} результатов`
               ) : 'Нет результатов'}
             </p>
-            
-            <select 
-              className="border rounded p-2"
-              // This would need client-side JS to handle the sorting
-            >
-              <option value="dateAdded_desc">Дата (новые)</option>
-              <option value="price_asc">Цена (от низкой)</option>
-              <option value="price_desc">Цена (от высокой)</option>
-            </select>
+            <SortSelector />
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
