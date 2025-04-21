@@ -42,21 +42,33 @@ async function currentUserIsAdmin() {
 async function buildBackHref(categorySlug: string) {
   const hdr = await nextHeaders();
   const referer = hdr.get('referer');
-  if (!referer) return `/listing-category/${categorySlug}`;
+  
+  console.log('Referer:', referer);
+  
+  if (!referer) {
+    console.log('No referer, returning category page:', `/listing-category/${categorySlug}`);
+    return `/listing-category/${categorySlug}`;
+  }
   
   try {
     const url = new URL(referer);
+    console.log('Parsed URL pathname:', url.pathname);
+    
     // If coming from search, category page, or home page, return to that page
     if (
       url.pathname.startsWith('/search') ||
       url.pathname.startsWith('/listing-category') ||
       url.pathname === '/'
     ) {
+      console.log('Returning to original referer:', referer);
       return referer;
     }
-  } catch {
+  } catch (error) {
+    console.error('Error parsing referer URL:', error);
     /* ignore malformed referer */
   }
+  
+  console.log('Defaulting to category page:', `/listing-category/${categorySlug}`);
   return `/listing-category/${categorySlug}`;
 }
 
@@ -76,35 +88,59 @@ function Info({
 }
 
 async function getBackLinkText(backUrl: string) {
+  console.log('Generating back link text for URL:', backUrl);
+  
   // If returning to home
   if (backUrl === '/' || backUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
+    console.log('Matched home URL pattern');
     return 'На главную';
   }
   
   // If returning to search results
-  if (backUrl.startsWith('/search')) {
+  if (backUrl.includes('/search')) {
+    console.log('Matched search URL pattern');
     return 'Назад к результатам поиска';
   }
   
   // If returning to a category
-  if (backUrl.startsWith('/listing-category/')) {
-    const categorySlug = backUrl.split('/')[2]?.split('?')[0];
+  if (backUrl.includes('/listing-category/')) {
+    console.log('Matched category URL pattern');
+    const urlParts = backUrl.split('/');
+    console.log('URL parts:', urlParts);
+    
+    // Find the segment after 'listing-category'
+    let categorySlug = '';
+    for (let i = 0; i < urlParts.length; i++) {
+      if (urlParts[i] === 'listing-category' && i + 1 < urlParts.length) {
+        categorySlug = urlParts[i + 1]?.split('?')[0] || '';
+        break;
+      }
+    }
+    
+    console.log('Extracted category slug:', categorySlug);
+    
     if (categorySlug) {
       const category = await prisma.category.findUnique({
         where: { slug: categorySlug },
       });
+      
+      console.log('Found category:', category);
+      
       if (category) {
         // If it's a search within category (has query parameter)
         if (backUrl.includes('?q=')) {
+          console.log('Category search detected');
           return 'Назад к результатам поиска';
         }
         // If it's just a category page
+        console.log('Using category name:', category.name);
         return `Назад к ${getDativeCase(category.name)}`;
       }
     }
   }
   
   // Default
+  console.log('No patterns matched, using default text');
   return 'Назад';
 }
 
