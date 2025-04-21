@@ -22,8 +22,6 @@
 ### NOW
 
 - Allow to view images in the edit listing page
-- Move edit listing history to a separate page and allow user to access it through a button in the edit listing page
-
 - Fix image not showing up right away when uploading, only after refresh
 
 

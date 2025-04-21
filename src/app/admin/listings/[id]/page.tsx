@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
+import ImageModal from '@/components/ImageModal';
+import { Eye } from 'lucide-react';
 
 interface ListingFormData {
   title: string;
@@ -101,6 +103,10 @@ export default function EditListingPage() {
     status: 'active',
     userId: '',
   });
+  
+  // Add new state for image preview modal
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewModalImage, setPreviewModalImage] = useState('');
   
   // Fetch users (realtors) and listing data
   useEffect(() => {
@@ -304,6 +310,15 @@ export default function EditListingPage() {
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ru-RU');
+  };
+  
+  const openPreviewModal = (imageUrl: string) => {
+    setPreviewModalImage(imageUrl);
+    setPreviewModalOpen(true);
+  };
+  
+  const closePreviewModal = () => {
+    setPreviewModalOpen(false);
   };
   
   if (isLoading) {
@@ -713,13 +728,22 @@ export default function EditListingPage() {
                         fill
                         className="object-cover rounded"
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeImagePreview(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
+                      <div className="absolute top-2 right-2 flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => removeImagePreview(index)}
+                          className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openPreviewModal(preview.url)}
+                          className="bg-white text-blue-500 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -738,6 +762,15 @@ export default function EditListingPage() {
           </div>
         </form>
       </div>
+      
+      {/* Add the modal at the end of the component, before the closing </div> */}
+      {previewModalOpen && (
+        <ImageModal
+          src={previewModalImage}
+          alt="Предпросмотр фото"
+          onClose={closePreviewModal}
+        />
+      )}
     </div>
   );
 }
