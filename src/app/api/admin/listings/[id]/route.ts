@@ -184,12 +184,22 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       });
     }
 
+    // Track image changes
+    let imageChanges: Record<string, any> = {};
+    let hasImageChanges = false;
+
     // Handle new image uploads
     const newImages = formData.getAll('newImages') as File[];
 
     if (newImages.length > 0) {
       const imagePromises = newImages.map(async (file) => {
         const imagePath = await saveImage(file);
+        hasImageChanges = true;
+        imageChanges.added = imageChanges.added || [];
+        imageChanges.added.push({
+          filename: file.name,
+          size: Math.round(file.size / 1024) + 'KB'
+        });
         return prisma.image.create({
           data: {
             listingId,
@@ -206,6 +216,12 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       const oldImages = await prisma.image.findMany({
         where: { id: { in: imagesToDelete }, listingId },
       });
+
+      hasImageChanges = true;
+      imageChanges.deleted = oldImages.map(img => ({
+        id: img.id,
+        path: img.path
+      }));
 
       await Promise.all(
         oldImages.map(async (img) => {
@@ -225,6 +241,22 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 
     // Set featured image
     if (featuredImageId) {
+      const previousFeatured = await prisma.image.findFirst({
+        where: { 
+          listingId,
+          isFeatured: true,
+          id: { not: featuredImageId }
+        },
+      });
+
+      if (previousFeatured) {
+        hasImageChanges = true;
+        imageChanges.featuredChanged = {
+          previous: previousFeatured.id,
+          new: featuredImageId
+        };
+      }
+
       await prisma.image.updateMany({
         where: { listingId },
         data: { isFeatured: false },
@@ -233,6 +265,18 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       await prisma.image.update({
         where: { id: featuredImageId },
         data: { isFeatured: true },
+      });
+    }
+
+    // Create history entry for image changes if any occurred
+    if (hasImageChanges) {
+      await prisma.listingHistory.create({
+        data: {
+          listingId,
+          userId: user.id,
+          changes: imageChanges,
+          action: 'images'
+        }
       });
     }
 

@@ -1,16 +1,32 @@
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import ClientImage from '@/components/ClientImage';
 
 interface HistoryChange {
   before: any;
   after: any;
 }
 
+interface ImageChange {
+  added?: Array<{
+    filename: string;
+    size: string;
+  }>;
+  deleted?: Array<{
+    id: string;
+    path: string;
+  }>;
+  featuredChanged?: {
+    previous: string;
+    new: string;
+  };
+}
+
 interface HistoryEntry {
   id: string;
   createdAt: string;
-  action: 'create' | 'update' | 'delete';
-  changes: Record<string, HistoryChange> | { action: string };
+  action: 'create' | 'update' | 'delete' | 'images';
+  changes: Record<string, HistoryChange> | ImageChange | { action: string };
   userName: string;
 }
 
@@ -71,6 +87,52 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
     return fieldMap[field] || field;
   };
 
+  const renderImageChanges = (changes: ImageChange) => {
+    return (
+      <div className="space-y-4">
+        {changes.added && changes.added.length > 0 && (
+          <div>
+            <h4 className="font-medium text-sm">Added {changes.added.length} new image{changes.added.length > 1 ? 's' : ''}</h4>
+            <ul className="ml-4 list-disc mt-1 text-sm">
+              {changes.added.map((img, idx) => (
+                <li key={idx}>
+                  {img.filename} ({img.size})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {changes.deleted && changes.deleted.length > 0 && (
+          <div>
+            <h4 className="font-medium text-sm text-red-600">Deleted {changes.deleted.length} image{changes.deleted.length > 1 ? 's' : ''}</h4>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {changes.deleted.map((img) => (
+                <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden">
+                  <ClientImage
+                    src={img.path}
+                    alt="Deleted image"
+                    fill
+                    className="object-cover opacity-70"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-40">
+                    <span className="text-white text-xs font-bold">Deleted</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {changes.featuredChanged && (
+          <div>
+            <h4 className="font-medium text-sm">Changed featured image</h4>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="p-4 text-center">Loading history...</div>;
   }
@@ -98,7 +160,9 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     ? 'created this listing' 
                     : entry.action === 'update' 
                       ? 'updated this listing'
-                      : 'deleted this listing'}
+                      : entry.action === 'images'
+                        ? 'modified images'
+                        : 'deleted this listing'}
                 </span>
               </div>
               <div className="text-sm text-gray-500">
@@ -129,6 +193,12 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {entry.action === 'images' && (
+              <div className="mt-2">
+                {renderImageChanges(entry.changes as ImageChange)}
               </div>
             )}
 

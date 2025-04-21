@@ -25,7 +25,21 @@ async function getListingHistory(req: NextRequest, { params }: { params: { id: s
       ORDER BY lh."createdAt" DESC
     `;
     
-    return NextResponse.json(history);
+    // Process image paths for deleted images to ensure they're complete
+    const processedHistory = (history as any[]).map(entry => {
+      if (entry.action === 'images' && entry.changes.deleted) {
+        // Make sure image paths are properly formatted for frontend rendering
+        entry.changes.deleted = entry.changes.deleted.map((img: any) => {
+          if (img.path && !img.path.startsWith('http') && !img.path.startsWith('/')) {
+            return { ...img, path: `/${img.path}` };
+          }
+          return img;
+        });
+      }
+      return entry;
+    });
+    
+    return NextResponse.json(processedHistory);
   } catch (error) {
     console.error('Error fetching listing history:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

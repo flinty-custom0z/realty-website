@@ -122,19 +122,36 @@ async function handleCreateListing(req: NextRequest) {
     const images = formData.getAll('images');
     console.log(`Processing ${images.length} images`);
     
+    const imageRecords = [];
+    interface UploadedImage {
+      filename: string;
+      size: string;
+      path: string;
+      isFeatured: boolean;
+    }
+    let uploadedImagesData: UploadedImage[] = [];
+    
     if (images.length > 0) {
       const imagePromises = images.map(async (file, index) => {
         if (file instanceof File) {
           try {
-        const imagePath = await saveImage(file);
+            const imagePath = await saveImage(file);
             console.log(`Image ${index + 1} saved at path: ${imagePath}`);
-        return prisma.image.create({
-          data: {
-            listingId: newListing.id,
-            path: imagePath,
-            isFeatured: index === 0, // First image is featured
-          },
-        });
+            
+            uploadedImagesData.push({
+              filename: file.name,
+              size: Math.round(file.size / 1024) + 'KB',
+              path: imagePath,
+              isFeatured: index === 0
+            });
+            
+            return prisma.image.create({
+              data: {
+                listingId: newListing.id,
+                path: imagePath,
+                isFeatured: index === 0, // First image is featured
+              },
+            });
           } catch (error) {
             console.error(`Error processing image ${index + 1}:`, error);
             // Continue with other images even if one fails
@@ -147,7 +164,26 @@ async function handleCreateListing(req: NextRequest) {
       });
 
       const results = await Promise.all(imagePromises);
-      console.log(`Created ${results.filter(Boolean).length} image records`);
+      imageRecords.push(...results.filter(Boolean));
+      console.log(`Created ${imageRecords.length} image records`);
+      
+      // Create history entry for images
+      if (uploadedImagesData.length > 0) {
+        await prisma.listingHistory.create({
+          data: {
+            listingId: newListing.id,
+            userId: user.id,
+            changes: {
+              added: uploadedImagesData.map(img => ({
+                filename: img.filename,
+                size: img.size
+              })),
+              featuredImage: uploadedImagesData.find(img => img.isFeatured)?.path
+            },
+            action: 'images'
+          }
+        });
+      }
     } else {
       // If no images were uploaded, use a placeholder
       console.log("No images uploaded, using placeholder");
