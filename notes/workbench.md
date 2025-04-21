@@ -29,6 +29,5 @@
 
 ### Later
 
-- On main after categories it should show all listings and user should be able to choose what to sort by
 - Edit history
 - Admin login not working when accessing website via IP address (but working via localhost)

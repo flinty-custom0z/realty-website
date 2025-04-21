@@ -40,6 +40,10 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '30');
 
+    // Sorting
+    const sortField = searchParams.get('sort') || 'dateAdded';
+    const sortOrder = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+
     const [total, listings] = await Promise.all([
       prismaApi.listing.count({ where: filter }),
       prismaApi.listing.findMany({
@@ -48,7 +52,7 @@ export async function GET(req: NextRequest) {
         category: true,
           images: { where: { isFeatured: true }, take: 1 },
       },
-        orderBy: { dateAdded: 'desc' },
+        orderBy: { [sortField]: sortOrder },
       skip: (page - 1) * limit,
       take: limit,
       }),
