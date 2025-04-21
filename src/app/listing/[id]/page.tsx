@@ -248,13 +248,17 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <aside className="w-full md:w-1/3">
     <div className="bg-white shadow rounded-md p-6 sticky top-4">
     <div className="flex items-center mb-4">
-    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-    {listing.user.photo ? (
-      <ClientImage src={listing.user.photo} alt={listing.user.name} className="w-16 h-16 rounded-full object-cover" fill={false} />
-    ) : (
-      <span className="text-3xl text-blue-500">{listing.user.name.charAt(0)}</span>
+    {listing.user.photo && (
+      <div className="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0">
+        <ClientImage
+          src={`/api/image${listing.user.photo}`}
+          alt={`Фото ${listing.user.name}`}
+          className="w-full h-full object-cover"
+          width={64}
+          height={64}
+        />
+      </div>
     )}
-    </div>
     <div>
     <h3 className="font-bold">{listing.user.name}</h3>
     <p className="text-gray-600">Риелтор</p>

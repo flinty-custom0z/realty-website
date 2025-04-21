@@ -7,6 +7,8 @@ interface ClientImageProps {
   src: string;
   alt: string;
   fill?: boolean;
+  width?: number;
+  height?: number;
   className?: string;
   sizes?: string;
   priority?: boolean;
@@ -17,6 +19,8 @@ export default function ClientImage({
   src,
   alt,
   fill = false,
+  width,
+  height,
   className = '',
   sizes = '100vw',
   priority = false,
@@ -74,7 +78,9 @@ export default function ClientImage({
     <Image
       src={imgSrc}
       alt={alt}
-      fill={fill}
+      fill={fill && !width && !height}
+      width={width}
+      height={height}
           className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
       sizes={sizes}
       priority={priority}

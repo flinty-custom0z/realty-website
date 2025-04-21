@@ -685,25 +685,30 @@ export default function FilterSidebar({
               {children}
             </div>
           )}
-          renderThumb={({ props }) => (
-            <div
-              {...props}
-              style={{
-                ...props.style,
-                height: '24px',
-                width: '24px',
-                borderRadius: '50%',
-                backgroundColor: '#2563eb',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                boxShadow: '0 2px 6px #aaa',
-                outline: 'none',
-              }}
-            >
-              {/* No label inside the thumb */}
-            </div>
-          )}
+          renderThumb={({ props }) => {
+            // Explicitly destructure key and style, then spread the rest
+            const { key, style, ...restThumbProps } = props;
+            return (
+              <div
+                key={key} // Pass the key directly
+                {...restThumbProps} // Spread the remaining props
+                style={{ // Apply style separately, merging original and custom
+                  ...style,
+                  height: '24px',
+                  width: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: '#2563eb',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 6px #aaa',
+                  outline: 'none',
+                }}
+              >
+                {/* No label inside the thumb */}
+              </div>
+            );
+          }}
         />
         <div className="flex justify-between text-xs text-gray-500 mt-1">
           <span>{filterOptions.priceRange.min.toLocaleString()} ₽</span>
