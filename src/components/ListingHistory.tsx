@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale'; // Import Russian locale
 import ClientImage from '@/components/ClientImage';
+import ImageModal from '@/components/ImageModal';
+import { Eye } from 'lucide-react';
 
 interface HistoryChange {
   before: any;
@@ -39,6 +41,17 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState('');
+
+  const openImageModal = (imagePath: string) => {
+    setSelectedImageSrc(imagePath);
+    setImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+  };
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -109,7 +122,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
             <h4 className="font-medium text-sm text-red-600">Удалено {changes.deleted.length} {changes.deleted.length > 1 ? 'изображений' : 'изображение'}</h4>
             <div className="flex flex-wrap gap-2 mt-1">
               {changes.deleted.map((img) => (
-                <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden">
+                <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden group">
                   <ClientImage
                     src={img.path}
                     alt="Deleted image"
@@ -119,6 +132,14 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                   <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-40">
                     <span className="text-white text-xs font-bold">Удалено</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => openImageModal(img.path)}
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                    aria-label="Просмотр фото"
+                  >
+                    <Eye size={16} className="text-white" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -147,70 +168,80 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 mb-6">
-      <h3 className="text-lg font-semibold mb-4">История изменений</h3>
-      
-      <div className="space-y-4">
-        {history.map((entry) => (
-          <div key={entry.id} className="border-b pb-4">
-            <div className="flex justify-between mb-2">
-              <div>
-                <span className="font-medium">{entry.userName}</span> 
-                <span className="ml-2 text-gray-600">
-                  {entry.action === 'create' 
-                    ? 'создал(а) это объявление' 
-                    : entry.action === 'update' 
-                      ? 'обновил(а) объявление'
-                      : entry.action === 'images'
-                        ? 'изменил(а) изображения'
-                        : 'удалил(а) объявление'}
-                </span>
+    <>
+      <div className="bg-white shadow rounded-lg p-4 mb-6">
+        <h3 className="text-lg font-semibold mb-4">История изменений</h3>
+        
+        <div className="space-y-4">
+          {history.map((entry) => (
+            <div key={entry.id} className="border-b pb-4">
+              <div className="flex justify-between mb-2">
+                <div>
+                  <span className="font-medium">{entry.userName}</span> 
+                  <span className="ml-2 text-gray-600">
+                    {entry.action === 'create' 
+                      ? 'создал(а) это объявление' 
+                      : entry.action === 'update' 
+                        ? 'обновил(а) объявление'
+                        : entry.action === 'images'
+                          ? 'изменил(а) изображения'
+                          : 'удалил(а) объявление'}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true, locale: ru })}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true, locale: ru })}
-              </div>
+
+              {entry.action === 'create' && 'action' in entry.changes && (
+                <div className="text-sm text-gray-600 ml-2">
+                  {entry.changes.action as string}
+                </div>
+              )}
+
+              {entry.action === 'update' && (
+                <div className="mt-2 space-y-2">
+                  {Object.entries(entry.changes as Record<string, HistoryChange>).map(([field, change]) => (
+                    <div key={field} className="grid grid-cols-3 text-sm">
+                      <div className="font-medium">{formatFieldName(field)}</div>
+                      <div className="text-red-500 line-through">
+                        {change.before === null ? 'Пусто' : 
+                         typeof change.before === 'boolean' ? (change.before ? 'Да' : 'Нет') : 
+                         change.before}
+                      </div>
+                      <div className="text-green-500">
+                        {change.after === null ? 'Пусто' : 
+                         typeof change.after === 'boolean' ? (change.after ? 'Да' : 'Нет') : 
+                         change.after}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {entry.action === 'images' && (
+                <div className="mt-2">
+                  {renderImageChanges(entry.changes as ImageChange)}
+                </div>
+              )}
+
+              {entry.action === 'delete' && 'action' in entry.changes && (
+                <div className="text-sm text-gray-600 ml-2">
+                  Объявление было удалено: {(entry.changes as any).title || 'Неизвестное объявление'}
+                </div>
+              )}
             </div>
-
-            {entry.action === 'create' && 'action' in entry.changes && (
-              <div className="text-sm text-gray-600 ml-2">
-                {entry.changes.action as string}
-              </div>
-            )}
-
-            {entry.action === 'update' && (
-              <div className="mt-2 space-y-2">
-                {Object.entries(entry.changes as Record<string, HistoryChange>).map(([field, change]) => (
-                  <div key={field} className="grid grid-cols-3 text-sm">
-                    <div className="font-medium">{formatFieldName(field)}</div>
-                    <div className="text-red-500 line-through">
-                      {change.before === null ? 'Пусто' : 
-                       typeof change.before === 'boolean' ? (change.before ? 'Да' : 'Нет') : 
-                       change.before}
-                    </div>
-                    <div className="text-green-500">
-                      {change.after === null ? 'Пусто' : 
-                       typeof change.after === 'boolean' ? (change.after ? 'Да' : 'Нет') : 
-                       change.after}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {entry.action === 'images' && (
-              <div className="mt-2">
-                {renderImageChanges(entry.changes as ImageChange)}
-              </div>
-            )}
-
-            {entry.action === 'delete' && 'action' in entry.changes && (
-              <div className="text-sm text-gray-600 ml-2">
-                Объявление было удалено: {(entry.changes as any).title || 'Неизвестное объявление'}
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+      
+      {imageModalOpen && (
+        <ImageModal
+          src={selectedImageSrc}
+          alt="Удаленное изображение"
+          onClose={closeImageModal}
+        />
+      )}
+    </>
   );
 } 
