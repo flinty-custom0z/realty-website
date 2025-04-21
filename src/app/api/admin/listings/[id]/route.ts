@@ -234,9 +234,34 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         })
       );
 
+      // Check if we're deleting the featured image
+      const deletedFeaturedImage = oldImages.some(img => img.isFeatured);
+      
       await prisma.image.deleteMany({
         where: { id: { in: imagesToDelete }, listingId },
       });
+
+      // If we deleted the featured image, set the next available image as featured
+      if (deletedFeaturedImage && !featuredImageId) {
+        const remainingImage = await prisma.image.findFirst({
+          where: { listingId },
+          orderBy: { id: 'asc' },
+        });
+
+        if (remainingImage) {
+          await prisma.image.update({
+            where: { id: remainingImage.id },
+            data: { isFeatured: true },
+          });
+          
+          hasImageChanges = true;
+          imageChanges.featuredChanged = {
+            previous: 'deleted',
+            new: remainingImage.id,
+            automatic: true
+          };
+        }
+      }
     }
 
     // Set featured image
