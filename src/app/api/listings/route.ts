@@ -31,6 +31,12 @@ export async function GET(req: NextRequest) {
     const districtParams = searchParams.getAll('district');
     if (districtParams.length) filter.district = { in: districtParams };
 
+    const conditionParams = searchParams.getAll('condition');
+    if (conditionParams.length) filter.condition = { in: conditionParams };
+
+    const roomsParams = searchParams.getAll('rooms');
+    if (roomsParams.length) filter.rooms = { in: roomsParams.map(Number).filter(Boolean) };
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '30');
 

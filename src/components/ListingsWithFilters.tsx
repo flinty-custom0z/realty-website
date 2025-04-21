@@ -5,19 +5,72 @@ import useSWR from 'swr';
 import FilterSidebar from './FilterSidebar';
 import ListingCard from './ListingCard';
 import SortSelector from './SortSelector';
+import { Category } from '@prisma/client';
+import { FC } from 'react';
+
+interface Listing {
+  id: string;
+  title: string;
+  price: number;
+  listingCode: string;
+  status: string;
+  category: {
+    name: string;
+  };
+  images: {
+    path: string;
+  }[];
+  dateAdded: string;
+  district: string;
+  address: string;
+  rooms?: number;
+  houseArea?: number;
+  floor?: number;
+  totalFloors?: number;
+  condition?: string;
+}
+
+interface PaginationData {
+  total: number;
+  pages: number;
+  page: number;
+  limit: number;
+}
+
+interface ListingsWithFiltersProps {
+  initialListings: Listing[];
+  initialPagination: PaginationData;
+  initialFilters: Record<string, any>;
+  categories: Category[];
+}
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export default function ListingsWithFilters({
+// Helper to build query string with repeated params for arrays
+function buildQueryString(filters: Record<string, any>) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => {
+        if (v !== undefined && v !== '') params.append(key, v);
+      });
+    } else if (value !== undefined && value !== '') {
+      params.append(key, value);
+    }
+  });
+  return params.toString();
+}
+
+const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
   initialListings,
   initialPagination,
   initialFilters,
   categories,
-}) {
+}) => {
   const [filters, setFilters] = useState(initialFilters);
 
   // Build query string from filters
-  const query = new URLSearchParams(filters).toString();
+  const query = buildQueryString(filters);
   const { data, isValidating } = useSWR(
     `/api/listings?${query}`,
     fetcher,
@@ -25,7 +78,7 @@ export default function ListingsWithFilters({
   );
 
   // Handler to update filters
-  const handleFilterChange = (newFilters) => {
+  const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
   };
 
@@ -53,12 +106,18 @@ export default function ListingsWithFilters({
           <SortSelector filters={filters} onChange={handleFilterChange} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.listings.map((l) => (
-            <ListingCard key={l.id} {...l} />
+          {data.listings.map((l: Listing) => (
+            <ListingCard
+              key={l.id}
+              {...l}
+              imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
+            />
           ))}
         </div>
         {/* Pagination, etc. */}
       </div>
     </div>
   );
-}
+};
+
+export default ListingsWithFilters;

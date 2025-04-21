@@ -146,6 +146,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const params = resolvedParams || {};
   const { listings, pagination } = await getListings(params);
   
+  // Convert dateAdded (and any other Date fields) to string for ListingsWithFilters
+  const listingsForClient = listings.map((l: any) => ({
+    ...l,
+    dateAdded: l.dateAdded instanceof Date ? l.dateAdded.toISOString() : l.dateAdded,
+  }));
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Categories */}
@@ -183,7 +189,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
       {/* Listings and filters */}
       <ListingsWithFilters
-        initialListings={listings}
+        initialListings={listingsForClient}
         initialPagination={pagination}
         initialFilters={params}
         categories={categories}

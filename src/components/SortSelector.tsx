@@ -1,6 +1,5 @@
 'use client';
 
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 
 const SORT_OPTIONS = [
@@ -9,14 +8,27 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Цена (от высокой)' },
 ];
 
-export default function SortSelector() {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+interface SortSelectorProps {
+  filters?: Record<string, any>;
+  onChange?: (filters: Record<string, any>) => void;
+}
 
-  // Determine current sort/order from params
-  const sort = searchParams.get('sort') || 'dateAdded';
-  const order = searchParams.get('order') || 'desc';
+export default function SortSelector({ filters, onChange }: SortSelectorProps) {
+  // Controlled mode if filters and onChange are provided
+  const isControlled = typeof filters !== 'undefined' && typeof onChange === 'function';
+
+  let sort = 'dateAdded';
+  let order = 'desc';
+  if (isControlled) {
+    sort = filters.sort || 'dateAdded';
+    order = filters.order || 'desc';
+  } else {
+    // Uncontrolled: use URL params
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const searchParams = require('next/navigation').useSearchParams();
+    sort = searchParams.get('sort') || 'dateAdded';
+    order = searchParams.get('order') || 'desc';
+  }
   const currentValue = `${sort}_${order}`;
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -25,13 +37,30 @@ export default function SortSelector() {
     if (!sortField) sortField = 'dateAdded';
     if (!sortOrder) sortOrder = 'desc';
 
-    // Build new search params
-    const params = new URLSearchParams(Array.from(searchParams.entries()));
-    params.set('sort', sortField);
-    params.set('order', sortOrder);
-    params.set('page', '1'); // Reset to first page on sort change
-
-    router.push(`${pathname}?${params.toString()}`);
+    if (isControlled && onChange) {
+      onChange({ ...filters, sort: sortField, order: sortOrder, page: 1 });
+    } else {
+      // Uncontrolled: update URL
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const searchParams = require('next/navigation').useSearchParams();
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const pathname = require('next/navigation').usePathname();
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const router = require('next/navigation').useRouter();
+      // Convert entries to string[][]
+      const entries = Array.from(searchParams.entries()) as [string, string | string[]][];
+      const params = new URLSearchParams(
+        entries.flatMap(([k, v]) =>
+          Array.isArray(v)
+            ? v.map((vv: string) => [k, vv])
+            : [[k, v]]
+        )
+      );
+      params.set('sort', sortField);
+      params.set('order', sortOrder);
+      params.set('page', '1');
+      router.push(`${pathname}?${params.toString()}`);
+    }
   };
 
   return (
