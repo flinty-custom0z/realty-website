@@ -14,6 +14,7 @@ interface ImageChange {
   added?: Array<{
     filename: string;
     size: string;
+    path?: string; // Add optional path for added images
   }>;
   deleted?: Array<{
     id: string;
@@ -22,6 +23,8 @@ interface ImageChange {
   featuredChanged?: {
     previous: string;
     new: string;
+    previousPath?: string;
+    newPath?: string;
   };
 }
 
@@ -107,13 +110,44 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         {changes.added && changes.added.length > 0 && (
           <div>
             <h4 className="font-medium text-sm">Добавлено {changes.added.length} {changes.added.length > 1 ? 'изображений' : 'изображение'}</h4>
-            <ul className="ml-4 list-disc mt-1 text-sm">
+            <div className="flex flex-wrap gap-2 mt-1">
               {changes.added.map((img, idx) => (
-                <li key={idx}>
-                  {img.filename} ({img.size})
-                </li>
+                <div key={idx} className="relative w-16 h-16 border border-green-300 rounded overflow-hidden group">
+                  {img.path ? (
+                    <>
+                      <ClientImage
+                        src={img.path}
+                        alt={`${img.filename}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-green-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                        Новое
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => img.path && openImageModal(img.path)}
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                        aria-label="Просмотр фото"
+                      >
+                        <Eye size={16} className="text-white" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500 text-xs p-1 text-center">
+                      {img.filename.length > 10 ? img.filename.substring(0, 10) + '...' : img.filename}
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              {changes.added.map((img, idx) => (
+                <div key={idx}>
+                  {idx + 1}. {img.filename} ({img.size})
+                </div>
+              ))}
+            </div>
           </div>
         )}
         
@@ -125,12 +159,12 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                 <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden group">
                   <ClientImage
                     src={img.path}
-                    alt="Deleted image"
+                    alt="Удаленное изображение"
                     fill
-                    className="object-cover opacity-70"
+                    className="object-cover"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-40">
-                    <span className="text-white text-xs font-bold">Удалено</span>
+                  <div className="absolute bottom-0 left-0 right-0 bg-red-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                    Удалено
                   </div>
                   <button
                     type="button"
@@ -149,6 +183,93 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         {changes.featuredChanged && (
           <div>
             <h4 className="font-medium text-sm">Изменено главное изображение</h4>
+            {changes.featuredChanged.previousPath && changes.featuredChanged.newPath && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="relative w-16 h-16 border border-gray-300 rounded overflow-hidden group">
+                  <ClientImage
+                    src={changes.featuredChanged.previousPath}
+                    alt="Предыдущее главное изображение"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gray-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                    Было
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => changes.featuredChanged?.previousPath && openImageModal(changes.featuredChanged.previousPath)}
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                    aria-label="Просмотр фото"
+                  >
+                    <Eye size={16} className="text-white" />
+                  </button>
+                </div>
+                
+                <span className="text-gray-500">→</span>
+                
+                <div className="relative w-16 h-16 border border-blue-300 rounded overflow-hidden group">
+                  <ClientImage
+                    src={changes.featuredChanged.newPath}
+                    alt="Новое главное изображение"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-blue-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                    Стало
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                    aria-label="Просмотр фото"
+                  >
+                    <Eye size={16} className="text-white" />
+                  </button>
+                </div>
+              </div>
+            )}
+            {(!changes.featuredChanged.previousPath || !changes.featuredChanged.newPath) && (
+              <div className="text-sm text-gray-600 mt-1">
+                {!changes.featuredChanged.previousPath && changes.featuredChanged.newPath ? (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="relative w-16 h-16 border border-gray-300 rounded overflow-hidden bg-gray-200 group">
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                        Удалено
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-gray-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                        Было
+                      </div>
+                    </div>
+                    
+                    <span className="text-gray-500">→</span>
+                    
+                    <div className="relative w-16 h-16 border border-blue-300 rounded overflow-hidden group">
+                      <ClientImage
+                        src={changes.featuredChanged.newPath}
+                        alt="Новое главное изображение"
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-blue-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                        Стало
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                        aria-label="Просмотр фото"
+                      >
+                        <Eye size={16} className="text-white" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    Информация о путях к изображениям недоступна
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -238,7 +359,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
       {imageModalOpen && (
         <ImageModal
           src={selectedImageSrc}
-          alt="Удаленное изображение"
+          alt="Изображение"
           onClose={closeImageModal}
         />
       )}

@@ -172,75 +172,119 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       data: updatedData,
     });
 
-    // Create history entry if there are changes
-    if (Object.keys(changes).length > 0) {
-      await prisma.listingHistory.create({
-        data: {
-          listingId,
-          userId: user.id,
-          changes,
-          action: 'update'
-        }
-      });
-    }
-
     // Track image changes
     let imageChanges: Record<string, any> = {};
     let hasImageChanges = false;
+    
+    // Variable to track if the featured image was deleted
+    let deletedFeaturedImage = false;
 
-    // Handle new image uploads
-    const newImages = formData.getAll('newImages') as File[];
-
-    if (newImages.length > 0) {
-      const imagePromises = newImages.map(async (file) => {
-        const imagePath = await saveImage(file);
-        hasImageChanges = true;
-        imageChanges.added = imageChanges.added || [];
-        imageChanges.added.push({
-          filename: file.name,
-          size: Math.round(file.size / 1024) + 'KB'
-        });
-        return prisma.image.create({
-          data: {
-            listingId,
-            path: imagePath,
-            isFeatured: false,
-          },
-        });
-      });
-      await Promise.all(imagePromises);
-    }
-
-    // Delete images
-    if (imagesToDelete.length > 0) {
-      const oldImages = await prisma.image.findMany({
-        where: { id: { in: imagesToDelete }, listingId },
-      });
-
-      hasImageChanges = true;
-      imageChanges.deleted = oldImages.map(img => ({
-        id: img.id,
-        path: img.path
-      }));
-
-      await Promise.all(
-        oldImages.map(async (img) => {
-          try {
-          const filePath = path.join(process.cwd(), 'public', img.path);
-            await unlink(filePath).catch(() => console.log(`Could not delete file: ${filePath}`));
-          } catch (error) {
-            console.error(`Error deleting image file:`, error);
-          }
-        })
-      );
-
-      // Check if we're deleting the featured image
-      const deletedFeaturedImage = oldImages.some(img => img.isFeatured);
+    // Handle uploaded new images
+    const newImageFiles = formData.getAll('newImages');
+    if (newImageFiles.length > 0) {
+      const uploadedImages = [];
+      const uploadedImageData = [];
       
-      await prisma.image.deleteMany({
-        where: { id: { in: imagesToDelete }, listingId },
+      // Process and save each new image
+      for (const file of newImageFiles) {
+        if (file instanceof File) {
+          try {
+            const imagePath = await saveImage(file);
+            
+            // Create the image record
+            const imageRecord = await prisma.image.create({
+              data: {
+                listingId,
+                path: imagePath,
+                isFeatured: false,
+              },
+            });
+            
+            uploadedImages.push(imageRecord);
+            uploadedImageData.push({
+              id: imageRecord.id,
+              filename: file.name,
+              size: Math.round(file.size / 1024) + 'KB',
+              path: imagePath
+            });
+          } catch (error) {
+            console.error('Error processing image upload:', error);
+          }
+        }
+      }
+      
+      if (uploadedImages.length > 0) {
+        hasImageChanges = true;
+        imageChanges.added = uploadedImageData;
+      }
+    }
+    
+    // Handle images to delete
+    if (imagesToDelete.length > 0) {
+      const deletedImages = [];
+      
+      // Get details of images to be deleted for history
+      const imagesToDeleteDetails = await prisma.image.findMany({
+        where: {
+          id: { in: imagesToDelete },
+          listingId
+        },
+        select: {
+          id: true,
+          path: true,
+          isFeatured: true
+        }
       });
-
+      
+      // Check if we're deleting the featured image
+      const deletingFeaturedImage = imagesToDeleteDetails.some(img => img.isFeatured);
+      
+      // Delete the images one by one to track which ones were deleted
+      for (const imageId of imagesToDelete) {
+        try {
+          const image = await prisma.image.findUnique({
+            where: { id: imageId }
+          });
+          
+          if (image) {
+            // Delete the image file from disk
+            try {
+              const imagePath = path.join(process.cwd(), 'public', image.path.startsWith('/') ? image.path.slice(1) : image.path);
+              await unlink(imagePath);
+            } catch (error) {
+              console.warn(`Error deleting file: ${error}`);
+            }
+            
+            // Delete from database
+            await prisma.image.delete({
+              where: { id: imageId }
+            });
+            
+            // Add to deleted images list for history
+            deletedImages.push({
+              id: imageId,
+              path: image.path,
+              isFeatured: image.isFeatured
+            });
+          }
+        } catch (error) {
+          console.error(`Error deleting image ${imageId}:`, error);
+        }
+      }
+      
+      if (deletedImages.length > 0) {
+        hasImageChanges = true;
+        imageChanges.deleted = deletedImages;
+      }
+      
+      // Check if the featured image was deleted
+      if (deletingFeaturedImage) {
+        deletedFeaturedImage = true;
+        
+        // Find the featured image that was deleted for history
+        const deletedFeaturedImageInfo = imagesToDeleteDetails.find(img => img.isFeatured);
+      }
+      
       // If we deleted the featured image, set the next available image as featured
       if (deletedFeaturedImage && !featuredImageId) {
         const remainingImage = await prisma.image.findFirst({
@@ -254,10 +298,15 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
             data: { isFeatured: true },
           });
           
+          // Find the deleted featured image data
+          const deletedFeaturedImageInfo = imagesToDeleteDetails.find(img => img.isFeatured);
+          
           hasImageChanges = true;
           imageChanges.featuredChanged = {
-            previous: 'deleted',
+            previous: deletedFeaturedImageInfo?.id || 'deleted',
+            previousPath: deletedFeaturedImageInfo?.path || null,
             new: remainingImage.id,
+            newPath: remainingImage.path,
             automatic: true
           };
         }
@@ -266,43 +315,99 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 
     // Set featured image
     if (featuredImageId) {
-      const previousFeatured = await prisma.image.findFirst({
+      // First check if the current featured image is the same one being selected
+      const currentFeatured = await prisma.image.findFirst({
         where: { 
           listingId,
           isFeatured: true,
-          id: { not: featuredImageId }
         },
       });
+      
+      // Only proceed if we're actually changing the featured image
+      if (!currentFeatured || currentFeatured.id !== featuredImageId) {
+        const previousFeatured = await prisma.image.findFirst({
+          where: { 
+            listingId,
+            isFeatured: true,
+            id: { not: featuredImageId }
+          },
+        });
 
-      if (previousFeatured) {
-        hasImageChanges = true;
-        imageChanges.featuredChanged = {
-          previous: previousFeatured.id,
-          new: featuredImageId
-        };
+        // Get the new featured image data
+        const newFeaturedImage = await prisma.image.findUnique({
+          where: { id: featuredImageId }
+        });
+
+        if (previousFeatured && newFeaturedImage) {
+          hasImageChanges = true;
+          imageChanges.featuredChanged = {
+            previous: previousFeatured.id,
+            new: featuredImageId,
+            previousPath: previousFeatured.path,
+            newPath: newFeaturedImage.path
+          };
+        } else if (newFeaturedImage && !previousFeatured) {
+          // Case when there was no previous featured image
+          hasImageChanges = true;
+          imageChanges.featuredChanged = {
+            previous: null,
+            new: featuredImageId,
+            previousPath: null,
+            newPath: newFeaturedImage.path
+          };
+        }
+
+        await prisma.image.updateMany({
+          where: { listingId },
+          data: { isFeatured: false },
+        });
+
+        await prisma.image.update({
+          where: { id: featuredImageId },
+          data: { isFeatured: true },
+        });
       }
-
-      await prisma.image.updateMany({
-        where: { listingId },
-        data: { isFeatured: false },
-      });
-
-      await prisma.image.update({
-        where: { id: featuredImageId },
-        data: { isFeatured: true },
-      });
     }
 
-    // Create history entry for image changes if any occurred
+    // Create history entry for image changes only if actual changes occurred
     if (hasImageChanges) {
-      await prisma.listingHistory.create({
-        data: {
-          listingId,
-          userId: user.id,
-          changes: imageChanges,
-          action: 'images'
-        }
-      });
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.listingHistory.create({
+            data: {
+              listingId,
+              userId: user.id,
+              changes: imageChanges,
+              action: 'images'
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error creating image history:', error);
+      }
+    }
+
+    // Create history entry for field changes only if actual changes occurred
+    if (Object.keys(changes).length > 0) {
+      const historyChanges: Record<string, any> = {};
+      
+      historyChanges.fields = changes;
+      
+      // Create history record
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.listingHistory.create({
+            data: {
+              listingId,
+              userId: user.id,
+              changes: historyChanges,
+              action: 'update'
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error creating update history:', error);
+      }
     }
 
     return NextResponse.json(updatedListing);
@@ -326,18 +431,18 @@ async function handleDeleteListing(req: NextRequest, { params }: { params: { id:
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
     }
 
-    // Create history entry for deletion before deleting the listing
-    await prisma.listingHistory.create({
-      data: {
-        listingId: params.id,
-        userId: user.id,
-        changes: {
-          action: "Listing deletion",
-          title: listing.title,
-          listingCode: listing.listingCode
-        },
-        action: 'delete'
-      }
+    // Create history entry for deletion
+    await prisma.$transaction(async (tx) => {
+      await tx.listingHistory.create({
+        data: {
+          listingId: params.id,
+          userId: user.id,
+          changes: {
+            action: `Listing deleted: ${listing.title}`
+          },
+          action: 'delete'
+        }
+      });
     });
 
     // Delete images from disk

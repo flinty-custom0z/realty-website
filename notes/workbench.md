@@ -21,9 +21,7 @@
 
 ### NOW
 
-- Allow to view images in the edit listing page
 - Fix image not showing up right away when uploading, only after refresh
-
 
 - Make buttons in edit listing page similar to each other
 
