@@ -46,9 +46,11 @@ async function buildBackHref(categorySlug: string) {
   
   try {
     const url = new URL(referer);
+    // If coming from search, category page, or home page, return to that page
     if (
       url.pathname.startsWith('/search') ||
-      url.pathname.startsWith('/listing-category')
+      url.pathname.startsWith('/listing-category') ||
+      url.pathname === '/'
     ) {
       return referer;
     }
@@ -75,7 +77,7 @@ function Info({
 
 async function getBackLinkText(backUrl: string) {
   // If returning to home
-  if (backUrl === '/') {
+  if (backUrl === '/' || backUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
     return 'На главную';
   }
   
