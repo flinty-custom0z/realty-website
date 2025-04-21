@@ -106,6 +106,18 @@ async function handleCreateListing(req: NextRequest) {
     });
     console.log("Listing created with ID:", newListing.id);
 
+    // Create history entry for creation
+    await prisma.listingHistory.create({
+      data: {
+        listingId: newListing.id,
+        userId: user.id,
+        changes: {
+          action: "Initial creation of listing"
+        },
+        action: 'create'
+      }
+    });
+
     // Handle image uploads
     const images = formData.getAll('images');
     console.log(`Processing ${images.length} images`);

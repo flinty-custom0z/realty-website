@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth';
 import { writeFile, mkdir, unlink, access } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { PrismaClient } from '@prisma/client';
 
 // GET method (fixed)
 export async function GET(
@@ -71,6 +72,36 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
   try {
     const formData = await req.formData();
     const listingId = params.id;
+    const user = (req as any).user;
+
+    // Get the original listing before changes for history tracking
+    const originalListing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: {
+        title: true,
+        publicDescription: true,
+        adminComment: true,
+        categoryId: true,
+        district: true,
+        address: true,
+        rooms: true,
+        floor: true,
+        totalFloors: true,
+        houseArea: true,
+        landArea: true,
+        condition: true,
+        yearBuilt: true,
+        noEncumbrances: true,
+        noKids: true,
+        price: true,
+        status: true,
+        userId: true,
+      }
+    });
+
+    if (!originalListing) {
+      return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+    }
 
     // Basic fields
     const title = formData.get('title') as string;
@@ -95,30 +126,63 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const imagesToDelete = JSON.parse(formData.get('imagesToDelete') as string || '[]');
     const featuredImageId = formData.get('featuredImageId') as string;
 
+    // Prepare updated data
+    const updatedData = {
+      title,
+      price,
+      status,
+      district,
+      address,
+      rooms,
+      floor,
+      totalFloors,
+      houseArea,
+      landArea,
+      condition,
+      yearBuilt,
+      categoryId,
+      publicDescription,
+      adminComment,
+      noEncumbrances,
+      noKids,
+      userId,
+    };
+
+    // Calculate changes for history
+    const changes: Record<string, { before: any, after: any }> = {};
+    
+    // Compare each field to detect changes
+    Object.keys(updatedData).forEach(key => {
+      const typedKey = key as keyof typeof updatedData;
+      const originalValue = originalListing[typedKey as keyof typeof originalListing];
+      const newValue = updatedData[typedKey];
+      
+      // Only record if values are different
+      if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
+        changes[key] = {
+          before: originalValue,
+          after: newValue
+        };
+      }
+    });
+    
     // Update listing info
     const updatedListing = await prisma.listing.update({
       where: { id: listingId },
-      data: {
-        title,
-        price,
-        status,
-        district,
-        address,
-        rooms,
-        floor,
-        totalFloors,
-        houseArea,
-        landArea,
-        condition,
-        yearBuilt,
-        categoryId,
-        publicDescription,
-        adminComment,
-        noEncumbrances,
-        noKids,
-        userId,
-      },
+      data: updatedData,
     });
+
+    // Create history entry if there are changes
+    if (Object.keys(changes).length > 0) {
+      await prisma.listingHistory.create({
+        data: {
+          listingId,
+          userId: user.id,
+          changes,
+          action: 'update'
+        }
+      });
+    }
 
     // Handle new image uploads
     const newImages = formData.getAll('newImages') as File[];
@@ -183,6 +247,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 // Delete listing
 async function handleDeleteListing(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const user = (req as any).user;
     const listing = await prisma.listing.findUnique({
       where: { id: params.id },
       include: { images: true },
@@ -191,6 +256,20 @@ async function handleDeleteListing(req: NextRequest, { params }: { params: { id:
     if (!listing) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
     }
+
+    // Create history entry for deletion before deleting the listing
+    await prisma.listingHistory.create({
+      data: {
+        listingId: params.id,
+        userId: user.id,
+        changes: {
+          action: "Listing deletion",
+          title: listing.title,
+          listingCode: listing.listingCode
+        },
+        action: 'delete'
+      }
+    });
 
     // Delete images from disk
     for (const image of listing.images) {

@@ -20,9 +20,6 @@
 
 
 ### NOW
- 
-
- - When opening a listing from the main page it should suggest to go back to the main page instead of a category
 
 
 ### Next

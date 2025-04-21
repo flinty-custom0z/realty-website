@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
+import ListingHistory from '@/components/ListingHistory';
 
 interface ListingFormData {
   title: string;
@@ -215,6 +216,30 @@ export default function EditListingPage() {
     setFeaturedImageId(imageId);
   };
   
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      const response = await fetch(`/api/admin/listings/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete listing');
+      }
+      
+      router.push('/admin/listings');
+    } catch (error) {
+      setError('Error deleting listing');
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -302,10 +327,10 @@ export default function EditListingPage() {
   }
   
   return (
-    <div>
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Редактирование объявления</h1>
-        <div className="space-x-2">
+        <div className="flex gap-2">
           <Link
             href={`/listing/${listing.id}`}
             target="_blank"
@@ -313,15 +338,26 @@ export default function EditListingPage() {
           >
             Просмотр на сайте
           </Link>
-          
           <Link
             href="/admin/listings"
             className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
           >
             Назад к списку
           </Link>
+          <button
+            className="btn-danger"
+            onClick={() => handleDelete()}
+            disabled={isSaving}
+          >
+            Удалить
+          </button>
         </div>
       </div>
+      
+      {/* Listing History */}
+      {listing && (
+        <ListingHistory listingId={listing.id} />
+      )}
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
