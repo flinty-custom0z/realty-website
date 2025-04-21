@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "node scripts/create-placeholders.js && node scripts/export-code.js",
+    "prebuild": "node scripts/export-code.js",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint",
@@ -25,6 +25,7 @@
     "react-dom": "^19.0.0",
     "react-range": "^1.10.0",
     "sharp": "^0.34.1",
+    "swr": "^2.3.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

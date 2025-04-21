@@ -20,13 +20,8 @@
 
 
 ### NOW
-
-
+ 
 ### Next
-
-- Dynamic suggestions when entering search query
-
-- Add a slider to filter price as well
 
 ### Later
 

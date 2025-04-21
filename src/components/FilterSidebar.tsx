@@ -32,30 +32,37 @@ interface FilterOptions {
 }
 
 interface FilterSidebarProps {
-  categorySlug: string;
+  categorySlug?: string;
   categories?: Category[];
   searchQuery?: string;
+  filters?: Record<string, any>;
+  onChange?: (filters: Record<string, any>) => void;
 }
 
 export default function FilterSidebar({
-  categorySlug,
+  categorySlug = '',
   categories = [],
   searchQuery = '',
+  filters,
+  onChange,
 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
+  // If controlled, use props for state
+  const isControlled = typeof filters !== 'undefined' && typeof onChange === 'function';
+  
   // State for search input (for category-specific search)
-  const [searchInputValue, setSearchInputValue] = useState(searchQuery || '');
+  const [searchInputValue, setSearchInputValue] = useState(searchQuery || (isControlled ? filters.q || '' : ''));
   
   // States for filter values
-  const [minPrice, setMinPrice] = useState<string>(searchParams?.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState<string>(searchParams?.get('maxPrice') || '');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(searchParams?.getAll('category') || []);
-  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(searchParams?.getAll('district') || []);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams?.getAll('condition') || []);
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(searchParams?.getAll('rooms') || []);
+  const [minPrice, setMinPrice] = useState(isControlled ? filters.minPrice || '' : searchParams?.get('minPrice') || '');
+  const [maxPrice, setMaxPrice] = useState(isControlled ? filters.maxPrice || '' : searchParams?.get('maxPrice') || '');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(isControlled ? filters.category || [] : searchParams?.getAll('category') || []);
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(isControlled ? filters.district || [] : searchParams?.getAll('district') || []);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>(isControlled ? filters.condition || [] : searchParams?.getAll('condition') || []);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(isControlled ? filters.rooms || [] : searchParams?.getAll('rooms') || []);
   
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -207,10 +214,18 @@ export default function FilterSidebar({
     }
 
     // Add all selected filters
-    selectedCategories.forEach(c => params.append('category', c));
-    selectedDistricts.forEach(d => params.append('district', d));
-    selectedConditions.forEach(c => params.append('condition', c));
-    selectedRooms.forEach(r => params.append('rooms', r));
+    if (selectedCategories.length > 0) {
+      selectedCategories.forEach((c: string) => params.append('category', c));
+    }
+    if (selectedDistricts.length > 0) {
+      selectedDistricts.forEach((d: string) => params.append('district', d));
+    }
+    if (selectedConditions.length > 0) {
+      selectedConditions.forEach((c: string) => params.append('condition', c));
+    }
+    if (selectedRooms.length > 0) {
+      selectedRooms.forEach((r: string) => params.append('rooms', r));
+    }
 
     // Add current price if provided
     if (minPrice) {
@@ -282,6 +297,36 @@ export default function FilterSidebar({
     return hasSearchQuery || hasCustomPrice || hasOtherFilters;
   };
   
+  // Helper to scroll to listings section after navigation
+  const scrollToListings = () => {
+    if (typeof window !== 'undefined') {
+      const el = document.getElementById('listings-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+  
+  // Handler for controlled mode
+  const updateFilters = (newFilters: Record<string, any>) => {
+    if (isControlled && onChange) {
+      onChange(newFilters);
+    }
+  };
+
+  // In controlled mode, update local state when filters prop changes
+  useEffect(() => {
+    if (isControlled && filters) {
+      setSearchInputValue(filters.q || '');
+      setMinPrice(filters.minPrice || '');
+      setMaxPrice(filters.maxPrice || '');
+      setSelectedCategories(filters.category || []);
+      setSelectedDistricts(filters.district || []);
+      setSelectedConditions(filters.condition || []);
+      setSelectedRooms(filters.rooms || []);
+    }
+  }, [isControlled, filters]);
+  
   // Apply filters when form is submitted
   const applyFilters = () => {
     if (isApplyingRef.current) return;
@@ -319,12 +364,12 @@ export default function FilterSidebar({
       
       // Add multi-select filters
       if (selectedCategories.length > 0) {
-        selectedCategories.forEach((c) => params.append('category', c));
+        selectedCategories.forEach((c: string) => params.append('category', c));
       }
       
-      selectedDistricts.forEach((d) => params.append('district', d));
-      selectedConditions.forEach((c) => params.append('condition', c));
-      selectedRooms.forEach((r) => params.append('rooms', r));
+      selectedDistricts.forEach((d: string) => params.append('district', d));
+      selectedConditions.forEach((c: string) => params.append('condition', c));
+      selectedRooms.forEach((r: string) => params.append('rooms', r));
       
       // Preserve navigation parameters
       const returnUrl = searchParams?.get('returnUrl');
@@ -338,8 +383,32 @@ export default function FilterSidebar({
       }
       
       // Navigate to appropriate page
-      const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
+      let base;
+      if (categorySlug) {
+        base = `/listing-category/${categorySlug}`;
+      } else if (pathname === '/') {
+        base = '/';
+      } else {
+        base = '/search';
+      }
+      if (isControlled) {
+        // Build new filters object
+        const newFilters: Record<string, any> = {
+          q: searchInputValue,
+          minPrice,
+          maxPrice,
+          category: selectedCategories,
+          district: selectedDistricts,
+          condition: selectedConditions,
+          rooms: selectedRooms,
+        };
+        updateFilters(newFilters);
+      } else {
       router.push(`${base}?${params.toString()}`);
+        if (pathname === '/') {
+          setTimeout(scrollToListings, 200);
+        }
+      }
     } finally {
       setTimeout(() => {
         isApplyingRef.current = false;
@@ -391,36 +460,50 @@ export default function FilterSidebar({
     }
     
     // Navigate with reset filters
-    const base = categorySlug ? `/listing-category/${categorySlug}` : '/search';
+    let base;
+    if (categorySlug) {
+      base = `/listing-category/${categorySlug}`;
+    } else if (pathname === '/') {
+      base = '/';
+    } else {
+      base = '/search';
+    }
+    if (isControlled) {
+      updateFilters({});
+    } else {
     router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
+      if (pathname === '/') {
+        setTimeout(scrollToListings, 200);
+      }
+    }
   };
   
   // Handler functions for filter changes (use functional updates)
   const handleCategoryToggle = (slug: string) => {
     shouldUpdatePrices.current = true;
-    setSelectedCategories(prev =>
-      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+    setSelectedCategories((prev: string[]) =>
+      prev.includes(slug) ? prev.filter((s: string) => s !== slug) : [...prev, slug]
     );
   };
   
   const handleDistrictToggle = (district: string) => {
     shouldUpdatePrices.current = true;
-    setSelectedDistricts(prev =>
-      prev.includes(district) ? prev.filter(d => d !== district) : [...prev, district]
+    setSelectedDistricts((prev: string[]) =>
+      prev.includes(district) ? prev.filter((d: string) => d !== district) : [...prev, district]
     );
   };
   
   const handleConditionToggle = (cond: string) => {
     shouldUpdatePrices.current = true;
-    setSelectedConditions(prev =>
-      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
+    setSelectedConditions((prev: string[]) =>
+      prev.includes(cond) ? prev.filter((c: string) => c !== cond) : [...prev, cond]
     );
   };
   
   const handleRoomToggle = (room: string) => {
     shouldUpdatePrices.current = true;
-    setSelectedRooms(prev =>
-      prev.includes(room) ? prev.filter(r => r !== room) : [...prev, room]
+    setSelectedRooms((prev: string[]) =>
+      prev.includes(room) ? prev.filter((r: string) => r !== room) : [...prev, room]
     );
   };
   
