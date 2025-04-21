@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
-import ListingHistory from '@/components/ListingHistory';
 
 interface ListingFormData {
   title: string;
@@ -339,6 +338,12 @@ export default function EditListingPage() {
             Просмотр на сайте
           </Link>
           <Link
+            href={`/admin/listings/${listing.id}/history`}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          >
+            История изменений
+          </Link>
+          <Link
             href="/admin/listings"
             className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
           >
@@ -353,11 +358,6 @@ export default function EditListingPage() {
           </button>
         </div>
       </div>
-      
-      {/* Listing History */}
-      {listing && (
-        <ListingHistory listingId={listing.id} />
-      )}
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">

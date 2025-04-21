@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale'; // Import Russian locale
 import ClientImage from '@/components/ClientImage';
 
 interface HistoryChange {
@@ -52,7 +53,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         const data = await response.json();
         setHistory(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load history');
+        setError(err instanceof Error ? err.message : 'Не удалось загрузить историю');
       } finally {
         setIsLoading(false);
       }
@@ -64,24 +65,24 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
   const formatFieldName = (field: string): string => {
     // Map field names to more readable versions
     const fieldMap: Record<string, string> = {
-      title: 'Title',
-      publicDescription: 'Public Description',
-      adminComment: 'Admin Comment',
-      categoryId: 'Category',
-      district: 'District',
-      address: 'Address',
-      rooms: 'Rooms',
-      floor: 'Floor',
-      totalFloors: 'Total Floors',
-      houseArea: 'House Area',
-      landArea: 'Land Area',
-      condition: 'Condition',
-      yearBuilt: 'Year Built',
-      noEncumbrances: 'No Encumbrances',
-      noKids: 'No Kids',
-      price: 'Price',
-      status: 'Status',
-      userId: 'Agent'
+      title: 'Название',
+      publicDescription: 'Публичное описание',
+      adminComment: 'Комментарий администратора',
+      categoryId: 'Категория',
+      district: 'Район',
+      address: 'Адрес',
+      rooms: 'Комнаты',
+      floor: 'Этаж',
+      totalFloors: 'Этажность',
+      houseArea: 'Площадь помещения',
+      landArea: 'Площадь участка',
+      condition: 'Состояние',
+      yearBuilt: 'Год постройки',
+      noEncumbrances: 'Без обременений',
+      noKids: 'Без детей',
+      price: 'Цена',
+      status: 'Статус',
+      userId: 'Риелтор'
     };
 
     return fieldMap[field] || field;
@@ -92,7 +93,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
       <div className="space-y-4">
         {changes.added && changes.added.length > 0 && (
           <div>
-            <h4 className="font-medium text-sm">Added {changes.added.length} new image{changes.added.length > 1 ? 's' : ''}</h4>
+            <h4 className="font-medium text-sm">Добавлено {changes.added.length} {changes.added.length > 1 ? 'изображений' : 'изображение'}</h4>
             <ul className="ml-4 list-disc mt-1 text-sm">
               {changes.added.map((img, idx) => (
                 <li key={idx}>
@@ -105,7 +106,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         
         {changes.deleted && changes.deleted.length > 0 && (
           <div>
-            <h4 className="font-medium text-sm text-red-600">Deleted {changes.deleted.length} image{changes.deleted.length > 1 ? 's' : ''}</h4>
+            <h4 className="font-medium text-sm text-red-600">Удалено {changes.deleted.length} {changes.deleted.length > 1 ? 'изображений' : 'изображение'}</h4>
             <div className="flex flex-wrap gap-2 mt-1">
               {changes.deleted.map((img) => (
                 <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden">
@@ -116,7 +117,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     className="object-cover opacity-70"
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-40">
-                    <span className="text-white text-xs font-bold">Deleted</span>
+                    <span className="text-white text-xs font-bold">Удалено</span>
                   </div>
                 </div>
               ))}
@@ -126,7 +127,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         
         {changes.featuredChanged && (
           <div>
-            <h4 className="font-medium text-sm">Changed featured image</h4>
+            <h4 className="font-medium text-sm">Изменено главное изображение</h4>
           </div>
         )}
       </div>
@@ -134,20 +135,20 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
   };
 
   if (isLoading) {
-    return <div className="p-4 text-center">Loading history...</div>;
+    return <div className="p-4 text-center">Загрузка истории...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+    return <div className="p-4 text-red-500">Ошибка: {error}</div>;
   }
 
   if (history.length === 0) {
-    return <div className="p-4 text-gray-500">No history available for this listing.</div>;
+    return <div className="p-4 text-gray-500">История изменений недоступна для этого объявления.</div>;
   }
 
   return (
     <div className="bg-white shadow rounded-lg p-4 mb-6">
-      <h3 className="text-lg font-semibold mb-4">Listing History</h3>
+      <h3 className="text-lg font-semibold mb-4">История изменений</h3>
       
       <div className="space-y-4">
         {history.map((entry) => (
@@ -157,16 +158,16 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                 <span className="font-medium">{entry.userName}</span> 
                 <span className="ml-2 text-gray-600">
                   {entry.action === 'create' 
-                    ? 'created this listing' 
+                    ? 'создал(а) это объявление' 
                     : entry.action === 'update' 
-                      ? 'updated this listing'
+                      ? 'обновил(а) объявление'
                       : entry.action === 'images'
-                        ? 'modified images'
-                        : 'deleted this listing'}
+                        ? 'изменил(а) изображения'
+                        : 'удалил(а) объявление'}
                 </span>
               </div>
               <div className="text-sm text-gray-500">
-                {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true, locale: ru })}
               </div>
             </div>
 
@@ -182,13 +183,13 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                   <div key={field} className="grid grid-cols-3 text-sm">
                     <div className="font-medium">{formatFieldName(field)}</div>
                     <div className="text-red-500 line-through">
-                      {change.before === null ? 'Empty' : 
-                       typeof change.before === 'boolean' ? (change.before ? 'Yes' : 'No') : 
+                      {change.before === null ? 'Пусто' : 
+                       typeof change.before === 'boolean' ? (change.before ? 'Да' : 'Нет') : 
                        change.before}
                     </div>
                     <div className="text-green-500">
-                      {change.after === null ? 'Empty' : 
-                       typeof change.after === 'boolean' ? (change.after ? 'Yes' : 'No') : 
+                      {change.after === null ? 'Пусто' : 
+                       typeof change.after === 'boolean' ? (change.after ? 'Да' : 'Нет') : 
                        change.after}
                     </div>
                   </div>
@@ -204,7 +205,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
 
             {entry.action === 'delete' && 'action' in entry.changes && (
               <div className="text-sm text-gray-600 ml-2">
-                Listing was deleted: {(entry.changes as any).title || 'Unknown listing'}
+                Объявление было удалено: {(entry.changes as any).title || 'Неизвестное объявление'}
               </div>
             )}
           </div>

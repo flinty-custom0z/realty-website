@@ -18,14 +18,13 @@ export default function AdminListingActions({ listingId, categorySlug }: AdminLi
       return;
     }
     
-    setIsDeleting(true);
-    
     try {
-      const response = await fetch(`/api/admin/listings/${listingId}`, {
+      setIsDeleting(true);
+      const res = await fetch(`/api/admin/listings/${listingId}`, {
         method: 'DELETE',
       });
       
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error('Ошибка при удалении объявления');
       }
       
@@ -35,23 +34,36 @@ export default function AdminListingActions({ listingId, categorySlug }: AdminLi
     } catch (error) {
       console.error('Error deleting listing:', error);
       alert('Ошибка при удалении объявления');
+    } finally {
       setIsDeleting(false);
     }
   };
-  
+
   return (
     <div className="flex space-x-2">
-      <Link 
+      <Link
         href={`/admin/listings/${listingId}`}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition flex items-center"
+        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
       >
         <span className="mr-1">✏️</span> Редактировать
       </Link>
-      
+      <Link
+        href={`/admin/listings/${listingId}/history`}
+        className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600"
+      >
+        История
+      </Link>
+      <Link
+        href={`/listing/${listingId}`}
+        target="_blank"
+        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+      >
+        Просмотр
+      </Link>
       <button
         onClick={handleDelete}
         disabled={isDeleting}
-        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition disabled:bg-red-300 flex items-center"
+        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50"
       >
         <span className="mr-1">🗑️</span> {isDeleting ? 'Удаление...' : 'Удалить'}
       </button>
