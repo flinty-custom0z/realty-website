@@ -111,6 +111,8 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
               key={l.id}
               {...l}
               imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
+              categoryName={l.category?.name}
+              showCategory={true}
             />
           ))}
         </div>
