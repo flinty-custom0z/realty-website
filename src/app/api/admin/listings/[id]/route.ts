@@ -410,7 +410,12 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       }
     }
 
-    return NextResponse.json(updatedListing);
+    // Fetch updated listing including images for immediate UI refresh
+    const finalListing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      include: { images: true },
+    });
+    return NextResponse.json(finalListing);
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Failed to update listing' }, { status: 500 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
@@ -107,6 +107,9 @@ export default function EditListingPage() {
   // Add new state for image preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewModalImage, setPreviewModalImage] = useState('');
+  
+  // Ref for clearing file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch users (realtors) and listing data
   useEffect(() => {
@@ -286,6 +289,11 @@ export default function EditListingPage() {
       setImageFiles([]);
       setImagePreviews([]);
       setImagesToDelete([]);
+      
+      // Reset the file input so selected file names are cleared
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       
       // Show success message
       setSuccess('Объявление успешно обновлено');
@@ -715,6 +723,7 @@ export default function EditListingPage() {
                 accept="image/*"
                 multiple
                 onChange={handleImageChange}
+                ref={fileInputRef}
                 className="w-full p-2 border rounded"
               />
               
