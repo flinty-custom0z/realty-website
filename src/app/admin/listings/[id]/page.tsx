@@ -7,6 +7,7 @@ import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
 import ImageModal from '@/components/ImageModal';
 import { Eye, Loader2 } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
 
 interface ListingFormData {
   title: string;
@@ -81,6 +82,9 @@ export default function EditListingPage() {
   const [imagePreviews, setImagePreviews] = useState<{ file: File; url: string }[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [featuredImageId, setFeaturedImageId] = useState<string>('');
+  
+  // Add state for tracking individual image upload status
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
   
   // Form data
   const [formData, setFormData] = useState<ListingFormData & { userId?: string }>({
@@ -182,10 +186,7 @@ export default function EditListingPage() {
     }));
   };
   
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    
-    const newFiles = Array.from(e.target.files);
+  const handleImageChange = (newFiles: File[]) => {
     setImageFiles(prev => [...prev, ...newFiles]);
     
     // Create preview URLs
@@ -248,31 +249,41 @@ export default function EditListingPage() {
     }
   };
   
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
     setError('');
-    setSuccess('');
     
     try {
       const formDataToSend = new FormData();
       
-      // Add all form fields to FormData
+      // Add form fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value?.toString() ?? '');
+        if (value !== undefined && value !== null) {
+          formDataToSend.append(key, String(value));
+        }
       });
       
-      // Add new images to FormData
-      imageFiles.forEach(file => {
-        formDataToSend.append('newImages', file);
-      });
-      
-      // Add images to delete
-      formDataToSend.append('imagesToDelete', JSON.stringify(imagesToDelete));
-      
-      // Set featured image
+      // Add featured image ID if it exists
       if (featuredImageId) {
         formDataToSend.append('featuredImageId', featuredImageId);
+      }
+      
+      // Add images to delete
+      if (imagesToDelete.length > 0) {
+        formDataToSend.append('imagesToDelete', JSON.stringify(imagesToDelete));
+      }
+      
+      // Add new images with individual upload tracking
+      if (imageFiles.length > 0) {
+        // Create a tracking object with all images set to uploading
+        const imageUploadStatus: Record<string, boolean> = {};
+        imageFiles.forEach((file, index) => {
+          const imageId = `${file.name}-${index}`;
+          imageUploadStatus[imageId] = true;
+          formDataToSend.append('newImages', file);
+        });
+        setUploadingImages(imageUploadStatus);
       }
       
       const response = await fetch(`/api/admin/listings/${params.id}`, {
@@ -692,78 +703,41 @@ export default function EditListingPage() {
             />
           </div>
           
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2">Фотографии</h3>
-            
-            {listing.images.length > 0 && (
-              <div className="mb-4">
-                <p className="text-sm text-gray-700 mb-2">Текущие фотографии:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {(listing.images.slice().sort((a, b) => {
-                    if (a.isFeatured === b.isFeatured) return 0;
-                    return a.isFeatured ? -1 : 1;
-                  })).map(image => (
-                    <AdminImagePreview
-                    key={image.id}
-                      image={image}
-                      isSelected={featuredImageId === image.id}
-                      isMarkedForDeletion={imagesToDelete.includes(image.id)}
-                      onToggleDelete={toggleImageToDelete}
-                      onSetFeatured={setImageAsFeatured}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <p className="text-sm text-gray-700 mb-2">Добавить новые фотографии:</p>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                ref={fileInputRef}
-                className="w-full p-2 border rounded"
-              />
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Фотографии</h2>
               
-              {imagePreviews.length > 0 && (
-                <div className="relative">
-                  {isSaving && (
-                    <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
-                      <Loader2 className="animate-spin" size={32} />
-                    </div>
-                  )}
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group aspect-square">
-                        <ClientImage
-                          src={preview.url}
-                          alt={`Preview ${index + 1}`}
-                          fill
-                          className="object-cover rounded"
-                        />
-                        <div className="absolute top-2 right-2 flex flex-col gap-2">
-                          <button
-                            type="button"
-                            onClick={() => removeImagePreview(index)}
-                            className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ×
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openPreviewModal(preview.url)}
-                            className="bg-white text-blue-500 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </div>
-                      </div>
+            <div className="space-y-6">
+              {listing && listing.images.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-700 mb-2">Текущие фотографии:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {(listing.images.slice().sort((a, b) => {
+                      if (a.isFeatured === b.isFeatured) return 0;
+                      return a.isFeatured ? -1 : 1;
+                    })).map(image => (
+                      <AdminImagePreview
+                        key={image.id}
+                        image={image}
+                        isSelected={featuredImageId === image.id}
+                        isMarkedForDeletion={imagesToDelete.includes(image.id)}
+                        onToggleDelete={toggleImageToDelete}
+                        onSetFeatured={setImageAsFeatured}
+                      />
                     ))}
                   </div>
                 </div>
               )}
+              
+              <div>
+                <p className="text-sm text-gray-700 mb-2">Добавить новые фотографии:</p>
+                <ImageUpload 
+                  onImagesSelected={handleImageChange}
+                  onImageRemoved={removeImagePreview}
+                  isUploading={isSaving}
+                  uploadingImages={uploadingImages}
+                  previewModalHandler={openPreviewModal}
+                />
+              </div>
             </div>
           </div>
           
@@ -773,19 +747,24 @@ export default function EditListingPage() {
               disabled={isSaving}
               className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
             >
-              {isSaving && <Loader2 className="animate-spin mr-2" size={16} />}
-              {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={20} />
+                  Сохранение...
+                </>
+              ) : (
+                'Сохранить'
+              )}
             </button>
           </div>
         </form>
       </div>
       
-      {/* Add the modal at the end of the component, before the closing </div> */}
       {previewModalOpen && (
         <ImageModal
           src={previewModalImage}
-          alt="Предпросмотр фото"
-          onClose={closePreviewModal}
+          alt="Просмотр фото"
+          onClose={() => setPreviewModalOpen(false)}
         />
       )}
     </div>

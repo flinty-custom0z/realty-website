@@ -1,11 +1,8 @@
 ## Backlog
 
+- Upload animation
 
 ### NOW
-
-- Fix image not showing up right away when uploading, only after refresh
-- Upload animation
-- Preview not working
 
 - Make buttons in edit listing page similar to each other
 
@@ -13,7 +10,6 @@
 
 ### Later
 
-- Edit history
 - Admin login not working when accessing website via IP address (but working via localhost)
 
 - Improve design

@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import { Loader2 } from 'lucide-react';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Category {
   id: string;
@@ -52,6 +53,9 @@ export default function CreateListingPage() {
     price: '',
     userId: '',
   });
+  
+  // Add state for tracking individual image upload status
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
   
   // Fetch categories on mount
   useEffect(() => {
@@ -107,10 +111,7 @@ export default function CreateListingPage() {
     }));
   };
   
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    
-    const newFiles = Array.from(e.target.files);
+  const handleImageChange = (newFiles: File[]) => {
     setImageFiles((prev) => [...prev, ...newFiles]);
     
     // Create preview URLs
@@ -142,13 +143,22 @@ export default function CreateListingPage() {
       
       // Add all form fields to FormData
       Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value.toString());
+        if (value !== undefined && value !== null) {
+          formDataToSend.append(key, String(value));
+        }
       });
       
-      // Add images to FormData
-      imageFiles.forEach((file) => {
-        formDataToSend.append('images', file);
-      });
+      // Add images with individual upload tracking
+      if (imageFiles.length > 0) {
+        // Create a tracking object with all images set to uploading
+        const imageUploadStatus: Record<string, boolean> = {};
+        imageFiles.forEach((file, index) => {
+          const imageId = `${file.name}-${index}`;
+          imageUploadStatus[imageId] = true;
+          formDataToSend.append('images', file);
+        });
+        setUploadingImages(imageUploadStatus);
+      }
       
       console.log('Sending form data...');
       const response = await fetch('/api/admin/listings', {
@@ -179,14 +189,10 @@ export default function CreateListingPage() {
   };
   
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Добавить новое объявление</h1>
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-2xl font-bold mb-6">Создать новое объявление</h1>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
       
       {success && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -469,45 +475,14 @@ export default function CreateListingPage() {
             className="w-full p-2 border rounded"
           />
         </div>
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Фотографии
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-            className="mb-4"
+        <div className="mb-6">
+          <label className="block text-gray-700 mb-2">Фотографии</label>
+          <ImageUpload 
+            onImagesSelected={handleImageChange}
+            onImageRemoved={removeImage}
+            isUploading={isLoading}
+            uploadingImages={uploadingImages}
           />
-          
-          {imagePreviews.length > 0 && (
-            <div className="relative">
-              {isLoading && (
-                <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
-                  <Loader2 className="animate-spin" size={32} />
-                </div>
-              )}
-              <div className="flex space-x-4 overflow-x-auto py-2">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group flex-shrink-0">
-                    <ClientImage
-                      src={preview.url}
-                      alt={`Preview ${index + 1}`}
-                      className="h-32 w-auto rounded-md object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="mt-8 flex justify-end">
@@ -516,8 +491,14 @@ export default function CreateListingPage() {
             disabled={isLoading}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
           >
-            {isLoading && <Loader2 className="animate-spin mr-2" size={16} />}
-            {isLoading ? 'Создание...' : 'Создать объявление'}
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin mr-2" size={20} />
+                Создание...
+              </>
+            ) : (
+              'Создать объявление'
+            )}
           </button>
         </div>
       </form>

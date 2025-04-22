@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface ClientImageProps {
   src: string;
@@ -13,6 +14,7 @@ interface ClientImageProps {
   sizes?: string;
   priority?: boolean;
   fallbackSrc?: string;
+  showLoadingIndicator?: boolean;
 }
 
 export default function ClientImage({
@@ -25,6 +27,7 @@ export default function ClientImage({
   sizes = '100vw',
   priority = false,
   fallbackSrc = '/images/placeholder.png',
+  showLoadingIndicator = false,
 }: ClientImageProps) {
   const [imgSrc, setImgSrc] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +39,7 @@ export default function ClientImage({
       const imagePath = src.substring(8); // Remove "/images/" prefix
       setImgSrc(`/api/image/${imagePath}`);
     } else {
-    setImgSrc(src);
+      setImgSrc(src);
     }
     
     setError(false);
@@ -66,35 +69,37 @@ export default function ClientImage({
     return null;
   }
   
+  const imageProps = {
+    src: imgSrc,
+    alt,
+    className,
+    sizes,
+    priority,
+    onError: handleError,
+    onLoad: handleLoad,
+  };
+  
   return (
-    <>
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-pulse bg-gray-100 w-full h-full"></div>
-        </div>
-      )}
-      
-      {imgSrc && !error && (
-    <Image
-      src={imgSrc}
-      alt={alt}
-      fill={fill && !width && !height}
-      width={width}
-      height={height}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
-      sizes={sizes}
-      priority={priority}
-      onError={handleError}
-          onLoad={handleLoad}
-          unoptimized={true} // Skip Next.js image optimization to troubleshoot
+    <div className="relative w-full h-full">
+      {fill ? (
+        <Image
+          {...imageProps}
+          fill
+          style={{ objectFit: 'cover' }}
+        />
+      ) : (
+        <Image
+          {...imageProps}
+          width={width || 500}
+          height={height || 300}
         />
       )}
       
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
-          {alt || 'Изображение недоступно'}
+      {showLoadingIndicator && isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-60">
+          <Loader2 className="animate-spin text-blue-500" size={24} />
         </div>
       )}
-    </>
+    </div>
   );
 }
