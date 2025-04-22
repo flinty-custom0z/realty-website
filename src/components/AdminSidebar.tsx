@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Button from './Button';
 
 export default function AdminSidebar({ user }: { user: { name: string } }) {
   return (
@@ -32,13 +33,14 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
             </Link>
           </li>
           <li className="border-t pt-2 mt-4">
-            <button
+            <Button
               type="button"
               onClick={() => window.location.href = '/admin/logout'}
-              className="w-full text-left p-2 hover:bg-gray-100 rounded text-red-600"
+              variant="danger"
+              fullWidth
             >
               Выйти
-            </button>
+            </Button>
           </li>
         </ul>
       </nav>

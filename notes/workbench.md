@@ -1,6 +1,5 @@
 ## Backlog
 
-- Upload animation
 
 ### NOW
 

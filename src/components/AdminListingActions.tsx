@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Button from './Button';
 
 interface AdminListingActionsProps {
   listingId: string;
@@ -43,30 +44,25 @@ export default function AdminListingActions({ listingId, categorySlug }: AdminLi
     <div className="flex space-x-2">
       <Link
         href={`/admin/listings/${listingId}`}
-        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center"
       >
-        <span className="mr-1">✏️</span> Редактировать
+        Редактировать
       </Link>
       <Link
         href={`/admin/listings/${listingId}/history`}
-        className="bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600"
+        className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 flex items-center"
       >
         История
       </Link>
-      <Link
-        href={`/listing/${listingId}`}
-        target="_blank"
-        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-      >
-        Просмотр
-      </Link>
-      <button
+      <Button
         onClick={handleDelete}
         disabled={isDeleting}
-        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50"
+        variant="danger"
+        className="px-3 py-1"
+        loading={isDeleting}
       >
-        <span className="mr-1">🗑️</span> {isDeleting ? 'Удаление...' : 'Удалить'}
-      </button>
+        {isDeleting ? 'Удаление...' : 'Удалить'}
+      </Button>
     </div>
   );
 }

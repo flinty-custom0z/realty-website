@@ -8,6 +8,7 @@ import AdminImagePreview from '@/components/AdminImagePreview';
 import ImageModal from '@/components/ImageModal';
 import { Eye, Loader2 } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
+import Button from '@/components/Button';
 
 interface ListingFormData {
   title: string;
@@ -383,13 +384,14 @@ export default function EditListingPage() {
           >
             Назад к списку
           </Link>
-          <button
-            className="btn-danger"
+          <Button
+            variant="danger"
+            className="px-3 py-1"
             onClick={() => handleDelete()}
             disabled={isSaving}
           >
             Удалить
-          </button>
+          </Button>
         </div>
       </div>
       
@@ -742,20 +744,14 @@ export default function EditListingPage() {
           </div>
           
           <div className="mt-8 flex justify-end">
-            <button
+            <Button
               type="submit"
               disabled={isSaving}
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
+              loading={isSaving}
+              className="px-6"
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" size={20} />
-                  Сохранение...
-                </>
-              ) : (
-                'Сохранить'
-              )}
-            </button>
+              Сохранить
+            </Button>
           </div>
         </form>
       </div>

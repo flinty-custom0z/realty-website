@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import ClientImage from '@/components/ClientImage';
+import Button from '@/components/Button';
 
 interface User {
   id: string;
@@ -139,14 +140,16 @@ export default function AdminUsersPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Риелторы</h1>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition" onClick={openAdd}>
+        <Button variant="primary" onClick={openAdd}>
           Добавить риелтора
-        </button>
+        </Button>
       </div>
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>&times;</button>
+            <Button variant="text" className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>
+              &times;
+            </Button>
             <h2 className="text-xl font-bold mb-4">{editUser ? 'Редактировать' : 'Добавить'} риелтора</h2>
             <form ref={formRef} onSubmit={handleFormSubmit} className="space-y-4">
               <div>
@@ -176,8 +179,8 @@ export default function AdminUsersPage() {
               </div>
               {formError && <div className="text-red-600 text-sm">{formError}</div>}
               <div className="flex justify-end gap-2">
-                <button type="button" className="px-4 py-2 rounded bg-gray-200" onClick={closeForm}>Отмена</button>
-                <button type="submit" className="px-4 py-2 rounded bg-blue-500 text-white" disabled={formLoading}>{formLoading ? 'Сохранение...' : 'Сохранить'}</button>
+                <Button type="button" variant="secondary" onClick={closeForm}>Отмена</Button>
+                <Button type="submit" variant="primary" loading={formLoading} disabled={formLoading}>Сохранить</Button>
               </div>
             </form>
           </div>
@@ -213,8 +216,8 @@ export default function AdminUsersPage() {
                   <td className="py-3 px-4">{user.username}</td>
                   <td className="py-3 px-4">{user.phone || "-"}</td>
                   <td className="py-3 px-4 space-x-2">
-                    <button className="text-blue-500 hover:underline" onClick={() => openEdit(user)}>Редактировать</button>
-                    <button className="text-red-500 hover:underline" onClick={() => handleDelete(user.id)}>Удалить</button>
+                    <Button variant="text" className="text-blue-500 hover:underline" onClick={() => openEdit(user)}>Редактировать</Button>
+                    <Button variant="text" className="text-red-500 hover:underline" onClick={() => handleDelete(user.id)}>Удалить</Button>
                   </td>
                 </tr>
               ))}

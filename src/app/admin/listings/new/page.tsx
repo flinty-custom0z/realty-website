@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
 import { Loader2 } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
+import Button from '@/components/Button';
 
 interface Category {
   id: string;
@@ -486,20 +487,14 @@ export default function CreateListingPage() {
         </div>
         
         <div className="mt-8 flex justify-end">
-          <button
+          <Button
             type="submit"
+            loading={isLoading}
             disabled={isLoading}
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
+            className="px-6"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="animate-spin mr-2" size={20} />
-                Создание...
-              </>
-            ) : (
-              'Создать объявление'
-            )}
-          </button>
+            Создать объявление
+          </Button>
         </div>
       </form>
     </div>

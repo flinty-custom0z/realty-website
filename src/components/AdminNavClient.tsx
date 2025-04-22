@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Button from './Button';
 
 interface User {
   id: string;
@@ -73,12 +74,13 @@ export default function AdminNavClient() {
             <span>Админ панель</span>
           </Link>
           
-          <button
+          <Button
             onClick={handleLogout}
-            className="text-red-600 hover:text-red-800 text-sm"
+            variant="danger"
+            className="text-sm"
           >
             Выйти
-          </button>
+          </Button>
         </div>
       ) : (
         <Link 
