@@ -76,8 +76,8 @@ export default function AdminNavClient() {
           
           <Button
             onClick={handleLogout}
-            variant="danger"
-            className="text-sm"
+            variant="primary"
+            className="text-sm bg-red-600 hover:bg-red-700 border-red-600"
           >
             Выйти
           </Button>

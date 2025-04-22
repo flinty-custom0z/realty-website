@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-            <Button variant="text" className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>
+            <Button variant="link" className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>
               &times;
             </Button>
             <h2 className="text-xl font-bold mb-4">{editUser ? 'Редактировать' : 'Добавить'} риелтора</h2>
@@ -216,8 +216,8 @@ export default function AdminUsersPage() {
                   <td className="py-3 px-4">{user.username}</td>
                   <td className="py-3 px-4">{user.phone || "-"}</td>
                   <td className="py-3 px-4 space-x-2">
-                    <Button variant="text" className="text-blue-500 hover:underline" onClick={() => openEdit(user)}>Редактировать</Button>
-                    <Button variant="text" className="text-red-500 hover:underline" onClick={() => handleDelete(user.id)}>Удалить</Button>
+                    <Button variant="link" className="text-blue-500 hover:underline" onClick={() => openEdit(user)}>Редактировать</Button>
+                    <Button variant="link" className="text-red-500 hover:underline" onClick={() => handleDelete(user.id)}>Удалить</Button>
                   </td>
                 </tr>
               ))}

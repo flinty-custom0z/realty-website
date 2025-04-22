@@ -231,70 +231,83 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); handleSubmitInternal(query); }} className="w-full">
-      <div className="flex">
-        <div className="relative flex-grow">
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={handleInputChange}
-            onKeyDown={handleInputKeyDown}
-            onBlur={handleInputBlur}
-            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-            placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
-            className="w-full p-2 border rounded-l"
-            autoComplete="off"
-            aria-autocomplete="list"
-            aria-controls="search-suggestions-list"
-            aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              aria-label="Очистить поиск"
-            >
-              ×
-            </button>
-          )}
-          {/* Suggestions dropdown */}
-          {showSuggestions && (suggestions.length > 0 || isLoadingSuggestions) && (
-            <ul
-              ref={suggestionsRef}
-              id="search-suggestions-list"
-              className="absolute z-10 left-0 right-0 bg-white border border-t-0 rounded-b shadow-lg max-h-60 overflow-y-auto mt-1"
-              role="listbox"
-            >
-              {isLoadingSuggestions && (
-                <li className="px-4 py-2 text-gray-400">Загрузка...</li>
-              )}
-              {suggestions.map((s, idx) => (
-                <li
-                  key={s.id}
-                  id={`suggestion-${idx}`}
-                  role="option"
-                  aria-selected={highlightedIndex === idx}
-                  className={`px-4 py-2 cursor-pointer hover:bg-blue-100 ${highlightedIndex === idx ? 'bg-blue-100' : ''}`}
-                  onMouseDown={() => handleSuggestionClick(s)}
-                  onMouseEnter={() => setHighlightedIndex(idx)}
-                >
-                  <div className="font-medium">{s.title}</div>
-                  {s.address && (
-                    <div className="text-xs text-gray-500 truncate">{s.address}</div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
         </div>
+        
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
+          onBlur={handleInputBlur}
+          onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+          placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
+          className="w-full py-3 pl-11 pr-14 rounded-full bg-gray-50 border border-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent transition-colors"
+          autoComplete="off"
+          aria-autocomplete="list"
+          aria-controls="search-suggestions-list"
+          aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
+        />
+        
+        {query && (
+          <button
+            type="button"
+            onClick={handleClearSearch}
+            className="absolute inset-y-0 right-14 flex items-center pr-2 text-gray-400 hover:text-gray-600"
+            aria-label="Очистить поиск"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 rounded-r hover:bg-blue-600 transition"
+          className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-700 hover:text-gray-900 font-medium"
         >
-          Искать
+          Найти
         </button>
       </div>
+      
+      {/* Suggestions dropdown */}
+      {showSuggestions && (suggestions.length > 0 || isLoadingSuggestions) && (
+        <div className="relative mt-1 z-10">
+          <ul
+            ref={suggestionsRef}
+            id="search-suggestions-list"
+            className="absolute w-full bg-white border border-gray-100 rounded-lg shadow-lg py-1 max-h-60 overflow-auto z-20"
+            role="listbox"
+          >
+            {isLoadingSuggestions && (
+              <li className="px-4 py-2 text-gray-400">Загрузка...</li>
+            )}
+            {suggestions.map((s, idx) => (
+              <li
+                key={s.id}
+                id={`suggestion-${idx}`}
+                role="option"
+                aria-selected={highlightedIndex === idx}
+                className={`px-4 py-2 cursor-pointer hover:bg-gray-50 ${
+                  highlightedIndex === idx ? 'bg-gray-50' : ''
+                }`}
+                onMouseDown={() => handleSuggestionClick(s)}
+                onMouseEnter={() => setHighlightedIndex(idx)}
+              >
+                <div className="font-medium text-gray-800">{s.title}</div>
+                {s.address && (
+                  <div className="text-xs text-gray-500 truncate">{s.address}</div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </form>
   );
       }}

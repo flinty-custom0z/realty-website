@@ -2,9 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  --footer-bg: #ffffff;
+  --foreground: #2d3748;
+  --primary: #4a5568;
+  --secondary: #718096;
+  --accent: #5a67d8;
+  --muted: #e2e8f0;
   --card-bg: #ffffff;
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --transition-standard: all 0.2s ease;
 }
 
 @theme inline {
@@ -19,24 +24,29 @@
   :root {
     /* Force light mode colors even in dark mode */
     --background: #ffffff;
-    --foreground: #171717;
+    --foreground: #2d3748;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
 }
 
 /* Force white background on specific elements */
 main {
   background-color: #ffffff;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 footer {
   background-color: #ffffff !important;
+  border-top: 1px solid var(--muted);
 }
 
 /* If you have a dark section at the bottom, find and remove it */
@@ -48,11 +58,16 @@ footer {
 .category-card {
   position: relative;
   overflow: hidden;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  /* Remove fixed height and allow aspect ratio classes to control dimensions */
+  border-radius: 0.75rem;
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-standard);
   display: block;
   width: 100%;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
 }
 
 .category-card::before {
@@ -62,8 +77,13 @@ footer {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.4));
   z-index: 1;
+  transition: var(--transition-standard);
+}
+
+.category-card:hover::before {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5));
 }
 
 .category-card-content {
@@ -91,4 +111,87 @@ footer {
 
 .category-industrial {
   background-color: #e2e8f0; /* gray-300 */
+}
+
+/* Header styles */
+header {
+  transition: var(--transition-standard);
+}
+
+header.sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Listing card styles */
+.listing-card {
+  transition: var(--transition-standard);
+}
+
+.listing-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Form elements */
+input, select, textarea, button {
+  font-family: 'Inter', sans-serif;
+  border-radius: 0.5rem;
+  transition: var(--transition-standard);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.1);
+}
+
+button {
+  font-weight: 500;
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Layout utilities */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }

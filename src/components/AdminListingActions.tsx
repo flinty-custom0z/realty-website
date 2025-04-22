@@ -57,8 +57,8 @@ export default function AdminListingActions({ listingId, categorySlug }: AdminLi
       <Button
         onClick={handleDelete}
         disabled={isDeleting}
-        variant="danger"
-        className="px-3 py-1"
+        variant="primary"
+        className="px-3 py-1 bg-red-600 hover:bg-red-700 border-red-600"
         loading={isDeleting}
       >
         {isDeleting ? 'Удаление...' : 'Удалить'}
