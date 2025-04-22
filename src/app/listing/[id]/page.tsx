@@ -1,280 +1,230 @@
-import { PrismaClient } from '@prisma/client';
-import { headers as nextHeaders, cookies as nextCookies } from 'next/headers';
-import { notFound } from 'next/navigation';
+'use client';
+
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import ImageGallery from '@/components/ImageGallery';
-import AdminListingActions from '@/components/AdminListingActions';
-import jwt from 'jsonwebtoken';
 import ClientImage from '@/components/ClientImage';
+import Button from '@/components/Button';
+import { ArrowLeft } from 'lucide-react';
 
-// always render on‑demand so we can read the Referer header
-export const dynamic = 'force-dynamic';
+// Create a component for the client-side data fetching
+function ListingDetailClient({ id }: { id: string }) {
+  const router = useRouter();
+  const [listing, setListing] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-/* ───────────────────────────── helpers ───────────────────────────── */
-
-async function fetchListing(id: string) {
-  return prisma.listing.findUnique({
-    where: { id },
-    include: {
-      category: true,
-      user: { select: { id: true, name: true, phone: true, photo: true } },
-      images: true,
-    },
-  });
-}
-
-async function currentUserIsAdmin() {
-  try {
-    const cookies = await nextCookies();
-    const token = cookies.get('token')?.value;
-    if (!token) return false;
-    
-    const { id } = jwt.verify(token, JWT_SECRET) as { id: string };
-    return !!(await prisma.user.findUnique({ where: { id } }));
-  } catch {
-    return false;
-  }
-}
-
-async function buildBackHref(categorySlug: string) {
-  const hdr = await nextHeaders();
-  const referer = hdr.get('referer');
-  
-  
-  if (!referer) {
-    return `/listing-category/${categorySlug}`;
-  }
-  
-  try {
-    const url = new URL(referer);
-    
-    // If coming from search, category page, or home page, return to that page
-    if (
-      url.pathname.startsWith('/search') ||
-      url.pathname.startsWith('/listing-category') ||
-      url.pathname === '/'
-    ) {
-      return referer;
-    }
-  } catch (error) {
-    /* ignore malformed referer */
-  }
-  
-  return `/listing-category/${categorySlug}`;
-}
-
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | number | null;
-}) {
-  if (value === undefined || value === null || value === '') return null;
-  return (
-    <p className="mb-2">
-    <span className="text-gray-600">{label}:</span> {value}
-    </p>
-  );
-}
-
-async function getBackLinkText(backUrl: string) {
-  
-  // If returning to home
-  if (backUrl === '/' || backUrl.match(/^https?:\/\/[^\/]+\/?$/)) {
-    return 'На главную';
-  }
-  
-  // If returning to search results
-  if (backUrl.includes('/search')) {
-    return 'Назад к результатам поиска';
-  }
-  
-  // If returning to a category
-  if (backUrl.includes('/listing-category/')) {
-    const urlParts = backUrl.split('/');
-    
-    // Find the segment after 'listing-category'
-    let categorySlug = '';
-    for (let i = 0; i < urlParts.length; i++) {
-      if (urlParts[i] === 'listing-category' && i + 1 < urlParts.length) {
-        categorySlug = urlParts[i + 1]?.split('?')[0] || '';
-        break;
+  useEffect(() => {
+    const fetchListing = async () => {
+      try {
+        const res = await fetch(`/api/listings/${id}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            router.push('/404');
+            return;
+          }
+          throw new Error('Failed to fetch listing');
+        }
+        
+        const data = await res.json();
+        setListing(data);
+      } catch (error) {
+        console.error('Error fetching listing:', error);
+        setError('Failed to load listing');
+      } finally {
+        setIsLoading(false);
       }
+    };
+    
+    fetchListing();
+  }, [id, router]);
+
+  const handleDeleteListing = async () => {
+    if (!window.confirm('Вы уверены, что хотите удалить это объявление?')) {
+      return;
     }
     
-    
-    if (categorySlug) {
-      const category = await prisma.category.findUnique({
-        where: { slug: categorySlug },
+    try {
+      const res = await fetch(`/api/admin/listings/${id}`, {
+        method: 'DELETE',
       });
       
-      
-      if (category) {
-        // If it's a search within category (has query parameter)
-        if (backUrl.includes('?q=')) {
-          return 'Назад к результатам поиска';
-        }
-        // If it's just a category page
-        return `Назад к ${getDativeCase(category.name)}`;
+      if (!res.ok) {
+        throw new Error('Ошибка при удалении объявления');
       }
+      
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      alert('Ошибка при удалении объявления');
     }
-  }
-  
-  // Default
-  return 'Назад';
-}
-
-
-/**
- * Helper function to get proper grammatical case for back links
- */
-function getDativeCase(categoryName: string): string {
-  // Handle Russian declensions for common category names
-  const dative: Record<string, string> = {
-    'Квартиры': 'квартирам',
-    'Дома': 'домам',
-    'Земельные участки': 'земельным участкам',
-    'Коммерция': 'коммерческим объектам',
-    'Промышленные объекты': 'промышленным объектам'
   };
-  
-  return dative[categoryName] || categoryName.toLowerCase();
-}
 
-/* ───────────────────────────── page ───────────────────────────── */
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <p>Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
-export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const listing = await fetchListing(id);
-  if (!listing) notFound();
-  
-  const isAdmin = await currentUserIsAdmin();
-  const backHref = await buildBackHref(listing!.category.slug);
-  const backLinkText = await getBackLinkText(backHref);
+  if (error || !listing) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error || 'Объявление не найдено'}</p>
+          <Link href="/" className="text-red-600 underline mt-2 inline-block">
+            Вернуться на главную
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const dateAdded = new Date(listing.dateAdded).toLocaleDateString('ru-RU');
   
   // Ensure main image is first
-  const sortedImages = listing.images.slice().sort((a, b) => {
+  const sortedImages = listing.images.slice().sort((a: any, b: any) => {
     if (a.isFeatured === b.isFeatured) return 0;
     return a.isFeatured ? -1 : 1;
   });
 
   return (
     <div className="container mx-auto px-4 py-8">
-    {/* top bar */}
-    <div className="mb-4 flex justify-between items-center">
-    <Link href={backHref} className="text-blue-500 hover:underline">
-    ← {backLinkText}
-    </Link>
-    {isAdmin && (
-      <AdminListingActions listingId={listing.id} categorySlug={listing.category.slug} />
-    )}
-    </div>
-    
-    {/* title & gallery */}
-    <h1 className="text-2xl font-bold mb-4">{listing.title}</h1>
-    <ImageGallery images={sortedImages} title={listing.title} />
-    <p className="text-gray-500 mt-2 mb-6">Добавлено: {dateAdded}</p>
-    
-    <div className="flex flex-col md:flex-row gap-8">
-    {/* left column */}
-    <div className="w-full md:w-2/3">
-    {/* characteristics */}
-    <section className="bg-white shadow rounded-md p-6 mb-6">
-    <h2 className="text-xl font-bold mb-4">Характеристики объекта</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-    <div>
-    <Info label="Район" value={listing.district} />
-    <Info label="Адрес" value={listing.address} />
-    <Info label="Комнат" value={listing.rooms} />
-    <Info
-    label="Этаж"
-    value={
-      listing.floor && listing.totalFloors
-      ? `${listing.floor}/${listing.totalFloors}`
-      : undefined
-    }
-    />
-    <Info label="Площадь (м²)" value={listing.houseArea} />
-    <Info label="Площадь участка (сот.)" value={listing.landArea} />
-    <Info label="Цена" value={`${listing.price.toLocaleString()} ₽`} />
-    </div>
-    <div>
-    <Info label="Год" value={listing.yearBuilt} />
-    <Info label="Состояние" value={listing.condition} />
-    <Info label="Код объекта" value={listing.listingCode} />
-    <Info label="Дата добавления" value={dateAdded} />
-    </div>
-    </div>
-    </section>
-    
-    {/* public description */}
-    {listing.publicDescription && (
-      <section className="bg-white shadow rounded-md p-6 mb-6">
-      <h2 className="text-xl font-bold mb-4">Описание</h2>
-      <div className="prose max-w-none text-gray-800">
-      {listing.publicDescription.split('\n').map((p, i) => (
-        <p key={i}>{p}</p>
-      ))}
+      {/* top bar */}
+      <div className="flex justify-between items-center mb-4">
+        <Link href="/" className="text-[#4285F4] hover:underline transition-all duration-200 flex items-center">
+          <ArrowLeft size={16} className="mr-1" />
+          На главную
+        </Link>
+        <div className="flex space-x-3">
+          <Button 
+            variant="primary" 
+            className="shadow-sm"
+            onClick={() => router.push(`/admin/listings/${listing.id}`)}
+          >
+            Редактировать
+          </Button>
+          <Button 
+            variant="secondary"
+            className="shadow-sm"
+            onClick={() => router.push(`/admin/listings/${listing.id}/history`)}
+          >
+            История
+          </Button>
+          <Button 
+            variant="danger"
+            onClick={handleDeleteListing}
+          >
+            Удалить
+          </Button>
+        </div>
       </div>
-      </section>
-    )}
-    
-    {/* admin comment */}
-    {isAdmin && listing.adminComment && (
-      <section className="bg-white shadow rounded-md p-6 mb-6 border-l-4 border-blue-500">
-      <h2 className="text-xl font-bold mb-4 flex items-center">
-      <span className="mr-2">🔒</span> Комментарий администратора
-      </h2>
-      <div className="prose max-w-none text-gray-700">
-      {listing.adminComment.split('\n').map((p, i) => (
-        <p key={i} className="mb-4">
-        {p}
-        </p>
-      ))}
+      
+      {/* title & gallery */}
+      <h1 className="text-2xl font-bold mb-4">{listing.title}</h1>
+      <ImageGallery images={sortedImages} title={listing.title} />
+      <p className="text-gray-500 mt-2 mb-6">Добавлено: {dateAdded}</p>
+      
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* left column */}
+        <div className="w-full md:w-2/3">
+          {/* characteristics */}
+          <section className="bg-white shadow rounded-md p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">Характеристики объекта</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                {listing.district && <p className="mb-2"><span className="text-gray-600">Район:</span> {listing.district}</p>}
+                {listing.address && <p className="mb-2"><span className="text-gray-600">Адрес:</span> {listing.address}</p>}
+                {listing.rooms && <p className="mb-2"><span className="text-gray-600">Комнат:</span> {listing.rooms}</p>}
+                {listing.floor && listing.totalFloors && 
+                  <p className="mb-2"><span className="text-gray-600">Этаж:</span> {listing.floor}/{listing.totalFloors}</p>
+                }
+                {listing.houseArea && <p className="mb-2"><span className="text-gray-600">Площадь (м²):</span> {listing.houseArea}</p>}
+                {listing.landArea && <p className="mb-2"><span className="text-gray-600">Площадь участка (сот.):</span> {listing.landArea}</p>}
+                <p className="mb-2"><span className="text-gray-600">Цена:</span> {listing.price.toLocaleString()} ₽</p>
+              </div>
+              <div>
+                {listing.yearBuilt && <p className="mb-2"><span className="text-gray-600">Год:</span> {listing.yearBuilt}</p>}
+                {listing.condition && <p className="mb-2"><span className="text-gray-600">Состояние:</span> {listing.condition}</p>}
+                <p className="mb-2"><span className="text-gray-600">Код объекта:</span> {listing.listingCode}</p>
+                <p className="mb-2"><span className="text-gray-600">Дата добавления:</span> {dateAdded}</p>
+              </div>
+            </div>
+          </section>
+          
+          {/* public description */}
+          {listing.publicDescription && (
+            <section className="bg-white shadow rounded-md p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4">Описание</h2>
+              <div className="prose max-w-none text-gray-800">
+                {listing.publicDescription.split('\n').map((p: string, i: number) => (
+                  <p key={i}>{p}</p>
+                ))}
+              </div>
+            </section>
+          )}
+          
+          {/* admin comment */}
+          {listing.adminComment && (
+            <section className="bg-white shadow rounded-md p-6 mb-6 border-l-4 border-blue-500">
+              <h2 className="text-xl font-bold mb-4 flex items-center">
+                <span className="mr-2">🔒</span> Комментарий администратора
+              </h2>
+              <div className="prose max-w-none text-gray-700">
+                {listing.adminComment.split('\n').map((p: string, i: number) => (
+                  <p key={i} className="mb-4">
+                    {p}
+                  </p>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-4 italic">
+                Этот комментарий виден только администраторам
+              </p>
+            </section>
+          )}
+        </div>
+        
+        {/* right sidebar */}
+        <aside className="w-full md:w-1/3">
+          <div className="bg-white shadow rounded-md p-6 sticky top-4">
+            <div className="flex items-center mb-4">
+              {listing.user.photo && (
+                <div className="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0">
+                  <ClientImage
+                    src={`/api/image${listing.user.photo}`}
+                    alt={`Фото ${listing.user.name}`}
+                    className="w-full h-full object-cover"
+                    width={64}
+                    height={64}
+                  />
+                </div>
+              )}
+              <div>
+                <h3 className="font-bold">{listing.user.name}</h3>
+                <p className="text-gray-600">Риелтор</p>
+              </div>
+            </div>
+            <div className="border-t pt-4 text-sm">
+              <p className="mb-2 flex items-center">
+                <span className="mr-2">📱</span>
+                <a href={`tel:${listing.user.phone}`} className="text-blue-500 hover:underline">
+                  {listing.user.phone}
+                </a>
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
-      <p className="text-sm text-gray-500 mt-4 italic">
-      Этот комментарий виден только администраторам
-      </p>
-      </section>
-    )}
-    </div>
-    
-    {/* right sidebar */}
-    <aside className="w-full md:w-1/3">
-    <div className="bg-white shadow rounded-md p-6 sticky top-4">
-    <div className="flex items-center mb-4">
-    {listing.user.photo && (
-      <div className="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0">
-        <ClientImage
-          src={`/api/image${listing.user.photo}`}
-          alt={`Фото ${listing.user.name}`}
-          className="w-full h-full object-cover"
-          width={64}
-          height={64}
-        />
-      </div>
-    )}
-    <div>
-    <h3 className="font-bold">{listing.user.name}</h3>
-    <p className="text-gray-600">Риелтор</p>
-    </div>
-    </div>
-    <div className="border-t pt-4 text-sm">
-    <p className="mb-2 flex items-center">
-    <span className="mr-2">📱</span>
-    <a href={`tel:${listing.user.phone}`} className="text-blue-500 hover:underline">
-    {listing.user.phone}
-    </a>
-    </p>
-    </div>
-    </div>
-    </aside>
-    </div>
     </div>
   );
+}
+
+// This is the main page component
+export default function ListingDetailPage({ params }: { params: { id: string } }) {
+  return <ListingDetailClient id={params.id} />;
 }
