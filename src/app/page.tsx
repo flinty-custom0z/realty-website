@@ -182,7 +182,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       {/* Categories */}
       <div className="mb-14 md:mb-20">
         <h2 className="text-2xl font-medium text-gray-800 mb-8">Категории недвижимости</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-7 gap-y-7 md:gap-x-8 md:gap-y-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-7">
           {categories.map((category) => {
             const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
               categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
@@ -194,15 +194,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                 key={category.id}
                 href={`/listing-category/${category.slug}`}
                 className={`category-card group ${categoryBgClass}`}
-                style={{ minHeight: '180px', maxHeight: '320px' }}
+                style={{ height: '220px' }}
               >
-                {/* Optional: background image with overlay for premium look */}
+                {/* Background image with overlay for premium look */}
                 <div className="absolute inset-0 w-full h-full z-0">
                   <ClientImage
                     src={imageSrc}
                     alt={category.name}
                     fill
-                    className="object-cover opacity-60"
+                    className="object-cover opacity-40"
                     priority
                     fallbackSrc={defaultPlaceholder}
                   />
