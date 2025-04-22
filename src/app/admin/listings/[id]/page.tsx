@@ -6,7 +6,7 @@ import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
 import ImageModal from '@/components/ImageModal';
-import { Eye } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 
 interface ListingFormData {
   title: string;
@@ -728,33 +728,40 @@ export default function EditListingPage() {
               />
               
               {imagePreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      <ClientImage
-                        src={preview.url}
-                        alt={`Preview ${index + 1}`}
-                        fill
-                        className="object-cover rounded"
-                      />
-                      <div className="absolute top-2 right-2 flex flex-col gap-2">
-                        <button
-                          type="button"
-                          onClick={() => removeImagePreview(index)}
-                          className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ×
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openPreviewModal(preview.url)}
-                          className="bg-white text-blue-500 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Eye size={16} />
-                        </button>
-                      </div>
+                <div className="relative">
+                  {isSaving && (
+                    <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
+                      <Loader2 className="animate-spin" size={32} />
                     </div>
-                  ))}
+                  )}
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group aspect-square">
+                        <ClientImage
+                          src={preview.url}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          className="object-cover rounded"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => removeImagePreview(index)}
+                            className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openPreviewModal(preview.url)}
+                            className="bg-white text-blue-500 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -764,8 +771,9 @@ export default function EditListingPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300"
+              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
             >
+              {isSaving && <Loader2 className="animate-spin mr-2" size={16} />}
               {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
             </button>
           </div>

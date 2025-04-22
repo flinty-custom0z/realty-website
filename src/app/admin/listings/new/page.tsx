@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ClientImage from '@/components/ClientImage';
+import { Loader2 } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -481,24 +482,31 @@ export default function CreateListingPage() {
           />
           
           {imagePreviews.length > 0 && (
-          <div className="flex space-x-4 overflow-x-auto py-2">
-          {imagePreviews.map((preview, index) => (
-            <div key={index} className="relative group flex-shrink-0">
-              <ClientImage
-                src={preview.url}
-                alt={`Preview ${index + 1}`}
-                className="h-32 w-auto rounded-md object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                ×
-              </button>
+            <div className="relative">
+              {isLoading && (
+                <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
+                  <Loader2 className="animate-spin" size={32} />
+                </div>
+              )}
+              <div className="flex space-x-4 overflow-x-auto py-2">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group flex-shrink-0">
+                    <ClientImage
+                      src={preview.url}
+                      alt={`Preview ${index + 1}`}
+                      className="h-32 w-auto rounded-md object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>        
           )}
         </div>
         
@@ -506,8 +514,9 @@ export default function CreateListingPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300"
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition disabled:bg-blue-300 flex items-center justify-center"
           >
+            {isLoading && <Loader2 className="animate-spin mr-2" size={16} />}
             {isLoading ? 'Создание...' : 'Создать объявление'}
           </button>
         </div>
