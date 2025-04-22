@@ -58,59 +58,87 @@ footer {
 .category-card {
   position: relative;
   overflow: hidden;
-  border-radius: 0.75rem;
-  box-shadow: var(--card-shadow);
-  transition: var(--transition-standard);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px 0 rgba(60, 60, 60, 0.07);
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s cubic-bezier(0.4,0,0.2,1);
   display: block;
   width: 100%;
+  aspect-ratio: 3 / 2;
+  background: none;
 }
 
 .category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  transform: scale(1.025);
+  box-shadow: 0 8px 32px 0 rgba(60, 60, 60, 0.13);
 }
 
 .category-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.4));
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
   z-index: 1;
-  transition: var(--transition-standard);
-}
-
-.category-card:hover::before {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5));
+  /* Subtle edge effect */
+  box-shadow: 0 0 0 2px rgba(60, 60, 60, 0.04);
 }
 
 .category-card-content {
   position: relative;
   z-index: 2;
-  color: white;
+  color: #222;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  height: 100%;
+  padding: 32px 28px 28px 28px;
+  background: rgba(255,255,255,0.72);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px 0 rgba(60,60,60,0.04);
+  margin: 0;
+}
+
+.category-card .category-icon {
+  margin-bottom: 18px;
+  color: #222;
+}
+
+.category-card .category-title {
+  font-size: 21px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #222;
+  letter-spacing: -0.01em;
+}
+
+.category-card .category-count {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.8;
+  color: #222;
+  margin-bottom: 0;
 }
 
 /* Category-specific background colors */
 .category-apartments {
-  background-color: #90cdf4; /* blue-300 */
+  background: rgba(91, 124, 153, 0.15);
 }
 
 .category-houses {
-  background-color: #9ae6b4; /* green-300 */
+  background: rgba(166, 155, 141, 0.15);
 }
 
 .category-land {
-  background-color: #fbd38d; /* yellow-300 */
+  background: rgba(136, 160, 150, 0.15);
 }
 
 .category-commercial {
-  background-color: #d6bcfa; /* purple-300 */
+  background: rgba(61, 90, 128, 0.15);
 }
 
 .category-industrial {
-  background-color: #e2e8f0; /* gray-300 */
+  background: rgba(100, 116, 139, 0.15);
 }
 
 /* Header styles */
@@ -194,4 +222,10 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+@media (max-width: 640px) {
+  .category-card-content {
+    padding: 18px 12px 16px 12px;
+  }
 }
