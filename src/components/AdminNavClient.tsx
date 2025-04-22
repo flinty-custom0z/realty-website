@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Button from './Button';
+import { User, LogOut } from 'lucide-react';
 
 interface User {
   id: string;
@@ -15,49 +16,42 @@ export default function AdminNavClient() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in by making a request to the server
-    async function checkAuth() {
+    const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/check', {
-          credentials: 'include',
-        });
-        
+        const res = await fetch('/api/auth/check');
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
-        } else {
-          setUser(null);
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
-        setUser(null);
+        console.error('Error checking auth:', error);
       } finally {
         setIsLoading(false);
       }
-    }
-    
+    };
+
     checkAuth();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      const res = await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include',
       });
-      // Redirect to home page after logout
-      window.location.href = '/';
+      
+      if (res.ok) {
+        // Redirect to home page after logout
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed');
+      }
     } catch (error) {
       console.error('Error logging out:', error);
     }
   };
-
+  
   if (isLoading) {
-    return (
-      <div className="text-gray-400 text-sm">
-        <span className="animate-pulse">•••</span>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -66,9 +60,9 @@ export default function AdminNavClient() {
         <div className="flex items-center space-x-3">
           <Link 
             href="/admin" 
-            className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+            className="text-[#4285F4] hover:text-[#3b78e7] text-sm flex items-center transition-colors duration-200"
           >
-            <span className="mr-1">👤</span> 
+            <User size={16} className="mr-1" /> 
             <span>{user.name}</span>
             <span className="mx-1">|</span>
             <span>Админ панель</span>
@@ -76,8 +70,10 @@ export default function AdminNavClient() {
           
           <Button
             onClick={handleLogout}
-            variant="primary"
-            className="text-sm bg-red-600 hover:bg-red-700 border-red-600"
+            variant="danger"
+            size="sm"
+            className="flex items-center"
+            icon={<LogOut size={14} />}
           >
             Выйти
           </Button>
@@ -85,9 +81,9 @@ export default function AdminNavClient() {
       ) : (
         <Link 
           href="/admin-login"
-          className="text-gray-600 hover:text-gray-900 text-sm flex items-center"
+          className="text-gray-600 hover:text-gray-900 text-sm flex items-center transition-colors duration-200"
         >
-          <span className="mr-1">🔐</span> 
+          <User size={16} className="mr-1" /> 
           Вход для администраторов
         </Link>
       )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
 import ImageUpload from '@/components/ImageUpload';
@@ -60,7 +60,7 @@ export default function NewListingPage() {
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
 
   // Fetch categories and users when the component mounts
-  useState(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [categoriesRes, usersRes] = await Promise.all([

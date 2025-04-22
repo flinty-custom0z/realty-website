@@ -112,7 +112,7 @@ export default function AdminListingsPage() {
         <h1 className="text-2xl font-bold">Управление объявлениями</h1>
         <Link
           href="/admin/listings/new"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          className="inline-flex items-center justify-center px-4 py-2 bg-[#4285F4] text-white rounded-[8px] text-sm font-medium hover:bg-[#3b78e7] transition-all duration-200 shadow-sm"
         >
           Добавить объявление
         </Link>
@@ -257,11 +257,11 @@ export default function AdminListingsPage() {
                     <button
                       key={page}
                       onClick={() => setPagination((prev) => ({ ...prev, page }))}
-                      className={`w-8 h-8 flex items-center justify-center mx-1 rounded ${
+                      className={`w-8 h-8 flex items-center justify-center mx-1 rounded-md ${
                         pagination.page === page
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
+                          ? 'bg-[#4285F4] text-white'
+                          : 'bg-[#F5F5F5] text-[#505050] hover:bg-[#EAEAEA]'
+                      } transition-all duration-200`}
                     >
                       {page}
                     </button>

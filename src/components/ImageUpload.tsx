@@ -2,7 +2,8 @@
 
 import { useState, useRef, ChangeEvent } from 'react';
 import ClientImage from '@/components/ClientImage';
-import { Loader2, Eye, X } from 'lucide-react';
+import { Loader2, Eye, X, Upload } from 'lucide-react';
+import Button from './Button';
 
 interface ImagePreview {
   file: File;
@@ -26,6 +27,7 @@ export default function ImageUpload({
   previewModalHandler
 }: ImageUploadProps) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -57,17 +59,75 @@ export default function ImageUpload({
     onImageRemoved(index);
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      
+      // Create preview URLs and IDs
+      const newPreviews = newFiles.map((file) => ({
+        file,
+        url: URL.createObjectURL(file),
+        id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      }));
+      
+      setPreviews((prev) => [...prev, ...newPreviews]);
+      onImagesSelected(newFiles);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
+      <div 
+        className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
+          isDragging ? 'border-[#4285F4] bg-blue-50' : 'border-gray-300'
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <input
-          type="file"
           ref={fileInputRef}
+          type="file"
           multiple
           accept="image/*"
           onChange={handleImageChange}
-          className="file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 text-sm text-gray-500"
+          className="hidden"
+          id="file-upload"
         />
+        <div className="flex flex-col items-center space-y-2">
+          <Upload size={32} className={`${isDragging ? 'text-[#4285F4]' : 'text-gray-400'}`} />
+          <p className="text-sm text-gray-500">Перетащите файлы сюда или</p>
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            variant="primary"
+            size="sm"
+            className="mt-2"
+          >
+            Выбрать файлы
+          </Button>
+        </div>
       </div>
       
       {previews.length > 0 && (
@@ -76,7 +136,7 @@ export default function ImageUpload({
             const isCurrentlyUploading = isUploading && uploadingImages[preview.id];
             
             return (
-              <div key={preview.id} className="relative group aspect-square">
+              <div key={preview.id} className="relative group aspect-square rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
                 <div className="relative h-full w-full">
                   <ClientImage
                     src={preview.url}
@@ -85,18 +145,23 @@ export default function ImageUpload({
                     className="object-cover rounded"
                     showLoadingIndicator={true}
                   />
+                  {index === 0 && (
+                    <div className="absolute top-2 left-2 bg-[#4285F4] text-white text-xs py-1 px-2 rounded-md z-10">
+                      Главное фото
+                    </div>
+                  )}
                   {isCurrentlyUploading && (
                     <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
                       <Loader2 className="animate-spin text-white" size={24} />
                     </div>
                   )}
                 </div>
-                
+           
                 <div className="absolute top-2 right-2 flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                     aria-label="Remove image"
                   >
                     <X size={16} />
@@ -106,7 +171,7 @@ export default function ImageUpload({
                     <button
                       type="button"
                       onClick={() => previewModalHandler(preview.url)}
-                      className="bg-white text-blue-500 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="bg-white text-[#4285F4] rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                       aria-label="Preview image"
                     >
                       <Eye size={16} />

@@ -5,7 +5,7 @@
   --foreground: #2d3748;
   --primary: #4a5568;
   --secondary: #718096;
-  --accent: #5a67d8;
+  --accent: #4285F4;
   --muted: #e2e8f0;
   --card-bg: #ffffff;
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -197,7 +197,7 @@ input, select, textarea, button {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.1);
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
 }
 
 button {
@@ -245,6 +245,77 @@ button {
   background: #9ca3af;
 }
 
+/* Admin interface styles */
+.admin-btn-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 24px 0;
+}
+
+.admin-btn-group button, 
+.admin-btn-group a {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.admin-action-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* File upload styling */
+.file-upload-dropzone {
+  border: 2px dashed #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.file-upload-dropzone:hover,
+.file-upload-dropzone.dragging {
+  border-color: #4285F4;
+  background-color: rgba(66, 133, 244, 0.05);
+}
+
+.file-thumbnail {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.file-thumbnail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.file-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: #4285F4;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
 @media (max-width: 640px) {
   .category-card-content {
     padding: 18px;
@@ -257,5 +328,9 @@ button {
   
   .category-card .category-title {
     font-size: 20px;
+  }
+
+  .admin-btn-group {
+    flex-wrap: wrap;
   }
 }

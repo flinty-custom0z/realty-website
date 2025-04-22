@@ -79,7 +79,8 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
           <Button
             type="button"
             onClick={() => window.location.href = '/admin/logout'}
-            variant="outline"
+            variant="danger"
+            size="sm"
             fullWidth
             icon={<LogOut size={16} />}
             className="mt-2 justify-start text-sm"
