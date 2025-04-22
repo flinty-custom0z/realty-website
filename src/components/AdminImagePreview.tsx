@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ClientImage from '@/components/ClientImage';
 import ImageModal from '@/components/ImageModal';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2, Star } from 'lucide-react';
 
 interface AdminImagePreviewProps {
   image: {
@@ -39,9 +39,9 @@ export default function AdminImagePreview({
     <>
       <div
         className={`
-          relative group border-2 rounded p-1 aspect-square
-          ${isSelected ? 'border-blue-500' : 'border-gray-200'}
-          ${isMarkedForDeletion ? 'opacity-50' : ''}
+          relative group border-2 rounded-lg overflow-hidden aspect-square transition-all duration-200
+          ${isSelected ? 'border-[#4285F4] shadow-md' : 'border-gray-200'}
+          ${isMarkedForDeletion ? 'opacity-50' : 'hover:shadow-md'}
         `}
         onClick={() => !isMarkedForDeletion && onSetFeatured(image.id)}
       >
@@ -53,38 +53,43 @@ export default function AdminImagePreview({
             sizes="(max-width: 768px) 100vw, 33vw"
             className="object-cover rounded"
           />
+
+          {isSelected && (
+            <div className="absolute top-2 left-2 bg-[#4285F4] text-white text-xs py-1 px-2 rounded-md z-10 flex items-center">
+              <Star size={12} className="mr-1" />
+              Главное фото
+            </div>
+          )}
         </div>
-          
-        <div className="absolute top-2 right-2">
+
+        <div className="absolute top-2 right-2 flex flex-col gap-2">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onToggleDelete(image.id);
             }}
-            className={`
-              p-1 rounded-full w-7 h-7 flex items-center justify-center mb-2
-              ${isMarkedForDeletion ? 'bg-red-500 text-white' : 'bg-white text-red-500 opacity-0 group-hover:opacity-100'}
-              transition-opacity
-            `}
-            aria-label={isMarkedForDeletion ? "Отменить удаление" : "Удалить фото"}
+            className="bg-white text-red-600 hover:bg-red-50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+            aria-label="Mark for deletion"
           >
-            {isMarkedForDeletion ? '↩' : '×'}
+            <Trash2 size={14} />
           </button>
-
+          
           <button
             type="button"
             onClick={openModal}
-            className="p-1 rounded-full w-7 h-7 flex items-center justify-center bg-white text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label="Просмотр фото"
+            className="bg-white text-[#4285F4] hover:bg-blue-50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+            aria-label="Preview image"
           >
-            <Eye size={16} />
+            <Eye size={14} />
           </button>
         </div>
         
-        {isSelected && (
-          <div className="absolute top-2 left-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-            Главное фото
+        {isMarkedForDeletion && (
+          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+            <span className="bg-red-500 text-white text-xs py-1 px-2 rounded-md">
+              Будет удалено
+            </span>
           </div>
         )}
       </div>
@@ -92,7 +97,7 @@ export default function AdminImagePreview({
       {isModalOpen && (
         <ImageModal
           src={image.path}
-          alt="Фото объявления"
+          alt="Просмотр изображения"
           onClose={closeModal}
         />
       )}

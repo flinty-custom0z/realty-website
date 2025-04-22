@@ -6,7 +6,7 @@ import ClientImage from '@/components/ClientImage';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
 import ImageModal from '@/components/ImageModal';
-import { Eye, Loader2 } from 'lucide-react';
+import { Eye, Loader2, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import Button from '@/components/Button';
 
@@ -364,29 +364,29 @@ export default function EditListingPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Редактирование объявления</h1>
-        <div className="flex gap-2">
+        <div className="admin-btn-group">
           <Link
             href={`/listing/${listing.id}`}
             target="_blank"
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+            className="bg-[#F5F5F5] text-[#505050] px-4 py-2 rounded-[8px] hover:bg-[#EAEAEA] transition-all duration-200 shadow-sm"
           >
             Просмотр на сайте
           </Link>
           <Link
             href={`/admin/listings/${listing.id}/history`}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="bg-[#F5F5F5] text-[#505050] px-4 py-2 rounded-[8px] hover:bg-[#EAEAEA] transition-all duration-200 shadow-sm"
           >
             История изменений
           </Link>
           <Link
             href="/admin/listings"
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
+            className="text-[#4285F4] hover:underline transition-all duration-200 flex items-center"
           >
+            <ArrowLeft size={16} className="mr-1" />
             Назад к списку
           </Link>
           <Button
-            variant="primary"
-            className="px-3 py-1 bg-red-600 hover:bg-red-700 border-red-600"
+            variant="danger"
             onClick={() => handleDelete()}
             disabled={isSaving}
           >
@@ -407,8 +407,8 @@ export default function EditListingPage() {
         </div>
       )}
       
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4 pb-2 border-b">
+      <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
           <h2 className="text-lg font-medium">Детали объявления</h2>
           <div className="text-sm text-gray-500">
             Код объекта: {listing.listingCode} | Добавлено: {formatDate(listing.dateAdded)}
@@ -427,7 +427,7 @@ export default function EditListingPage() {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
                 required
               />
             </div>
@@ -743,14 +743,15 @@ export default function EditListingPage() {
             </div>
           </div>
           
-          <div className="mt-8 flex justify-end">
+          <div className="flex justify-end mt-6">
             <Button
               type="submit"
-              disabled={isSaving}
+              variant="primary"
+              size="lg"
               loading={isSaving}
-              className="px-6"
+              className="px-8 shadow-sm"
             >
-              Сохранить
+              {isSaving ? 'Сохранение...' : 'Сохранить'}
             </Button>
           </div>
         </form>
