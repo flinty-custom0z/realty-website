@@ -112,7 +112,7 @@ export default function AdminListingsPage() {
         <h1 className="text-2xl font-bold">Управление объявлениями</h1>
         <Link
           href="/admin/listings/new"
-          className="inline-flex items-center justify-center px-4 py-2 bg-[#4285F4] text-white rounded-[8px] text-sm font-medium hover:bg-[#3b78e7] transition-all duration-200 shadow-sm"
+          className="admin-add-btn"
         >
           Добавить объявление
         </Link>
@@ -169,25 +169,25 @@ export default function AdminListingsPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="admin-table">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="py-3 px-4 font-medium">Фото</th>
-                    <th className="py-3 px-4 font-medium">Название</th>
-                    <th className="py-3 px-4 font-medium">Категория</th>
-                    <th className="py-3 px-4 font-medium">Код</th>
-                    <th className="py-3 px-4 font-medium">Район</th>
-                    <th className="py-3 px-4 font-medium">Адрес</th>
-                    <th className="py-3 px-4 font-medium">Цена</th>
-                    <th className="py-3 px-4 font-medium">Статус</th>
-                    <th className="py-3 px-4 font-medium">Дата</th>
-                    <th className="py-3 px-4 font-medium">Действия</th>
+                  <tr>
+                    <th>Фото</th>
+                    <th>Название</th>
+                    <th>Категория</th>
+                    <th>Код</th>
+                    <th>Район</th>
+                    <th>Адрес</th>
+                    <th>Цена</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {listings.map((listing) => (
-                    <tr key={listing.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="py-3 px-4">
+                    <tr key={listing.id}>
+                      <td>
                         <div className="relative w-12 h-12 bg-gray-200 rounded overflow-hidden">
                             {listing.images && listing.images[0] ? (
                             <ClientImage
@@ -205,39 +205,39 @@ export default function AdminListingsPage() {
                             )}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <Link href={`/admin/listings/${listing.id}`} className="text-blue-500 hover:underline">
+                      <td>
+                        <Link href={`/admin/listings/${listing.id}`} className="admin-edit-link">
                           {listing.title}
                         </Link>
                       </td>
-                      <td className="py-3 px-4">{listing.category.name}</td>
-                      <td className="py-3 px-4">{listing.listingCode}</td>
-                      <td className="py-3 px-4">{listing.district}</td>
-                      <td className="py-3 px-4">{listing.address}</td>
-                      <td className="py-3 px-4">{listing.price.toLocaleString()} ₽</td>
-                      <td className="py-3 px-4">
+                      <td>{listing.category.name}</td>
+                      <td>{listing.listingCode}</td>
+                      <td>{listing.district}</td>
+                      <td>{listing.address}</td>
+                      <td>{listing.price.toLocaleString()} ₽</td>
+                      <td>
                         <span 
-                          className={`px-2 py-1 rounded-full text-xs ${
+                          className={`status-badge ${
                             listing.status === 'active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'status-badge-active' 
+                              : 'status-badge-inactive'
                           }`}
                         >
                           {listing.status === 'active' ? 'Активно' : 'Неактивно'}
                         </span>
                       </td>
-                      <td className="py-3 px-4">{formatDate(listing.dateAdded)}</td>
-                      <td className="py-3 px-4">
+                      <td><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
+                      <td>
                         <div className="flex space-x-2">
                           <Link
                             href={`/admin/listings/${listing.id}`}
-                            className="text-blue-500 hover:text-blue-700"
+                            className="admin-edit-link"
                           >
                             Редактировать
                           </Link>
                           <button
                             onClick={() => handleDeleteListing(listing.id)}
-                            className="text-red-500 hover:text-red-700"
+                            className="admin-delete-btn"
                           >
                             Удалить
                           </button>
@@ -257,11 +257,11 @@ export default function AdminListingsPage() {
                     <button
                       key={page}
                       onClick={() => setPagination((prev) => ({ ...prev, page }))}
-                      className={`w-8 h-8 flex items-center justify-center mx-1 rounded-md ${
+                      className={`pagination-btn ${
                         pagination.page === page
-                          ? 'bg-[#4285F4] text-white'
-                          : 'bg-[#F5F5F5] text-[#505050] hover:bg-[#EAEAEA]'
-                      } transition-all duration-200`}
+                          ? 'pagination-btn-active'
+                          : 'pagination-btn-inactive'
+                      }`}
                     >
                       {page}
                     </button>

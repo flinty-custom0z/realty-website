@@ -368,30 +368,30 @@ export default function EditListingPage() {
           <Link
             href={`/listing/${listing.id}`}
             target="_blank"
-            className="bg-[#F5F5F5] text-[#505050] px-4 py-2 rounded-[8px] hover:bg-[#EAEAEA] transition-all duration-200 shadow-sm"
+            className="admin-secondary-btn"
           >
             Просмотр на сайте
           </Link>
           <Link
             href={`/admin/listings/${listing.id}/history`}
-            className="bg-[#F5F5F5] text-[#505050] px-4 py-2 rounded-[8px] hover:bg-[#EAEAEA] transition-all duration-200 shadow-sm"
+            className="admin-secondary-btn"
           >
             История изменений
           </Link>
           <Link
             href="/admin/listings"
-            className="text-[#4285F4] hover:underline transition-all duration-200 flex items-center"
+            className="admin-back-btn"
           >
-            <ArrowLeft size={16} className="mr-1" />
+            <ArrowLeft size={16} />
             Назад к списку
           </Link>
-          <Button
-            variant="danger"
+          <button
+            className="admin-delete-btn"
             onClick={() => handleDelete()}
             disabled={isSaving}
           >
             Удалить
-          </Button>
+          </button>
         </div>
       </div>
       
@@ -628,33 +628,29 @@ export default function EditListingPage() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center">
+              <label className="custom-checkbox">
                 <input
                   type="checkbox"
                   id="noEncumbrances"
                   name="noEncumbrances"
                   checked={formData.noEncumbrances}
                   onChange={handleChange}
-                  className="mr-2"
                 />
-                <label htmlFor="noEncumbrances" className="text-sm text-gray-700">
-                  Без обременений
-                </label>
-              </div>
+                <span className="checkbox-icon"></span>
+                <span className="text-sm text-gray-700">Без обременений</span>
+              </label>
               
-              <div className="flex items-center">
+              <label className="custom-checkbox">
                 <input
                   type="checkbox"
                   id="noKids"
                   name="noKids"
                   checked={formData.noKids}
                   onChange={handleChange}
-                  className="mr-2"
                 />
-                <label htmlFor="noKids" className="text-sm text-gray-700">
-                  Без детей
-                </label>
-              </div>
+                <span className="checkbox-icon"></span>
+                <span className="text-sm text-gray-700">Без детей</span>
+              </label>
             </div>
             
             <div>
@@ -744,15 +740,13 @@ export default function EditListingPage() {
           </div>
           
           <div className="flex justify-end mt-6">
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              size="lg"
-              loading={isSaving}
-              className="px-8 shadow-sm"
+              className="admin-add-btn px-8"
+              disabled={isSaving}
             >
               {isSaving ? 'Сохранение...' : 'Сохранить'}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

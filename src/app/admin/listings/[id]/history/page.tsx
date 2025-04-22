@@ -58,7 +58,7 @@ export default function ListingHistoryPage() {
         <div className="flex gap-2">
           <Link
             href={`/admin/listings/${id}`}
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
+            className="admin-back-btn"
           >
             Вернуться к объявлению
           </Link>

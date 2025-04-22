@@ -99,8 +99,8 @@ export default function ImageUpload({
   return (
     <div className="space-y-4">
       <div 
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
-          isDragging ? 'border-[#4285F4] bg-blue-50' : 'border-gray-300'
+        className={`file-upload-area ${
+          isDragging ? 'border-[#4285F4] bg-blue-50' : ''
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -119,14 +119,13 @@ export default function ImageUpload({
         <div className="flex flex-col items-center space-y-2">
           <Upload size={32} className={`${isDragging ? 'text-[#4285F4]' : 'text-gray-400'}`} />
           <p className="text-sm text-gray-500">Перетащите файлы сюда или</p>
-          <Button 
+          <button 
             onClick={() => fileInputRef.current?.click()}
-            variant="primary"
-            size="sm"
-            className="mt-2"
+            className="admin-add-btn mt-2"
+            type="button"
           >
             Выбрать файлы
-          </Button>
+          </button>
         </div>
       </div>
       

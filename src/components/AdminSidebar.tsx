@@ -76,17 +76,14 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
         </div>
         
         <div className="border-t border-gray-100 pt-4 mt-6">
-          <Button
+          <button
             type="button"
             onClick={() => window.location.href = '/admin/logout'}
-            variant="danger"
-            size="sm"
-            fullWidth
-            icon={<LogOut size={16} />}
-            className="mt-2 justify-start text-sm"
+            className="admin-logout-btn w-full flex items-center justify-start mt-2 text-sm"
           >
+            <LogOut size={16} className="mr-2" />
             Выйти
-          </Button>
+          </button>
         </div>
       </nav>
     </aside>

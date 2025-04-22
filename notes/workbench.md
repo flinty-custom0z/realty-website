@@ -5,13 +5,13 @@
 
 - Make buttons in edit listing page similar to each other
 
+- Логотип
+- Добавить аренду (коммерция и жилая)
+- Убрать промышленную
+
 ### Next
 
 ### Later
-
-- Admin login not working when accessing website via IP address (but working via localhost)
-
-- Improve design
 
 - Host website
 - Decide on domain name

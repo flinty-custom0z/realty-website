@@ -121,7 +121,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-green-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                      <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
                         Новое
                       </div>
                       <button
@@ -141,7 +141,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                 </div>
               ))}
             </div>
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs timestamp">
               {changes.added.map((img, idx) => (
                 <div key={idx}>
                   {idx + 1}. {img.filename} ({img.size})
@@ -163,7 +163,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-red-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 history-badge-deleted text-center">
                     Удалено
                   </div>
                   <button
@@ -192,7 +192,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gray-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
                     Было
                   </div>
                   <button
@@ -214,7 +214,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-blue-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
                     Стало
                   </div>
                   <button
@@ -236,7 +236,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                       <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
                         Удалено
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gray-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                      <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
                         Было
                       </div>
                     </div>
@@ -250,7 +250,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-blue-500 bg-opacity-70 text-white text-xs py-1 text-center">
+                      <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
                         Стало
                       </div>
                       <button

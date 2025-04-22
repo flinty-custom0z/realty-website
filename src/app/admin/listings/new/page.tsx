@@ -406,33 +406,29 @@ export default function NewListingPage() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center">
+              <label className="custom-checkbox">
                 <input
                   type="checkbox"
                   id="noEncumbrances"
                   name="noEncumbrances"
                   checked={formData.noEncumbrances}
                   onChange={handleChange}
-                  className="mr-2 rounded text-[#4285F4] focus:ring-blue-500"
                 />
-                <label htmlFor="noEncumbrances" className="text-sm text-gray-700">
-                  Без обременений
-                </label>
-              </div>
+                <span className="checkbox-icon"></span>
+                <span className="text-sm text-gray-700">Без обременений</span>
+              </label>
               
-              <div className="flex items-center">
+              <label className="custom-checkbox">
                 <input
                   type="checkbox"
                   id="noKids"
                   name="noKids"
                   checked={formData.noKids}
                   onChange={handleChange}
-                  className="mr-2 rounded text-[#4285F4] focus:ring-blue-500"
                 />
-                <label htmlFor="noKids" className="text-sm text-gray-700">
-                  Без детей
-                </label>
-              </div>
+                <span className="checkbox-icon"></span>
+                <span className="text-sm text-gray-700">Без детей</span>
+              </label>
             </div>
             
             <div>
@@ -504,15 +500,13 @@ export default function NewListingPage() {
         </div>
         
         <div className="flex justify-end mt-6">
-          <Button
+          <button
             type="submit"
-            variant="primary"
-            size="lg"
-            loading={isLoading}
-            className="px-8 shadow-sm"
+            className="admin-add-btn px-8"
+            disabled={isLoading}
           >
             {isLoading ? 'Сохранение...' : 'Создать объявление'}
-          </Button>
+          </button>
         </div>
       </form>
     </div>

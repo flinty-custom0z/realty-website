@@ -140,16 +140,16 @@ export default function AdminUsersPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Риелторы</h1>
-        <Button variant="primary" onClick={openAdd}>
+        <button className="admin-add-btn" onClick={openAdd}>
           Добавить риелтора
-        </Button>
+        </button>
       </div>
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-            <Button variant="link" className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={closeForm}>
               &times;
-            </Button>
+            </button>
             <h2 className="text-xl font-bold mb-4">{editUser ? 'Редактировать' : 'Добавить'} риелтора</h2>
             <form ref={formRef} onSubmit={handleFormSubmit} className="space-y-4">
               <div>
@@ -173,14 +173,16 @@ export default function AdminUsersPage() {
                 <input type="file" accept="image/*" onChange={handlePhotoChange} className="w-full p-2 border rounded" />
                 {form.photo && (
                   <div className="mt-2">
-                    <ClientImage src={form.photo} alt={form.name || 'Фото'} className="w-16 h-16 rounded-full object-cover" fill={false} />
+                    <ClientImage src={form.photo} alt={form.name || 'Фото'} className="avatar-image" fill={false} />
                   </div>
                 )}
               </div>
               {formError && <div className="text-red-600 text-sm">{formError}</div>}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="secondary" onClick={closeForm}>Отмена</Button>
-                <Button type="submit" variant="primary" loading={formLoading} disabled={formLoading}>Сохранить</Button>
+                <button type="button" className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded" onClick={closeForm}>Отмена</button>
+                <button type="submit" className="admin-add-btn" disabled={formLoading}>
+                  {formLoading ? 'Сохранение...' : 'Сохранить'}
+                </button>
               </div>
             </form>
           </div>
@@ -192,32 +194,32 @@ export default function AdminUsersPage() {
         ) : error ? (
           <div className="p-8 text-center text-red-600">{error}</div>
         ) : (
-          <table className="w-full text-left">
+          <table className="admin-table">
             <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="py-3 px-4 font-medium">Фото</th>
-                <th className="py-3 px-4 font-medium">Имя</th>
-                <th className="py-3 px-4 font-medium">Логин</th>
-                <th className="py-3 px-4 font-medium">Телефон</th>
-                <th className="py-3 px-4 font-medium">Действия</th>
+              <tr>
+                <th>Фото</th>
+                <th>Имя</th>
+                <th>Логин</th>
+                <th>Телефон</th>
+                <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="py-3 px-4">
+                <tr key={user.id}>
+                  <td>
                     {user.photo ? (
-                      <ClientImage src={user.photo} alt={user.name} className="w-10 h-10 rounded-full object-cover" fill={false} />
+                      <ClientImage src={user.photo} alt={user.name} className="avatar-image" fill={false} />
                     ) : (
-                      <span className="inline-block w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center font-bold">{user.name.charAt(0)}</span>
+                      <div className="avatar-placeholder">{user.name.charAt(0)}</div>
                     )}
                   </td>
-                  <td className="py-3 px-4">{user.name}</td>
-                  <td className="py-3 px-4">{user.username}</td>
-                  <td className="py-3 px-4">{user.phone || "-"}</td>
-                  <td className="py-3 px-4 space-x-2">
-                    <Button variant="link" className="text-blue-500 hover:underline" onClick={() => openEdit(user)}>Редактировать</Button>
-                    <Button variant="link" className="text-red-500 hover:underline" onClick={() => handleDelete(user.id)}>Удалить</Button>
+                  <td>{user.name}</td>
+                  <td>{user.username}</td>
+                  <td>{user.phone || "-"}</td>
+                  <td className="space-x-2">
+                    <button className="admin-edit-link" onClick={() => openEdit(user)}>Редактировать</button>
+                    <button className="admin-delete-btn" onClick={() => handleDelete(user.id)}>Удалить</button>
                   </td>
                 </tr>
               ))}

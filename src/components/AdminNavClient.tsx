@@ -68,15 +68,13 @@ export default function AdminNavClient() {
             <span>Админ панель</span>
           </Link>
           
-          <Button
+          <button
             onClick={handleLogout}
-            variant="danger"
-            size="sm"
-            className="flex items-center"
-            icon={<LogOut size={14} />}
+            className="admin-logout-btn flex items-center"
           >
+            <LogOut size={14} className="mr-1" />
             Выйти
-          </Button>
+          </button>
         </div>
       ) : (
         <Link 
