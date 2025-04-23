@@ -171,10 +171,14 @@ function ListingDetailClient({ id }: { id: string }) {
           
           {/* admin comment */}
           {listing.adminComment && (
-            <section className="bg-white shadow rounded-md p-6 mb-6 border-l-4 border-blue-500">
-              <h2 className="text-xl font-bold mb-4 flex items-center">
-                <span className="mr-2">🔒</span> Комментарий администратора
-              </h2>
+            <section className="admin-comment mb-6">
+              <div className="admin-comment-header">
+                <svg className="admin-comment-lock" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <h2 className="text-xl font-bold">Комментарий администратора</h2>
+              </div>
               <div className="prose max-w-none text-gray-700">
                 {listing.adminComment.split('\n').map((p: string, i: number) => (
                   <p key={i} className="mb-4">
@@ -182,7 +186,7 @@ function ListingDetailClient({ id }: { id: string }) {
                   </p>
                 ))}
               </div>
-              <p className="text-sm text-gray-500 mt-4 italic">
+              <p className="admin-comment-notice">
                 Этот комментарий виден только администраторам
               </p>
             </section>

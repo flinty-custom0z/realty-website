@@ -1,3 +1,19 @@
+/* 
+  Minimalist Design System
+  -----------------------
+  - Typography: 13-16px font sizes with medium weights for better readability
+  - Colors: Refined palette with thoughtful use of color for status and actions
+  - Status badges: Subtle pill shapes with appropriate colors for different states
+  - Action buttons: Standard 36px height with 8px spacing between buttons in groups
+  - Tables: Consistent styling with subtle alternating rows and hover effects
+  - Forms: Standardized inputs with focused states
+  - Transitions: Smooth 0.2s transitions on all interactive elements  
+*/
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import "tailwindcss";
 
 :root {
@@ -248,20 +264,21 @@ button {
 /* Admin interface styles */
 .admin-btn-group {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  margin: 24px 0;
 }
 
 .admin-btn-group button, 
 .admin-btn-group a {
-  height: 40px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
   transition: all 0.2s ease;
-  border-radius: 8px;
 }
 
 .admin-action-btn {
@@ -340,27 +357,27 @@ button {
 /* Action Buttons & Links */
 .admin-edit-link {
   color: #4285F4;
-  text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .admin-edit-link:hover {
-  text-decoration: underline;
+  color: #1967D2;
 }
 
 .admin-delete-btn {
   color: #E53935;
-  background: transparent;
-  border: none;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 4px;
+  background: transparent;
+  border: 1px solid #E53935;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 14px;
   transition: all 0.2s ease;
 }
 
 .admin-delete-btn:hover {
-  background: rgba(229, 57, 53, 0.08);
+  background-color: rgba(229, 57, 53, 0.1);
 }
 
 .admin-logout-btn {
@@ -436,9 +453,16 @@ button {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   font-size: 13px;
   font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.status-badge-active {
+  background-color: #E8F5E9;
+  color: #2E7D32;
 }
 
 .status-badge-active::before {
@@ -446,8 +470,14 @@ button {
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: #4CAF50;
+  background-color: #2E7D32;
   border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-badge-inactive {
+  background-color: #F5F5F5;
+  color: #757575;
 }
 
 .status-badge-inactive::before {
@@ -457,34 +487,35 @@ button {
   height: 8px;
   background-color: #9E9E9E;
   border-radius: 50%;
+  margin-right: 6px;
 }
 
 .history-badge-new {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 4px;
-  background-color: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
+  border-radius: 12px;
+  background-color: #E8F5E9;
+  color: #2E7D32;
 }
 
 .history-badge-deleted {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 4px;
-  background-color: rgba(229, 57, 53, 0.15);
-  color: #E53935;
+  border-radius: 12px;
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #D32F2F;
 }
 
 .history-badge-previous {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 2px 8px;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 4px;
+  border-radius: 12px;
   background-color: rgba(158, 158, 158, 0.15);
   color: #757575;
 }
@@ -509,6 +540,8 @@ button {
   background-color: #F9FAFB;
   border-bottom: 1px solid #f0f0f0;
   text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .admin-table td {
@@ -518,11 +551,12 @@ button {
 }
 
 .admin-table tr:nth-child(even) {
-  background-color: #f9fafb;
+  background-color: #F9FAFB;
 }
 
 .admin-table tr:hover {
-  background-color: #f3f4f6;
+  background-color: #F5F7FA;
+  transition: background-color 0.2s;
 }
 
 /* Form Elements */
@@ -594,11 +628,11 @@ button {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #EBF4FF;
+  background-color: #F5F7FA;
   color: #4285F4;
   font-weight: 500;
   font-size: 16px;
-  border: 1px solid rgba(66, 133, 244, 0.2);
+  border: 2px solid #E5E7EB;
 }
 
 .avatar-image {
@@ -606,7 +640,7 @@ button {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #E5E7EB;
+  border: 2px solid #E5E7EB;
 }
 
 /* Pagination Styling */
@@ -635,4 +669,62 @@ button {
 
 .pagination-btn-inactive:hover {
   background-color: #EAEAEA;
+}
+
+/* Admin Comment Area */
+.admin-comment {
+  background-color: #F9FAFB;
+  border-top: 3px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.admin-comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.admin-comment-lock {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.admin-comment-notice {
+  margin-top: 12px;
+  font-size: 13px;
+  font-style: italic;
+  color: #9CA3AF;
+}
+
+/* Filter Controls */
+.filter-controls {
+  background-color: #F9FAFB;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-controls select {
+  height: 36px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 0 12px;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.filter-controls select:focus {
+  border-color: #4285F4;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+}
+
+.filter-group {
+  margin-bottom: 16px;
+}
+
+.filter-group:last-child {
+  margin-bottom: 0;
 }

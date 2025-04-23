@@ -118,21 +118,19 @@ export default function AdminListingsPage() {
         </Link>
       </div>
       
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-medium">Фильтры</h2>
-        </div>
+      <div className="filter-controls">
+        <h2 className="text-lg font-medium mb-4">Фильтры</h2>
         
-        <div className="p-4 flex flex-wrap gap-4">
-          <div>
-            <label htmlFor="categoryFilter" className="block text-sm text-gray-700 mb-1">
+        <div className="flex flex-wrap gap-6">
+          <div className="filter-group">
+            <label htmlFor="categoryFilter" className="block text-sm text-gray-700 mb-2">
               Категория
             </label>
             <select
               id="categoryFilter"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-48 p-2 border rounded"
+              className="w-48"
             >
               <option value="">Все категории</option>
               <option value="apartments">Квартиры</option>
@@ -143,15 +141,15 @@ export default function AdminListingsPage() {
             </select>
           </div>
           
-          <div>
-            <label htmlFor="statusFilter" className="block text-sm text-gray-700 mb-1">
+          <div className="filter-group">
+            <label htmlFor="statusFilter" className="block text-sm text-gray-700 mb-2">
               Статус
             </label>
             <select
               id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-48 p-2 border rounded"
+              className="w-48"
             >
               <option value="">Все статусы</option>
               <option value="active">Активные</option>

@@ -365,33 +365,32 @@ export default function EditListingPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Редактирование объявления</h1>
         <div className="admin-btn-group">
-          <Link
-            href={`/listing/${listing.id}`}
-            target="_blank"
-            className="admin-secondary-btn"
+          <Button
+            variant="secondary"
+            onClick={() => window.open(`/listing/${listing.id}`, '_blank')}
           >
             Просмотр на сайте
-          </Link>
-          <Link
-            href={`/admin/listings/${listing.id}/history`}
-            className="admin-secondary-btn"
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => router.push(`/admin/listings/${listing.id}/history`)}
           >
             История изменений
-          </Link>
-          <Link
-            href="/admin/listings"
-            className="admin-back-btn"
+          </Button>
+          <Button
+            variant="secondary"
+            icon={<ArrowLeft size={16} />}
+            onClick={() => router.push('/admin/listings')}
           >
-            <ArrowLeft size={16} />
             Назад к списку
-          </Link>
-          <button
-            className="admin-delete-btn"
+          </Button>
+          <Button
+            variant="danger"
             onClick={() => handleDelete()}
             disabled={isSaving}
           >
             Удалить
-          </button>
+          </Button>
         </div>
       </div>
       
@@ -740,13 +739,14 @@ export default function EditListingPage() {
           </div>
           
           <div className="flex justify-end mt-6">
-            <button
+            <Button
+              variant="primary"
               type="submit"
-              className="admin-add-btn px-8"
+              loading={isSaving}
               disabled={isSaving}
             >
-              {isSaving ? 'Сохранение...' : 'Сохранить'}
-            </button>
+              Сохранить
+            </Button>
           </div>
         </form>
       </div>
