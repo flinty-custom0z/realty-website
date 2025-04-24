@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import ClientImage from '@/components/ClientImage';
+import ImageOverlay from '@/components/ui/ImageOverlay';
+import { formatPrice } from '@/lib/utils';
 
 interface ListingCardProps {
   id: string;
@@ -16,6 +18,8 @@ interface ListingCardProps {
   listingCode: string;
   categoryName?: string;
   showCategory?: boolean;
+  status?: 'active' | 'inactive';
+  isNew?: boolean;
 }
 
 export default function ListingCard({
@@ -33,10 +37,12 @@ export default function ListingCard({
   listingCode,
   categoryName,
   showCategory = false,
+  status,
+  isNew,
 }: ListingCardProps) {
   return (
     <Link href={`/listing/${id}`} className="block group">
-      <div className="bg-white rounded-lg overflow-hidden transition-all duration-300 listing-card border border-gray-100 hover:border-gray-200">
+      <div className="bg-white rounded-lg overflow-hidden transition-all duration-300 listing-card border border-gray-100 hover:border-gray-200 hover:shadow-md">
         <div className="relative w-full h-64">
           {imagePath ? (
             <div className="relative w-full h-full overflow-hidden">
@@ -48,33 +54,48 @@ export default function ListingCard({
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 fallbackSrc="/images/placeholder.png"
               />
+              
+              {/* Status overlay badges with improved visibility */}
+              {status === 'inactive' && (
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                  <span className="text-white text-sm font-medium px-3 py-1 rounded-md bg-black bg-opacity-60 shadow-sm border border-white border-opacity-20">
+                    Неактивно
+                  </span>
+                </div>
+              )}
+              
+              {/* New badge */}
+              {isNew && (
+                <ImageOverlay type="new" position="top-right">
+                  Новое
+                </ImageOverlay>
+              )}
+              
+              {/* Price badge */}
+              <ImageOverlay type="price" position="bottom-left">
+                {formatPrice(price)}
+              </ImageOverlay>
+              
+              {/* Category badge */}
+              {showCategory && categoryName && (
+                <ImageOverlay type="category" position="top-left">
+                  {categoryName}
+                </ImageOverlay>
+              )}
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
               Нет фото
             </div>
           )}
-          
-          {/* Price badge */}
-          <div className="absolute bottom-4 left-4">
-            <span className="bg-white px-3 py-1.5 text-sm font-medium text-gray-900 rounded-md shadow-sm">
-              {price.toLocaleString()} ₽
-            </span>
-          </div>
-          
-          {/* Category badge */}
-          {showCategory && categoryName && (
-            <div className="absolute top-4 left-4">
-              <span className="bg-gray-800 bg-opacity-75 text-white px-3 py-1 text-xs rounded-full">
-                {categoryName}
-              </span>
-            </div>
-          )}
         </div>
+        
         <div className="p-5">
           <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700 line-clamp-1">{title}</h3>
           
-          {address && <div className="text-sm text-gray-500 mt-1 mb-3 line-clamp-1">{address}</div>}
+          {address && (
+            <div className="text-sm text-gray-500 mt-1 mb-3 line-clamp-1">{address}</div>
+          )}
           
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
             {district && (

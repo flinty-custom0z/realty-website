@@ -122,7 +122,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         className="object-cover"
                       />
                       <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                        Новое
+                        
                       </div>
                       <button
                         type="button"
@@ -164,7 +164,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     className="object-cover"
                   />
                   <div className="absolute bottom-0 left-0 right-0 history-badge-deleted text-center">
-                    Удалено
+                    
                   </div>
                   <button
                     type="button"
@@ -193,7 +193,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     className="object-cover"
                   />
                   <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
-                    Было
+                    
                   </div>
                   <button
                     type="button"
@@ -215,7 +215,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     className="object-cover"
                   />
                   <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                    Стало
+                    
                   </div>
                   <button
                     type="button"
@@ -237,7 +237,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         Удалено
                       </div>
                       <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
-                        Было
+                        
                       </div>
                     </div>
                     
@@ -251,7 +251,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         className="object-cover"
                       />
                       <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                        Стало
+                        
                       </div>
                       <button
                         type="button"

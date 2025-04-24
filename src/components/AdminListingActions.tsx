@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Button from './Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit, Clock, Trash2 } from 'lucide-react';
 
 interface AdminListingActionsProps {
   listingId: string;
@@ -41,33 +41,44 @@ export default function AdminListingActions({ listingId, categorySlug }: AdminLi
   };
 
   return (
-    <div className="flex items-center space-x-3">
-      <Link
-        href={`/admin/listings/${listingId}`}
-        className="admin-add-btn"
-      >
-        Редактировать
-      </Link>
-      <Link
-        href={`/admin/listings/${listingId}/history`}
-        className="admin-secondary-btn"
-      >
-        История
-      </Link>
-      <button
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="admin-delete-btn"
-      >
-        {isDeleting ? 'Удаление...' : 'Удалить'}
-      </button>
-      <Link
-        href="/admin/listings"
-        className="admin-back-btn"
-      >
-        <ArrowLeft size={16} />
-        Назад к списку
-      </Link>
+    <div className="space-y-4">
+      <div className="admin-btn-group">
+        <Button 
+          variant="primary"
+          icon={<Edit size={16} />}
+          onClick={() => router.push(`/admin/listings/${listingId}`)}
+        >
+          Редактировать
+        </Button>
+        
+        <Button 
+          variant="secondary"
+          icon={<Clock size={16} />}
+          onClick={() => router.push(`/admin/listings/${listingId}/history`)}
+        >
+          История
+        </Button>
+        
+        <Button 
+          variant="back"
+          isBackButton
+          onClick={() => router.push('/admin/listings')}
+        >
+          Назад к списку
+        </Button>
+      </div>
+      
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <Button 
+          variant="danger"
+          icon={<Trash2 size={16} />}
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="w-full justify-center"
+        >
+          {isDeleting ? 'Удаление...' : 'Удалить объявление'}
+        </Button>
+      </div>
     </div>
   );
 }

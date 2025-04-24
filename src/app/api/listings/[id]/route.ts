@@ -8,10 +8,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    // Await the params promise to get the real value
+    const { id } = await params;
 
     // Check if user is admin (to show admin comments)
     const isAdmin = await checkIfUserIsAdmin();
@@ -20,7 +21,7 @@ export async function GET(
       where: { id },
       include: {
         category: true,
-        user: { select: { id: true, name: true, phone: true, photo: true } },
+        user: { select: { id: true, name: true, phone: true, photo: true, createdAt: true } },
         images: true,
       },
     });
@@ -32,12 +33,13 @@ export async function GET(
       );
     }
 
-    // If user is not admin, remove adminComment field
+    // If user is not admin, strip out adminComment
     if (!isAdmin) {
-      const { adminComment, ...rest } = listing;
-      return NextResponse.json(rest);
+      const { adminComment, ...publicData } = listing;
+      return NextResponse.json(publicData);
     }
 
+    // Admin sees everything
     return NextResponse.json(listing);
   } catch (error) {
     console.error('Error fetching listing:', error);
@@ -48,9 +50,10 @@ export async function GET(
   }
 }
 
-async function checkIfUserIsAdmin() {
+
+async function checkIfUserIsAdmin(): Promise<boolean> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     if (!token) return false;
     

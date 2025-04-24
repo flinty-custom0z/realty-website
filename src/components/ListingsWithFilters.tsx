@@ -30,6 +30,13 @@ interface Listing {
   condition?: string;
 }
 
+// Add a type safe status helper function
+function mapListingStatus(status: string): 'active' | 'inactive' | undefined {
+  if (status === 'active') return 'active';
+  if (status === 'inactive') return 'inactive';
+  return undefined;
+}
+
 interface PaginationData {
   total: number;
   pages: number;
@@ -109,7 +116,18 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
           {data.listings.map((l: Listing) => (
             <ListingCard
               key={l.id}
-              {...l}
+              id={l.id}
+              title={l.title}
+              price={l.price}
+              listingCode={l.listingCode}
+              status={mapListingStatus(l.status)}
+              district={l.district}
+              address={l.address}
+              rooms={l.rooms}
+              area={l.houseArea}
+              floor={l.floor}
+              totalFloors={l.totalFloors}
+              condition={l.condition}
               imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
               categoryName={l.category?.name}
               showCategory={true}

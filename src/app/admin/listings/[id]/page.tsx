@@ -384,13 +384,6 @@ export default function EditListingPage() {
           >
             Назад к списку
           </Button>
-          <Button
-            variant="danger"
-            onClick={() => handleDelete()}
-            disabled={isSaving}
-          >
-            Удалить
-          </Button>
         </div>
       </div>
       
@@ -738,17 +731,30 @@ export default function EditListingPage() {
             </div>
           </div>
           
-          <div className="flex justify-end mt-6">
+          <div className="col-span-1 md:col-span-2 mt-8 flex justify-between items-center">
             <Button
-              variant="primary"
               type="submit"
-              loading={isSaving}
+              variant="primary"
               disabled={isSaving}
+              className="mr-4"
             >
-              Сохранить
+              {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
             </Button>
           </div>
         </form>
+      </div>
+      
+      {/* Delete section */}
+      <div className="bg-red-50 rounded-lg p-6 border border-red-100 mb-6">
+        <h2 className="text-lg font-medium text-red-700 mb-4">Опасная зона</h2>
+        <p className="text-gray-700 mb-4">Удаление объявления приведет к полному удалению всех данных и не может быть отменено.</p>
+        <Button
+          variant="danger"
+          onClick={() => handleDelete()}
+          disabled={isSaving}
+        >
+          Удалить объявление
+        </Button>
       </div>
       
       {previewModalOpen && (

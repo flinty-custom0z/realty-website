@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import ClientImage from '@/components/ClientImage';
+import TruncatedCell from '@/components/ui/TruncatedCell';
+import StatusBadge from '@/components/ui/StatusBadge';
+import Button from '@/components/Button';
+import { formatDate, formatPrice } from '@/lib/utils';
 
 interface Listing {
   id: string;
@@ -102,23 +107,20 @@ export default function AdminListingsPage() {
     }
   };
   
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ru-RU');
-  };
-  
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Управление объявлениями</h1>
-        <Link
-          href="/admin/listings/new"
-          className="admin-add-btn"
+        <Button
+          variant="primary"
+          icon={<PlusCircle size={16} />}
+          onClick={() => window.location.href = '/admin/listings/new'}
         >
           Добавить объявление
-        </Link>
+        </Button>
       </div>
       
-      <div className="filter-controls">
+      <div className="filter-controls mb-6">
         <h2 className="text-lg font-medium mb-4">Фильтры</h2>
         
         <div className="flex flex-wrap gap-6">
@@ -130,7 +132,7 @@ export default function AdminListingsPage() {
               id="categoryFilter"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-48"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Все категории</option>
               <option value="apartments">Квартиры</option>
@@ -149,7 +151,7 @@ export default function AdminListingsPage() {
               id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-48"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Все статусы</option>
               <option value="active">Активные</option>
@@ -166,27 +168,27 @@ export default function AdminListingsPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="admin-table">
+            <div className="overflow-x-auto admin-table-container">
+              <table className="admin-table w-full admin-table-mobile">
                 <thead>
                   <tr>
-                    <th>Фото</th>
+                    <th className="w-16">Фото</th>
                     <th>Название</th>
                     <th>Категория</th>
                     <th>Код</th>
                     <th>Район</th>
                     <th>Адрес</th>
-                    <th>Цена</th>
+                    <th className="text-right">Цена</th>
                     <th>Статус</th>
                     <th>Дата</th>
-                    <th>Действия</th>
+                    <th className="text-right">Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {listings.map((listing) => (
                     <tr key={listing.id}>
-                      <td>
-                        <div className="relative w-12 h-12 bg-gray-200 rounded overflow-hidden">
+                      <td className="image-cell" data-label="Фото">
+                        <div className="relative w-12 h-12 bg-gray-50 rounded overflow-hidden border border-gray-100">
                             {listing.images && listing.images[0] ? (
                             <ClientImage
                               src={listing.images[0].path}
@@ -203,42 +205,44 @@ export default function AdminListingsPage() {
                             )}
                         </div>
                       </td>
-                      <td>
-                        <Link href={`/admin/listings/${listing.id}`} className="admin-edit-link">
-                          {listing.title}
+                      <td className="title-cell" data-label="Название">
+                        <Link 
+                          href={`/listing/${listing.id}`}
+                          className="hover:text-blue-600 transition-colors duration-200 cursor-pointer"
+                          target="_blank"
+                        >
+                          <TruncatedCell text={listing.title} maxWidth={220} />
                         </Link>
                       </td>
-                      <td>{listing.category.name}</td>
-                      <td>{listing.listingCode}</td>
-                      <td>{listing.district}</td>
-                      <td>{listing.address}</td>
-                      <td>{listing.price.toLocaleString()} ₽</td>
-                      <td>
-                        <span 
-                          className={`status-badge ${
-                            listing.status === 'active' 
-                              ? 'status-badge-active' 
-                              : 'status-badge-inactive'
-                          }`}
-                        >
-                          {listing.status === 'active' ? 'Активно' : 'Неактивно'}
-                        </span>
+                      <td data-label="Категория">{listing.category.name}</td>
+                      <td data-label="Код">{listing.listingCode}</td>
+                      <td data-label="Район">{listing.district}</td>
+                      <td data-label="Адрес">
+                        <TruncatedCell text={listing.address} maxWidth={180} />
                       </td>
-                      <td><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
-                      <td>
-                        <div className="flex space-x-2">
-                          <Link
-                            href={`/admin/listings/${listing.id}`}
-                            className="admin-edit-link"
+                      <td className="text-right font-medium" data-label="Цена">{formatPrice(listing.price)}</td>
+                      <td className="status-cell" data-label="Статус">
+                        <StatusBadge status={listing.status} />
+                      </td>
+                      <td data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
+                      <td className="actions-cell" data-label="Действия">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Edit2 size={14} />}
+                            onClick={() => window.location.href = `/admin/listings/${listing.id}`}
                           >
-                            Редактировать
-                          </Link>
-                          <button
+                            Ред.
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={<Trash2 size={14} />}
                             onClick={() => handleDeleteListing(listing.id)}
-                            className="admin-delete-btn"
                           >
-                            Удалить
-                          </button>
+                            Удал.
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -249,12 +253,15 @@ export default function AdminListingsPage() {
             
             {/* Pagination */}
             {pagination.pages > 1 && (
-              <div className="p-4 border-t flex justify-center">
-                <div className="flex">
+              <div className="flex justify-center pt-4 pb-8">
+                <div className="flex space-x-2">
                   {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
-                      onClick={() => setPagination((prev) => ({ ...prev, page }))}
+                      onClick={() => {
+                        setPagination((prev) => ({ ...prev, page }));
+                        window.scrollTo(0, 0);
+                      }}
                       className={`pagination-btn ${
                         pagination.page === page
                           ? 'pagination-btn-active'

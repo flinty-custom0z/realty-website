@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import SearchParamsProvider from '@/components/SearchParamsProvider';
+import Button from '@/components/Button';
 
 export default function AdminLoginForm() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function AdminLoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   
   const handleLogin = async (e: FormEvent, redirectTo: string = '/admin') => {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function AdminLoginForm() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, rememberMe }),
         headers: { 'Content-Type': 'application/json' },
       });
       
@@ -44,54 +46,72 @@ export default function AdminLoginForm() {
         const redirectTo = searchParams?.get('redirect') || '/admin';
         
         return (
-          <form onSubmit={(e) => handleLogin(e, redirectTo)} className="p-6 bg-white rounded shadow-md w-full max-w-md">
-      <h2 className="text-xl font-bold mb-4 text-center">Вход в административную панель</h2>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      <div className="mb-4">
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          Имя пользователя
-        </label>
-        <input
-          id="username"
-          type="text"
-          className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Введите имя пользователя"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-      </div>
-      
-      <div className="mb-6">
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Пароль
-        </label>
-        <input
-          id="password"
-          type="password"
-          className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Введите пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
-      
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition disabled:bg-blue-300"
-      >
-        {isLoading ? 'Выполняется вход...' : 'Войти'}
-      </button>
-    </form>
-  );
+          <form onSubmit={(e) => handleLogin(e, redirectTo)} className="p-6 bg-white rounded-lg shadow-md w-full max-w-md">
+            <h2 className="text-xl font-bold mb-6 text-center">Вход в административную панель</h2>
+            
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div className="form-field">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Имя пользователя <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Введите имя пользователя"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-field">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Пароль <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Введите пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-field">
+                <label className="custom-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span className="checkbox-icon"></span>
+                  <span className="text-sm text-gray-700 ml-2">Запомнить меня</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                loading={isLoading}
+                fullWidth
+              >
+                {isLoading ? 'Выполняется вход...' : 'Войти'}
+              </Button>
+            </div>
+          </form>
+        );
       }}
     </SearchParamsProvider>
   );
