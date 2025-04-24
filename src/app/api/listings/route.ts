@@ -15,10 +15,13 @@ export async function GET(req: NextRequest) {
       if (cats.length) filter.categoryId = { in: cats.map((c) => c.id) };
     }
 
-    // Deal type filter
-    const dealType = searchParams.get('dealType');
-    if (dealType === 'SALE' || dealType === 'RENT') {
-      filter.dealType = dealType;
+    // Deal type filter - simplified to use only 'deal' parameter
+    const deal = searchParams.get('deal');
+
+    if (deal === 'rent') {
+      filter.dealType = 'RENT';
+    } else {
+      filter.dealType = 'SALE';
     }
 
     const q = searchParams.get('q');

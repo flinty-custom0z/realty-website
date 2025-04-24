@@ -8,9 +8,35 @@ import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import SortSelector from '@/components/SortSelector';
 import { Suspense } from 'react';
 import ListingsWithFilters from '@/components/ListingsWithFilters';
+import DealTypeToggle from '@/components/DealTypeToggle';
+import CategoryTiles from '@/components/CategoryTiles';
+import { Metadata } from 'next';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
+
+// Generate metadata based on deal type
+export async function generateMetadata({
+  // ✱ params may be omitted if you don't need it
+  // params,
+  searchParams,
+}: {
+  // params?: Promise<{ slug: string }>;        // keep if used
+  searchParams: Promise<{ deal?: string }>;     // ← Promise!
+}): Promise<Metadata> {
+  // Unwrap the promise
+  const { deal } = await searchParams;
+
+  const isRent = deal === 'rent';
+
+  return {
+    title: isRent
+      ? 'Недвижимость в Краснодаре — аренда'
+      : 'Недвижимость в Краснодаре — продажа',
+    description:
+      'Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.',
+  };
+}
 
 const prisma = new PrismaClient();
 
@@ -114,11 +140,11 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     ];
   }
 
-  // Deal type filter (don't set a default)
-  if (searchParams.dealType === 'SALE') {
-    filter.dealType = 'SALE';
-  } else if (searchParams.dealType === 'RENT') {
+  // Deal type filter (unified approach - use only 'deal' parameter)
+  if (searchParams.deal === 'rent') {
     filter.dealType = 'RENT';
+  } else {
+    filter.dealType = 'SALE';
   }
 
   // Numeric filters
@@ -188,7 +214,7 @@ async function ensurePlaceholderImages() {
       await fs.mkdir(imagesDir, { recursive: true });
       console.log('Created images directory');
     }
-    const defaultPlaceholderPath = path.join(publicDir, defaultPlaceholder);
+    const defaultPlaceholderPath = path.join(publicDir, '/images/placeholder.png');
     try {
       await fs.access(defaultPlaceholderPath);
     } catch (error) {
@@ -202,17 +228,22 @@ async function ensurePlaceholderImages() {
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Await searchParams as required by Next.js app directory
   const resolvedParams = await searchParams;
+  
+  // Determine current deal type from URL query - use only 'deal' parameter
+  const isDealRent = resolvedParams.deal === 'rent';
+  const dealType = isDealRent ? 'rent' : 'sale';
 
-  // Note: not setting a default deal type anymore
+  // Convert to Prisma enum for database queries
+  const dbDealType = isDealRent ? 'RENT' : 'SALE';
+  
+  // Set params for fetching listings (using only 'deal' parameter)
   const paramsWithDefaults = {
     ...resolvedParams,
+    deal: isDealRent ? 'rent' : undefined // Only include deal=rent, omit for sale as default
   };
 
-  // Get categories and ensure placeholders exist
-  const [categories] = await Promise.all([
-    getCategories(),
-    ensurePlaceholderImages()
-  ]);
+  // Ensure placeholders exist
+  await ensurePlaceholderImages();
 
   // Get listings for the main page (with filters/sort/pagination)
   const { listings, pagination } = await getListings(paramsWithDefaults);
@@ -231,98 +262,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <p className="text-gray-600 max-w-2xl mx-auto">Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.</p>
       </div>
       
-      {/* SALE Categories Section */}
+      {/* Deal Type Toggle and Categories Section */}
       <div className="mb-14 md:mb-20">
-        <h2 className="text-2xl font-medium text-gray-800 mb-8">Продажа</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
-          {categories
-            .filter(category => category.slug !== 'industrial') // Exclude industrial properties
-            .map((category) => {
-              const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
-                categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
-                defaultPlaceholder;
-              const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
-              const categoryBgClass = `category-${category.slug}`;
-              
-              return (
-                <Link 
-                  key={`sale-${category.id}`}
-                  href={{
-                    pathname: `/listing-category/${category.slug}`,
-                    query: { dealType: 'SALE' }
-                  }}
-                  className={`category-card group ${categoryBgClass}`}
-                  style={{ height: '220px' }}
-                >
-                  {/* Background image with overlay for premium look */}
-                  <div className="absolute inset-0 w-full h-full z-0">
-                    <ClientImage
-                      src={imageSrc}
-                      alt={category.name}
-                      fill
-                      className="object-cover opacity-40"
-                      priority
-                      fallbackSrc={defaultPlaceholder}
-                    />
-                  </div>
-                  <div className="category-card-content">
-                    <div className="category-icon">{icon}</div>
-                    <div className="category-title">{category.name}</div>
-                    <div className="category-count">
-                      {category.saleCount} {getListingText(category.saleCount)}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-        </div>
-      </div>
-
-      {/* RENT Categories Section */}
-      <div className="mb-14 md:mb-20">
-        <h2 className="text-2xl font-medium text-gray-800 mb-8">Аренда</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
-          {categories
-            .filter(category => ['apartments', 'commercial'].includes(category.slug))
-            .map((category) => {
-              const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
-                categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
-                defaultPlaceholder;
-              const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
-              const categoryBgClass = `category-${category.slug}`;
-              
-              return (
-                <Link 
-                  key={`rent-${category.id}`}
-                  href={{
-                    pathname: `/listing-category/${category.slug}`,
-                    query: { dealType: 'RENT' }
-                  }}
-                  className={`category-card group ${categoryBgClass}`}
-                  style={{ height: '220px' }}
-                >
-                  {/* Background image with overlay for premium look */}
-                  <div className="absolute inset-0 w-full h-full z-0">
-                    <ClientImage
-                      src={imageSrc}
-                      alt={category.name}
-                      fill
-                      className="object-cover opacity-40"
-                      priority
-                      fallbackSrc={defaultPlaceholder}
-                    />
-                  </div>
-                  <div className="category-card-content">
-                    <div className="category-icon">{icon}</div>
-                    <div className="category-title">{category.name}</div>
-                    <div className="category-count">
-                      {category.rentCount} {getListingText(category.rentCount)}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-        </div>
+        <DealTypeToggle current={dealType} />
+        
+        <h2 className="text-2xl font-medium text-gray-800 mb-8">
+          Популярные предложения — {isDealRent ? 'аренда' : 'продажа'}
+        </h2>
+        
+        <CategoryTiles dealType={dealType} />
       </div>
 
       {/* Featured listings section */}
@@ -331,7 +279,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           <h2 className="text-2xl font-medium text-gray-800">Популярные предложения</h2>
           <Link href={{
             pathname: "/search",
-            query: resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {}
+            query: { deal: isDealRent ? 'rent' : undefined }
           }} className="mt-2 sm:mt-0 text-sm text-gray-600 hover:text-gray-900">
             Показать все предложения →
           </Link>
@@ -342,7 +290,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           initialListings={listingsForClient}
           initialPagination={pagination}
           initialFilters={paramsWithDefaults}
-          categories={categories}
+          categories={[]} // We don't need to pass categories here now
         />
       </div>
     </div>

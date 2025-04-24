@@ -26,9 +26,13 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning={true} className={inter.variable}>
       <body className={`${inter.className} antialiased`}>
         <header className="bg-white transition-all duration-300" id="site-header">
-          <ResponsiveNav />
+          <Suspense fallback={<div className="h-12 w-full bg-gray-100 animate-pulse rounded mb-4"></div>}>
+            <ResponsiveNav />
+          </Suspense>
           <div className="w-full max-w-xl mx-auto mt-6 pb-6 px-4">
-            <SearchFormWrapper />
+            <Suspense fallback={<div className="h-10 w-full bg-gray-100 animate-pulse rounded"></div>}>
+              <SearchFormWrapper />
+            </Suspense>
           </div>
         </header>
         <main className="bg-white min-h-screen pt-4 pb-12">

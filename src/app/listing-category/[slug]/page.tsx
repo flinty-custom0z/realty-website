@@ -6,11 +6,40 @@ import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import SortSelector from '@/components/SortSelector';
+import { Metadata } from 'next';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
+
+// Generate metadata for the page with proper titles
+export async function generateMetadata(
+  { params, searchParams }: {
+    params: Promise<{ slug: string }>;                     // ← Promise
+    searchParams: Promise<{ deal?: string }>;              // ← Promise
+  }
+): Promise<Metadata> {
+
+  // 1. unwrap both promises
+  const { slug }            = await params;
+  const { deal }            = await searchParams;
+
+  // 2. fetch category
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) return { title: 'Категория не найдена' };
+
+  // 3. tailor title by deal type
+  const isRent = deal === 'rent';
+  return {
+    title: isRent
+      ? `${category.name} — аренда в Краснодаре`
+      : `${category.name} — продажа в Краснодаре`,
+    description:
+      category.description
+        ?? `${category.name} в Краснодаре. Выгодные предложения.`,
+  };
+}
 
 // // Helper function to handle Russian grammatical cases
 function getDativeCase(categoryName: string): string {
@@ -44,11 +73,11 @@ async function getListings(
     status: 'active',
   };
   
-  // Deal type filter (don't set a default value)
-  if (searchParams.dealType === 'SALE') {
-    filter.dealType = 'SALE';
-  } else if (searchParams.dealType === 'RENT') {
+  // Deal type filter (simplified to use only 'deal' parameter)
+  if (searchParams.deal === 'rent') {
     filter.dealType = 'RENT';
+  } else {
+    filter.dealType = 'SALE';
   }
   
   // Apply search filters - use categoryQuery, fallback to q for backward compatibility
@@ -160,6 +189,13 @@ export default async function CategoryPage({
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   
+  // Set deal type from simplified parameter
+  const isRent = resolvedSearchParams.deal === 'rent';
+  const dealType = isRent ? 'RENT' : 'SALE';
+  
+  // Add dealType to metadata for proper page title
+  const isDealTypeRent = isRent;
+  
   const category = await getCategory(slug);
   
   if (!category) {
@@ -169,10 +205,9 @@ export default async function CategoryPage({
   const { listings: unfilteredListings, pagination } = await getListings(category.id, resolvedSearchParams);
 
   // Additional client-side filtering to ensure correct deal type
-  const listings = resolvedSearchParams.dealType ? 
-    unfilteredListings.filter((listing: any) => 
-      listing.dealType === resolvedSearchParams.dealType) : 
-    unfilteredListings;
+  const listings = unfilteredListings.filter((listing: any) => 
+    listing.dealType === dealType
+  );
 
   // Update pagination total if we filtered listings
   const adjustedPagination = {
@@ -192,7 +227,10 @@ export default async function CategoryPage({
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">{category.name}</h1>
+      <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+      {isDealTypeRent && (
+        <h2 className="text-xl text-gray-600 mb-4">Аренда</h2>
+      )}
       
       {/* Show "back to category" link ONLY when coming from global search */}
       {showBackLink && (

@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const districts = searchParams.getAll('district');
     const conditions = searchParams.getAll('condition');
     const rooms = searchParams.getAll('rooms');
-    const dealType = searchParams.get('dealType');
+    const dealType = searchParams.get('deal');
 
     // Read flag from frontend: only apply price filter for available options if user has edited price
     const applyPriceFilter = searchParams.get('applyPriceFilter') === 'true';
@@ -30,8 +30,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Add dealType to base filter if provided
-    if (dealType === 'SALE' || dealType === 'RENT') {
-      baseFilterMinimal.dealType = dealType;
+    if (dealType === 'rent') {
+      baseFilterMinimal.dealType = 'RENT';
+    } else if (dealType === 'sale') {
+      baseFilterMinimal.dealType = 'SALE';
     }
 
     // Build filter that includes category
@@ -97,7 +99,11 @@ export async function GET(req: NextRequest) {
         if (roomValues.length > 0) filter.rooms = { in: roomValues };
       }
       if (exclude !== 'dealType' && dealType) {
-        filter.dealType = dealType;
+        if (dealType === 'rent') {
+          filter.dealType = 'RENT';
+        } else {
+          filter.dealType = 'SALE';
+        }
       }
       return filter;
     }

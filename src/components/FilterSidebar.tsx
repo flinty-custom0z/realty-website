@@ -121,7 +121,7 @@ export default function FilterSidebar({
     const paramQuery = categorySlug ? searchParams.get('categoryQuery') : searchParams.get('q');
     const minPriceParam = searchParams.get('minPrice');
     const maxPriceParam = searchParams.get('maxPrice');
-    const dealTypeParam = searchParams.get('dealType');
+    const dealParam = searchParams.get('deal');
     
     if (paramQuery !== null) {
       setSearchInputValue(paramQuery);
@@ -136,8 +136,11 @@ export default function FilterSidebar({
         setMaxPrice(maxPriceParam);
       }
 
-    if (dealTypeParam !== null) {
-      setSelectedDealType(dealTypeParam);
+    // Handle deal parameter
+    if (dealParam === 'rent') {
+      setSelectedDealType('RENT');
+    } else {
+      setSelectedDealType('SALE');
     }
     
     // Update selected filters from URL
@@ -242,7 +245,11 @@ export default function FilterSidebar({
       selectedRooms.forEach((r: string) => params.append('rooms', r));
     }
     if (selectedDealType) {
-      params.append('dealType', selectedDealType);
+      // Map internal RENT/SALE to deal=rent/sale for URL
+      if (selectedDealType === 'RENT') {
+        params.append('deal', 'rent');
+      }
+      // We don't need to explicitly add deal=sale since it's the default
     }
 
     // Add current price if provided
@@ -331,7 +338,11 @@ export default function FilterSidebar({
     if (isControlled && onChange) {
       onChange(newFilters);
     }
-    if ('dealType' in newFilters) setSelectedDealType(newFilters.dealType);
+    
+    // Handle deal parameter and set internal state 
+    if ('deal' in newFilters) {
+      setSelectedDealType(newFilters.deal === 'rent' ? 'RENT' : 'SALE');
+    }
   };
 
   // In controlled mode, update local state when filters prop changes
@@ -344,7 +355,13 @@ export default function FilterSidebar({
       setSelectedDistricts(filters.district || []);
       setSelectedConditions(filters.condition || []);
       setSelectedRooms(filters.rooms || []);
-      setSelectedDealType(filters.dealType || '');
+      
+      // Handle deal parameter
+      if (filters.deal === 'rent') {
+        setSelectedDealType('RENT');
+      } else {
+        setSelectedDealType('SALE');
+      }
     }
   }, [isControlled, filters]);
   
@@ -392,9 +409,9 @@ export default function FilterSidebar({
       selectedConditions.forEach((c: string) => params.append('condition', c));
       selectedRooms.forEach((r: string) => params.append('rooms', r));
       
-      // Add deal type to query params
-      if (selectedDealType) {
-        params.append('dealType', selectedDealType);
+      // Add deal type to query params - only add for rent, not for sale (default)
+      if (selectedDealType === 'RENT') {
+        params.append('deal', 'rent');
       }
       
       // Preserve navigation parameters
@@ -427,8 +444,13 @@ export default function FilterSidebar({
           district: selectedDistricts,
           condition: selectedConditions,
           rooms: selectedRooms,
-          dealType: selectedDealType,
         };
+        
+        // Only add deal parameter for rent
+        if (selectedDealType === 'RENT') {
+          newFilters.deal = 'rent';
+        }
+        
         updateFilters(newFilters);
       } else {
       router.push(`${base}?${params.toString()}`);
@@ -612,10 +634,10 @@ export default function FilterSidebar({
     const params = new URLSearchParams(window.location.search);
     
     // Add or remove deal type parameter
-    if (newDealType) {
-      params.set('dealType', newDealType);
+    if (newDealType === 'RENT') {
+      params.set('deal', 'rent');
     } else {
-      params.delete('dealType');
+      params.delete('deal');
     }
     
     // If not controlled mode, navigate immediately
@@ -629,8 +651,8 @@ export default function FilterSidebar({
     } else {
       // Update filters for controlled mode
       const newFilters: Record<string, any> = {};
-      if (newDealType) {
-        newFilters.dealType = newDealType;
+      if (newDealType === 'RENT') {
+        newFilters.deal = 'rent'; 
       }
       
       // Include current category selections
