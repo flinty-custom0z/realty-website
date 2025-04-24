@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { PrismaClient } from '@prisma/client';
-import { Home, Building2, MapPin, Store, Factory, ListFilter, Plus } from 'lucide-react';
+import { Home, Building2, MapPin, Store, ListFilter, Plus } from 'lucide-react';
 
 const prisma = new PrismaClient();
 
@@ -104,9 +104,6 @@ export default async function AdminDashboard() {
                       break;
                     case 'commercial':
                       icon = <Store size={16} className="text-indigo-600 mr-2" />;
-                      break;
-                    case 'industrial':
-                      icon = <Factory size={16} className="text-gray-600 mr-2" />;
                       break;
                     default:
                       icon = <ListFilter size={16} className="text-gray-500 mr-2" />;

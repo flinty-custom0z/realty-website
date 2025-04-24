@@ -139,7 +139,6 @@ export default function AdminListingsPage() {
               <option value="houses">Дома</option>
               <option value="land">Земельные участки</option>
               <option value="commercial">Коммерция</option>
-              <option value="industrial">Промышленные объекты</option>
             </select>
           </div>
           

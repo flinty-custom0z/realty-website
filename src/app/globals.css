@@ -181,10 +181,6 @@ footer {
   background: rgba(61, 90, 128, 0.15);
 }
 
-.category-industrial {
-  background: rgba(100, 116, 139, 0.15);
-}
-
 /* Header styles */
 header {
   transition: var(--transition-standard);

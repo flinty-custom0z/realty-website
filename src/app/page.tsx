@@ -20,7 +20,6 @@ const categoryImages = {
   'houses': '/images/houses_placeholder.png',
   'land': '/images/land_placeholder.png',
   'commercial': '/images/commercial_placeholder.png',
-  'industrial': '/images/industrial_placeholder.png',
   // Singular backups
   'apartment': '/images/apartment_placeholder.png',
   'house': '/images/house_placeholder.png',
@@ -42,9 +41,6 @@ const categoryIcons: Record<string, React.ReactNode> = {
   ),
   'commercial': (
     <span className="category-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="10" width="10" height="20" stroke="currentColor" strokeWidth="2.2"/><rect x="22" y="16" width="10" height="14" stroke="currentColor" strokeWidth="2.2"/><path d="M4 36h32" stroke="currentColor" strokeWidth="2.2"/></svg></span>
-  ),
-  'industrial': (
-    <span className="category-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="18" width="28" height="15" rx="2" stroke="currentColor" strokeWidth="2.2"/><path d="M12 18V12a2 2 0 012-2h2a2 2 0 012 2v6M24 18V10a2 2 0 012-2h2a2 2 0 012 2v8" stroke="currentColor" strokeWidth="2.2"/></svg></span>
   ),
 };
 
