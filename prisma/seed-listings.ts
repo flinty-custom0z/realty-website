@@ -1,4 +1,4 @@
-import { PrismaClient, DealType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import fs from 'fs';
 import path from 'path';
@@ -28,7 +28,7 @@ interface SampleListing {
   noEncumbrances?: boolean;
   noKids?: boolean;
   yearBuilt?: number;
-  dealType: DealType;
+  dealType: 'SALE' | 'RENT';
 }
 
 async function main() {
@@ -63,7 +63,7 @@ async function main() {
       condition: 'Хорошее',
       price: 4550000,
       noEncumbrances: true,
-      dealType: DealType.SALE,
+      dealType: 'SALE',
     },
     {
       title: 'Ставропольская 161',
@@ -77,7 +77,7 @@ async function main() {
       condition: 'Хорошее',
       price: 4200000,
       noEncumbrances: true,
-      dealType: DealType.SALE,
+      dealType: 'SALE',
     },
     
     // Houses - FOR SALE
@@ -92,7 +92,7 @@ async function main() {
       condition: 'Хорошее',
       price: 6200000,
       yearBuilt: 2015,
-      dealType: DealType.SALE,
+      dealType: 'SALE',
     },
     
     // Land - FOR SALE
@@ -103,7 +103,7 @@ async function main() {
       district: 'Динской р-он',
       landArea: 50,
       price: 45000000,
-      dealType: DealType.SALE,
+      dealType: 'SALE',
     },
     
     // Commercial - FOR SALE
@@ -116,7 +116,7 @@ async function main() {
       floor: 1,
       condition: 'Хорошее',
       price: 2250000,
-      dealType: DealType.SALE,
+      dealType: 'SALE',
     },
     
     // Apartments - FOR RENT
@@ -132,7 +132,7 @@ async function main() {
       condition: 'Отличное',
       price: 25000,
       noKids: true,
-      dealType: DealType.RENT,
+      dealType: 'RENT',
     },
     {
       title: 'Красная 45',
@@ -145,7 +145,7 @@ async function main() {
       houseArea: 58,
       condition: 'Хорошее',
       price: 35000,
-      dealType: DealType.RENT,
+      dealType: 'RENT',
     },
     
     // Houses - FOR RENT
@@ -160,7 +160,7 @@ async function main() {
       condition: 'Отличное',
       price: 85000,
       yearBuilt: 2018,
-      dealType: DealType.RENT,
+      dealType: 'RENT',
     },
     
     // Commercial - FOR RENT
@@ -173,7 +173,7 @@ async function main() {
       floor: 2,
       condition: 'Хорошее',
       price: 45000,
-      dealType: DealType.RENT,
+      dealType: 'RENT',
     },
   ];
   
@@ -188,7 +188,7 @@ async function main() {
     
     // Generate listing code
     const prefix = category.name.charAt(0).toUpperCase();
-    const dealPrefix = listing.dealType === DealType.RENT ? 'А' : 'П'; // А for Аренда (Rent), П for Продажа (Sale)
+    const dealPrefix = listing.dealType === 'RENT' ? 'А' : 'П'; // А for Аренда (Rent), П for Продажа (Sale)
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const listingCode = `${prefix}${dealPrefix}-${randomNum}`;
     
