@@ -63,7 +63,11 @@ async function getCategories() {
 // Fetch all listings with filters/sorting/pagination
 async function getListings(searchParams: Record<string, string | string[] | undefined>) {
   // Build filter object (same as search page)
-  const filter: any = { status: 'active' };
+  const filter: any = { 
+    status: 'active',
+    // Always set SALE as default deal type when none specified
+    dealType: 'SALE'
+  };
 
   // Search query
   if (searchParams.q) {
@@ -73,9 +77,9 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     ];
   }
 
-  // Deal type filter
-  if (searchParams.dealType === 'SALE' || searchParams.dealType === 'RENT') {
-    filter.dealType = searchParams.dealType;
+  // Deal type filter (override default if specified)
+  if (searchParams.dealType === 'RENT') {
+    filter.dealType = 'RENT';
   }
 
   // Numeric filters
@@ -160,6 +164,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   // Await searchParams as required by Next.js app directory
   const resolvedParams = await searchParams;
 
+  // Ensure dealType has a default value (SALE)
+  const paramsWithDefaults = {
+    ...resolvedParams,
+    dealType: resolvedParams.dealType || 'SALE'
+  };
+
   // Get categories and ensure placeholders exist
   const [categories] = await Promise.all([
     getCategories(),
@@ -167,8 +177,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   ]);
 
   // Get listings for the main page (with filters/sort/pagination)
-  const params = resolvedParams || {};
-  const { listings, pagination } = await getListings(params);
+  const { listings, pagination } = await getListings(paramsWithDefaults);
   
   // Convert dateAdded (and any other Date fields) to string for ListingsWithFilters
   const listingsForClient = listings.map((l: any) => ({
@@ -186,16 +195,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       
       {/* Deal Type Tabs */}
       <div className="mb-10 text-center">
-        <div className="inline-flex border border-gray-300 rounded-lg overflow-hidden">
+        <div className="inline-flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
           <Link 
             href={{ pathname: '/', query: { ...resolvedParams, dealType: 'SALE' } }}
-            className={`px-6 py-3 font-medium text-base ${!resolvedParams.dealType || resolvedParams.dealType === 'SALE' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+            className={`px-8 py-3.5 font-medium text-base transition-colors ${!resolvedParams.dealType || resolvedParams.dealType === 'SALE' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
           >
             Продажа
           </Link>
           <Link 
             href={{ pathname: '/', query: { ...resolvedParams, dealType: 'RENT' } }}
-            className={`px-6 py-3 font-medium text-base ${resolvedParams.dealType === 'RENT' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+            className={`px-8 py-3.5 font-medium text-base transition-colors ${resolvedParams.dealType === 'RENT' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
           >
             Аренда
           </Link>
@@ -206,47 +215,53 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       <div className="mb-14 md:mb-20">
         <h2 className="text-2xl font-medium text-gray-800 mb-8">Категории недвижимости</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
-          {categories.map((category) => {
-            const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
-              categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
-              defaultPlaceholder;
-            const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
-            const categoryBgClass = `category-${category.slug}`;
-            
-            // Link with deal type preserved
-            const dealTypeQuery = resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {};
-            
-            return (
-              <Link 
-                key={category.id}
-                href={{
-                  pathname: `/listing-category/${category.slug}`,
-                  query: dealTypeQuery
-                }}
-                className={`category-card group ${categoryBgClass}`}
-                style={{ height: '220px' }}
-              >
-                {/* Background image with overlay for premium look */}
-                <div className="absolute inset-0 w-full h-full z-0">
-                  <ClientImage
-                    src={imageSrc}
-                    alt={category.name}
-                    fill
-                    className="object-cover opacity-40"
-                    priority
-                    fallbackSrc={defaultPlaceholder}
-                  />
-                </div>
-                <div className="category-card-content">
-                  <div className="category-icon">{icon}</div>
-                  <div className="category-title">{category.name}</div>
-                  <div className="category-count">
-                    {category._count.listings} {getListingText(category._count.listings)}
+          {categories
+            // Filter categories for RENT (only show apartments and commercial)
+            .filter(category => 
+              resolvedParams.dealType !== 'RENT' || 
+              ['apartments', 'commercial'].includes(category.slug)
+            )
+            .map((category) => {
+              const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
+                categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
+                defaultPlaceholder;
+              const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
+              const categoryBgClass = `category-${category.slug}`;
+              
+              // Link with deal type preserved
+              const dealTypeQuery = resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {};
+              
+              return (
+                <Link 
+                  key={category.id}
+                  href={{
+                    pathname: `/listing-category/${category.slug}`,
+                    query: dealTypeQuery
+                  }}
+                  className={`category-card group ${categoryBgClass}`}
+                  style={{ height: '220px' }}
+                >
+                  {/* Background image with overlay for premium look */}
+                  <div className="absolute inset-0 w-full h-full z-0">
+                    <ClientImage
+                      src={imageSrc}
+                      alt={category.name}
+                      fill
+                      className="object-cover opacity-40"
+                      priority
+                      fallbackSrc={defaultPlaceholder}
+                    />
                   </div>
-                </div>
-              </Link>
-            );
-          })}
+                  <div className="category-card-content">
+                    <div className="category-icon">{icon}</div>
+                    <div className="category-title">{category.name}</div>
+                    <div className="category-count">
+                      {category._count.listings} {getListingText(category._count.listings)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
         </div>
       </div>
 
@@ -266,7 +281,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <ListingsWithFilters
           initialListings={listingsForClient}
           initialPagination={pagination}
-          initialFilters={params}
+          initialFilters={paramsWithDefaults}
           categories={categories}
         />
       </div>

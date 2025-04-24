@@ -71,7 +71,7 @@ export default function FilterSidebar({
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(isControlled ? filters.district || [] : searchParams?.getAll('district') || []);
   const [selectedConditions, setSelectedConditions] = useState<string[]>(isControlled ? filters.condition || [] : searchParams?.getAll('condition') || []);
   const [selectedRooms, setSelectedRooms] = useState<string[]>(isControlled ? filters.rooms || [] : searchParams?.getAll('rooms') || []);
-  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || '');
+  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || 'SALE');
   
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -312,7 +312,7 @@ export default function FilterSidebar({
     selectedRooms.length > 0 ||
     (!categorySlug && selectedCategories.length > 0);
     
-    const dealTypeChanged = selectedDealType !== '';
+    const dealTypeChanged = selectedDealType !== 'SALE';
     return hasSearchQuery || hasCustomPrice || hasOtherFilters || dealTypeChanged;
   };
   
@@ -344,7 +344,7 @@ export default function FilterSidebar({
       setSelectedDistricts(filters.district || []);
       setSelectedConditions(filters.condition || []);
       setSelectedRooms(filters.rooms || []);
-      setSelectedDealType(filters.dealType || '');
+      setSelectedDealType(filters.dealType || 'SALE');
     }
   }, [isControlled, filters]);
   
@@ -457,7 +457,7 @@ export default function FilterSidebar({
     setSelectedDistricts([]);
     setSelectedConditions([]);
     setSelectedRooms([]);
-    setSelectedDealType('');
+    setSelectedDealType('SALE');
     
     // Clear local search input in category pages
     if (categorySlug) {
@@ -563,6 +563,11 @@ export default function FilterSidebar({
     // In a category page, all categories are considered available
     if (categorySlug) return true;
     
+    // For rent, only show apartments and commercial
+    if (selectedDealType === 'RENT') {
+      return ['apartments', 'commercial'].includes(slug);
+    }
+    
     // If we have availability data from the API, use it
     if (filterOptions.categories && filterOptions.categories.length > 0) {
       const category = filterOptions.categories.find(c => c.slug === slug);
@@ -600,7 +605,37 @@ export default function FilterSidebar({
   }
 
   const handleDealTypeChange = (dealType: string) => {
-    setSelectedDealType((prevType: string) => prevType === dealType ? '' : dealType);
+    const newDealType = selectedDealType === dealType ? 'SALE' : dealType; // Default to SALE if deselected
+    setSelectedDealType(newDealType);
+    
+    // Update filters right away
+    const newFilters: Record<string, any> = {};
+    if (newDealType) {
+      newFilters.dealType = newDealType;
+    }
+    
+    // Include current category selections
+    if (selectedCategories.length > 0) {
+      newFilters.category = selectedCategories;
+    }
+    
+    // Clear category selections that don't apply to the deal type
+    if (newDealType === 'RENT') {
+      const validCategories = selectedCategories.filter(cat => 
+        ['apartments', 'commercial'].includes(cat)
+      );
+      if (validCategories.length !== selectedCategories.length) {
+        newFilters.category = validCategories;
+        setSelectedCategories(validCategories);
+      }
+    }
+    
+    updateFilters(newFilters);
+    
+    // If not controlled mode, update URL and refresh
+    if (!isControlled) {
+      applyFilters();
+    }
   };
 
   return (
@@ -657,20 +692,23 @@ export default function FilterSidebar({
         
         {/* Deal Type Selector */}
         <div className="filter-section mb-5">
-          <h3 className="filter-section-title">Тип сделки</h3>
+          <h3 className="filter-section-title">Тип</h3>
           <div className="deal-type-selector flex space-x-3 mt-2">
             {filterOptions.dealTypes && filterOptions.dealTypes.map((dealType) => (
               <button
                 key={dealType.value}
                 type="button"
                 onClick={() => handleDealTypeChange(dealType.value)}
-                className={`px-4 py-2 border rounded-md ${
+                className={`flex-1 px-4 py-2.5 border rounded-md transition-colors ${
                   selectedDealType === dealType.value
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-800 hover:bg-gray-100'
+                    ? 'bg-blue-500 text-white border-blue-500 font-medium shadow-sm'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
                 }`}
               >
-                {dealType.label} ({dealType.count})
+                <span>{dealType.label}</span>
+                <span className={`ml-1 text-xs ${selectedDealType === dealType.value ? 'text-blue-100' : 'text-gray-400'}`}>
+                  ({dealType.count})
+                </span>
               </button>
             ))}
           </div>
@@ -688,12 +726,12 @@ export default function FilterSidebar({
                     key={cat.slug}
                     type="button"
                     onClick={() => handleCategoryToggle(cat.slug)}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-all ${
+                    className={`px-3 py-2 rounded-md text-sm transition-all ${
                       selectedCategories.includes(cat.slug)
-                        ? 'bg-gray-800 text-white'
+                        ? 'bg-blue-500 text-white font-medium shadow-sm'
                         : isAvailable
-                          ? 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                          : 'bg-gray-50 text-gray-400 opacity-60'
+                          ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                          : 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
                     }`}
                     disabled={!isAvailable && !selectedCategories.includes(cat.slug)}
                   >
@@ -808,12 +846,12 @@ export default function FilterSidebar({
                   key={dist.value}
                   type="button"
                   onClick={() => handleDistrictToggle(dist.value)}
-                  className={`px-3 py-1.5 rounded-md text-sm transition-all ${
+                  className={`px-3 py-2 rounded-md text-sm transition-all ${
                     selectedDistricts.includes(dist.value)
-                      ? 'bg-gray-800 text-white'
+                      ? 'bg-blue-500 text-white font-medium shadow-sm'
                       : dist.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                   }`}
                   disabled={!dist.available && !selectedDistricts.includes(dist.value)}
                 >
@@ -835,12 +873,12 @@ export default function FilterSidebar({
                   key={cond.value}
                   type="button"
                   onClick={() => handleConditionToggle(cond.value)}
-                  className={`px-3 py-1.5 rounded-md text-sm transition-all ${
+                  className={`px-3 py-2 rounded-md text-sm transition-all ${
                     selectedConditions.includes(cond.value)
-                      ? 'bg-gray-800 text-white'
+                      ? 'bg-blue-500 text-white font-medium shadow-sm'
                       : cond.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                   }`}
                   disabled={!cond.available && !selectedConditions.includes(cond.value)}
                 >
@@ -862,12 +900,12 @@ export default function FilterSidebar({
                   key={room.value}
                   type="button"
                   onClick={() => handleRoomToggle(room.value)}
-                  className={`px-3 py-1.5 rounded-md text-sm transition-all ${
+                  className={`px-3 py-2 rounded-md text-sm transition-all ${
                     selectedRooms.includes(room.value)
-                      ? 'bg-gray-800 text-white'
+                      ? 'bg-blue-500 text-white font-medium shadow-sm'
                       : room.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                   }`}
                   disabled={!room.available && !selectedRooms.includes(room.value)}
                 >

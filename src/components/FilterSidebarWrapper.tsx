@@ -61,12 +61,20 @@ export default function FilterSidebarWrapper({
           }
         }, [searchParams, currentSearchQuery, isCategoryPage]);
 
+        // Extract any existing filter values from URL
+        const initialFilters: Record<string, any> = {};
+        
+        // Add deal type if present, default to SALE
+        const dealType = searchParams?.get('dealType') || 'SALE';
+        initialFilters.dealType = dealType;
+
         return (
           <Suspense fallback={<div className="w-full h-96 bg-gray-100 animate-pulse rounded"></div>}>
             <FilterSidebar 
               categorySlug={categorySlug}
               searchQuery={currentSearchQuery}
               categories={categories}
+              filters={initialFilters}
             />
           </Suspense>
         );

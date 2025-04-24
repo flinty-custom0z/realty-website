@@ -44,6 +44,10 @@ async function getListings(
     status: 'active',
   };
   
+  // Deal type filter, default to SALE
+  const dealType = searchParams.dealType as string || 'SALE';
+  filter.dealType = dealType;
+  
   // Apply search filters - use categoryQuery, fallback to q for backward compatibility
   const searchTerm = searchParams.categoryQuery || searchParams.q;
   if (searchTerm) {
