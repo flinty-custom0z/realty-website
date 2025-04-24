@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, DealType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -102,12 +102,15 @@ export async function GET(req: NextRequest) {
       return filter;
     }
 
-    // Get available deal types with their counts
-    const dealTypes = await prisma.listing.groupBy({
-      by: ['dealType'],
-      where: buildAvailableFilter('dealType'),
-      _count: { dealType: true },
-    });
+    // Count listings for sale and rent
+    const [salesCount, rentalsCount] = await Promise.all([
+      prisma.listing.count({
+        where: { ...buildAvailableFilter('dealType'), dealType: 'SALE' }
+      }),
+      prisma.listing.count({
+        where: { ...buildAvailableFilter('dealType'), dealType: 'RENT' }
+      })
+    ]);
 
     // Run all queries in parallel
     const [
@@ -229,13 +232,13 @@ export async function GET(req: NextRequest) {
       {
         value: 'SALE',
         label: 'Продажа',
-        count: dealTypes.find(d => d.dealType === 'SALE')?._count?.dealType || 0,
+        count: salesCount,
         available: true
       },
       {
         value: 'RENT',
         label: 'Аренда',
-        count: dealTypes.find(d => d.dealType === 'RENT')?._count?.dealType || 0,
+        count: rentalsCount,
         available: true
       }
     ];

@@ -13,6 +13,24 @@ const categoryImages = {
   'commercial': '/images/commercial_placeholder.png'
 };
 
+interface SampleListing {
+  title: string;
+  publicDescription: string;
+  categorySlug: string;
+  district: string;
+  rooms?: number;
+  floor?: number;
+  totalFloors?: number;
+  houseArea?: number;
+  landArea?: number;
+  condition?: string;
+  price: number;
+  noEncumbrances?: boolean;
+  noKids?: boolean;
+  yearBuilt?: number;
+  dealType: DealType;
+}
+
 async function main() {
   console.log('Starting to seed listings...');
   
@@ -31,7 +49,7 @@ async function main() {
   }
   
   // Sample data for different categories - FOR SALE
-  const sampleListings = [
+  const sampleListings: SampleListing[] = [
     // Apartments - FOR SALE
     {
       title: 'Школьная 1/4',
@@ -170,7 +188,7 @@ async function main() {
     
     // Generate listing code
     const prefix = category.name.charAt(0).toUpperCase();
-    const dealPrefix = listing.dealType === 'RENT' ? 'А' : 'П'; // А for Аренда (Rent), П for Продажа (Sale)
+    const dealPrefix = listing.dealType === DealType.RENT ? 'А' : 'П'; // А for Аренда (Rent), П for Продажа (Sale)
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const listingCode = `${prefix}${dealPrefix}-${randomNum}`;
     

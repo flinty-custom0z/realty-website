@@ -600,7 +600,7 @@ export default function FilterSidebar({
   }
 
   const handleDealTypeChange = (dealType: string) => {
-    setSelectedDealType(prevType => prevType === dealType ? '' : dealType);
+    setSelectedDealType((prevType: string) => prevType === dealType ? '' : dealType);
   };
 
   return (
