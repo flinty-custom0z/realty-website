@@ -48,16 +48,59 @@ const categoryIcons: Record<string, React.ReactNode> = {
   ),
 };
 
+// Add interface for Listing type
+interface ListingWithDealType {
+  dealType: 'SALE' | 'RENT';
+}
+
+// Add interface for Category with counts
+interface CategoryWithCounts {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  _count: {
+    listings: number;
+  };
+  listings: ListingWithDealType[];
+  saleCount?: number;
+  rentCount?: number;
+}
+
 async function getCategories() {
   const categories = await prisma.category.findMany({
     include: {
       _count: {
-        select: { listings: { where: { status: 'active' } } },
+        select: { 
+          listings: { 
+            where: { status: 'active' } 
+          },
+        },
       },
+      // Get separate counts for SALE and RENT listings
+      listings: {
+        where: { 
+          status: 'active',
+        },
+        select: {
+          dealType: true,
+        } as any, // Type assertion to avoid TypeScript error
+      }
     },
   });
   
-  return categories;
+  // Add calculated counts for each deal type
+  return (categories as unknown as CategoryWithCounts[]).map(category => {
+    const saleCount = category.listings.filter(l => l.dealType === 'SALE').length;
+    const rentCount = category.listings.filter(l => l.dealType === 'RENT').length;
+    
+    return {
+      ...category,
+      saleCount,
+      rentCount,
+      listings: undefined, // Remove the listings array to keep the response clean
+    };
+  });
 }
 
 // Fetch all listings with filters/sorting/pagination
@@ -65,8 +108,6 @@ async function getListings(searchParams: Record<string, string | string[] | unde
   // Build filter object (same as search page)
   const filter: any = { 
     status: 'active',
-    // Always set SALE as default deal type when none specified
-    dealType: 'SALE'
   };
 
   // Search query
@@ -77,8 +118,10 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     ];
   }
 
-  // Deal type filter (override default if specified)
-  if (searchParams.dealType === 'RENT') {
+  // Deal type filter (don't set a default)
+  if (searchParams.dealType === 'SALE') {
+    filter.dealType = 'SALE';
+  } else if (searchParams.dealType === 'RENT') {
     filter.dealType = 'RENT';
   }
 
@@ -164,10 +207,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   // Await searchParams as required by Next.js app directory
   const resolvedParams = await searchParams;
 
-  // Ensure dealType has a default value (SALE)
+  // Note: not setting a default deal type anymore
   const paramsWithDefaults = {
     ...resolvedParams,
-    dealType: resolvedParams.dealType || 'SALE'
   };
 
   // Get categories and ensure placeholders exist
@@ -193,34 +235,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <p className="text-gray-600 max-w-2xl mx-auto">Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.</p>
       </div>
       
-      {/* Deal Type Tabs */}
-      <div className="mb-10 text-center">
-        <div className="inline-flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-          <Link 
-            href={{ pathname: '/', query: { ...resolvedParams, dealType: 'SALE' } }}
-            className={`px-8 py-3.5 font-medium text-base transition-colors ${!resolvedParams.dealType || resolvedParams.dealType === 'SALE' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
-          >
-            Продажа
-          </Link>
-          <Link 
-            href={{ pathname: '/', query: { ...resolvedParams, dealType: 'RENT' } }}
-            className={`px-8 py-3.5 font-medium text-base transition-colors ${resolvedParams.dealType === 'RENT' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
-          >
-            Аренда
-          </Link>
-        </div>
-      </div>
-      
-      {/* Categories */}
+      {/* SALE Categories Section */}
       <div className="mb-14 md:mb-20">
-        <h2 className="text-2xl font-medium text-gray-800 mb-8">Категории недвижимости</h2>
+        <h2 className="text-2xl font-medium text-gray-800 mb-8">Продажа</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
           {categories
-            // Filter categories for RENT (only show apartments and commercial)
-            .filter(category => 
-              resolvedParams.dealType !== 'RENT' || 
-              ['apartments', 'commercial'].includes(category.slug)
-            )
+            .filter(category => category.slug !== 'industrial') // Exclude industrial properties
             .map((category) => {
               const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
                 categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
@@ -228,15 +248,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
               const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
               const categoryBgClass = `category-${category.slug}`;
               
-              // Link with deal type preserved
-              const dealTypeQuery = resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {};
-              
               return (
                 <Link 
-                  key={category.id}
+                  key={`sale-${category.id}`}
                   href={{
                     pathname: `/listing-category/${category.slug}`,
-                    query: dealTypeQuery
+                    query: { dealType: 'SALE' }
                   }}
                   className={`category-card group ${categoryBgClass}`}
                   style={{ height: '220px' }}
@@ -256,7 +273,54 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
                     <div className="category-icon">{icon}</div>
                     <div className="category-title">{category.name}</div>
                     <div className="category-count">
-                      {category._count.listings} {getListingText(category._count.listings)}
+                      {category.saleCount} {getListingText(category.saleCount)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+        </div>
+      </div>
+
+      {/* RENT Categories Section */}
+      <div className="mb-14 md:mb-20">
+        <h2 className="text-2xl font-medium text-gray-800 mb-8">Аренда</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
+          {categories
+            .filter(category => ['apartments', 'commercial'].includes(category.slug))
+            .map((category) => {
+              const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
+                categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
+                defaultPlaceholder;
+              const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
+              const categoryBgClass = `category-${category.slug}`;
+              
+              return (
+                <Link 
+                  key={`rent-${category.id}`}
+                  href={{
+                    pathname: `/listing-category/${category.slug}`,
+                    query: { dealType: 'RENT' }
+                  }}
+                  className={`category-card group ${categoryBgClass}`}
+                  style={{ height: '220px' }}
+                >
+                  {/* Background image with overlay for premium look */}
+                  <div className="absolute inset-0 w-full h-full z-0">
+                    <ClientImage
+                      src={imageSrc}
+                      alt={category.name}
+                      fill
+                      className="object-cover opacity-40"
+                      priority
+                      fallbackSrc={defaultPlaceholder}
+                    />
+                  </div>
+                  <div className="category-card-content">
+                    <div className="category-icon">{icon}</div>
+                    <div className="category-title">{category.name}</div>
+                    <div className="category-count">
+                      {category.rentCount} {getListingText(category.rentCount)}
                     </div>
                   </div>
                 </Link>

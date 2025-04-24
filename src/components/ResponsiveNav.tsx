@@ -10,8 +10,8 @@ export default function ResponsiveNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
-  // Get current deal type from URL, default to SALE
-  const currentDealType = searchParams.get('dealType') || 'SALE';
+  // Get current deal type from URL, no default
+  const currentDealType = searchParams.get('dealType') || '';
   
   // Close menu when route changes
   useEffect(() => {
@@ -34,8 +34,10 @@ export default function ResponsiveNav() {
   }, [isMenuOpen]);
   
   // Function to create category URL with current deal type
-  const getCategoryUrl = (categorySlug: string) => {
-    return `/listing-category/${categorySlug}?dealType=${currentDealType}`;
+  const getCategoryUrl = (categorySlug: string, dealType: string) => {
+    return dealType 
+      ? `/listing-category/${categorySlug}?dealType=${dealType}` 
+      : `/listing-category/${categorySlug}`;
   };
   
   // For rent, only show apartments and commercial
@@ -47,7 +49,7 @@ export default function ResponsiveNav() {
     <div className="w-full">
       <div className="container mx-auto px-6">
         <div className="flex justify-between items-center py-6">
-          <Link href={`/?dealType=${currentDealType}`} className="text-2xl font-medium text-gray-800 flex flex-col">
+          <Link href="/" className="text-2xl font-medium text-gray-800 flex flex-col">
             <span className="text-gray-800">ВТОРИЧНЫЙ ВЫБОР</span>
             <span className="text-xs text-gray-500 tracking-wide">краснодарская недвижимость</span>
           </Link>
@@ -56,13 +58,13 @@ export default function ResponsiveNav() {
             {/* Deal type toggle */}
             <div className="hidden md:flex space-x-4 mr-8">
               <Link 
-                href={`/?dealType=SALE`}
+                href={currentDealType === 'SALE' ? '/' : `/?dealType=SALE`}
                 className={`text-sm font-medium ${currentDealType === 'SALE' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Продажа
               </Link>
               <Link 
-                href={`/?dealType=RENT`}
+                href={currentDealType === 'RENT' ? '/' : `/?dealType=RENT`}
                 className={`text-sm font-medium ${currentDealType === 'RENT' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Аренда
@@ -72,7 +74,7 @@ export default function ResponsiveNav() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8 mr-6">
               <Link 
-                href={`/?dealType=${currentDealType}`}
+                href="/"
                 className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
                   pathname === '/' ? 'text-gray-900' : ''
                 }`}
@@ -81,7 +83,7 @@ export default function ResponsiveNav() {
               </Link>
               {shouldShowForRent('apartments') && (
                 <Link 
-                  href={getCategoryUrl('apartments')}
+                  href={getCategoryUrl('apartments', currentDealType)}
                   className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
                     pathname === '/listing-category/apartments' ? 'text-gray-900' : ''
                   }`}
@@ -91,7 +93,7 @@ export default function ResponsiveNav() {
               )}
               {shouldShowForRent('houses') && (
                 <Link 
-                  href={getCategoryUrl('houses')}
+                  href={getCategoryUrl('houses', currentDealType)}
                   className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
                     pathname === '/listing-category/houses' ? 'text-gray-900' : ''
                   }`}
@@ -101,7 +103,7 @@ export default function ResponsiveNav() {
               )}
               {shouldShowForRent('land') && (
                 <Link 
-                  href={getCategoryUrl('land')}
+                  href={getCategoryUrl('land', currentDealType)}
                   className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
                     pathname === '/listing-category/land' ? 'text-gray-900' : ''
                   }`}
@@ -111,7 +113,7 @@ export default function ResponsiveNav() {
               )}
               {shouldShowForRent('commercial') && (
                 <Link 
-                  href={getCategoryUrl('commercial')}
+                  href={getCategoryUrl('commercial', currentDealType)}
                   className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
                     pathname === '/listing-category/commercial' ? 'text-gray-900' : ''
                   }`}
@@ -150,13 +152,13 @@ export default function ResponsiveNav() {
           {/* Mobile deal type toggle */}
           <div className="flex space-x-4 py-2">
             <Link 
-              href={`/?dealType=SALE`}
+              href={currentDealType === 'SALE' ? '/' : `/?dealType=SALE`}
               className={`text-sm font-medium ${currentDealType === 'SALE' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Продажа
             </Link>
             <Link 
-              href={`/?dealType=RENT`}
+              href={currentDealType === 'RENT' ? '/' : `/?dealType=RENT`}
               className={`text-sm font-medium ${currentDealType === 'RENT' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Аренда
@@ -164,7 +166,7 @@ export default function ResponsiveNav() {
           </div>
           
           <Link 
-            href={`/?dealType=${currentDealType}`}
+            href="/"
             className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
               pathname === '/' ? 'text-gray-900 font-medium' : ''
             }`}
@@ -173,7 +175,7 @@ export default function ResponsiveNav() {
           </Link>
           {shouldShowForRent('apartments') && (
             <Link 
-              href={getCategoryUrl('apartments')}
+              href={getCategoryUrl('apartments', currentDealType)}
               className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
                 pathname === '/listing-category/apartments' ? 'text-gray-900 font-medium' : ''
               }`}
@@ -183,7 +185,7 @@ export default function ResponsiveNav() {
           )}
           {shouldShowForRent('houses') && (
             <Link 
-              href={getCategoryUrl('houses')}
+              href={getCategoryUrl('houses', currentDealType)}
               className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
                 pathname === '/listing-category/houses' ? 'text-gray-900 font-medium' : ''
               }`}
@@ -193,7 +195,7 @@ export default function ResponsiveNav() {
           )}
           {shouldShowForRent('land') && (
             <Link 
-              href={getCategoryUrl('land')}
+              href={getCategoryUrl('land', currentDealType)}
               className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
                 pathname === '/listing-category/land' ? 'text-gray-900 font-medium' : ''
               }`}
@@ -203,7 +205,7 @@ export default function ResponsiveNav() {
           )}
           {shouldShowForRent('commercial') && (
             <Link 
-              href={getCategoryUrl('commercial')}
+              href={getCategoryUrl('commercial', currentDealType)}
               className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
                 pathname === '/listing-category/commercial' ? 'text-gray-900 font-medium' : ''
               }`}

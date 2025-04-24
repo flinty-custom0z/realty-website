@@ -64,9 +64,11 @@ export default function FilterSidebarWrapper({
         // Extract any existing filter values from URL
         const initialFilters: Record<string, any> = {};
         
-        // Add deal type if present, default to SALE
-        const dealType = searchParams?.get('dealType') || 'SALE';
-        initialFilters.dealType = dealType;
+        // Add deal type if present in URL, without default
+        const dealType = searchParams?.get('dealType');
+        if (dealType) {
+          initialFilters.dealType = dealType;
+        }
 
         return (
           <Suspense fallback={<div className="w-full h-96 bg-gray-100 animate-pulse rounded"></div>}>

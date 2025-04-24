@@ -44,9 +44,12 @@ async function getListings(
     status: 'active',
   };
   
-  // Deal type filter, default to SALE
-  const dealType = searchParams.dealType as string || 'SALE';
-  filter.dealType = dealType;
+  // Deal type filter (don't set a default value)
+  if (searchParams.dealType === 'SALE') {
+    filter.dealType = 'SALE';
+  } else if (searchParams.dealType === 'RENT') {
+    filter.dealType = 'RENT';
+  }
   
   // Apply search filters - use categoryQuery, fallback to q for backward compatibility
   const searchTerm = searchParams.categoryQuery || searchParams.q;
@@ -163,7 +166,19 @@ export default async function CategoryPage({
     notFound();
   }
   
-  const { listings, pagination } = await getListings(category.id, resolvedSearchParams);
+  const { listings: unfilteredListings, pagination } = await getListings(category.id, resolvedSearchParams);
+
+  // Additional client-side filtering to ensure correct deal type
+  const listings = resolvedSearchParams.dealType ? 
+    unfilteredListings.filter((listing: any) => 
+      listing.dealType === resolvedSearchParams.dealType) : 
+    unfilteredListings;
+
+  // Update pagination total if we filtered listings
+  const adjustedPagination = {
+    ...pagination,
+    total: listings.length
+  };
 
   // Get search query if exists (prioritize categoryQuery, fallback to q for backwards compatibility)
   const categorySearchQuery = resolvedSearchParams.categoryQuery as string || '';
@@ -204,9 +219,9 @@ export default async function CategoryPage({
         <div className="w-full md:w-3/4">
           <div className="mb-4 flex justify-between items-center">
             <p className="text-gray-600">
-              {pagination.total > 0 ? (
-                `Отображаются ${(pagination.page - 1) * pagination.limit + 1}-
-                ${Math.min(pagination.page * pagination.limit, pagination.total)} из ${pagination.total} результатов`
+              {adjustedPagination.total > 0 ? (
+                `Отображаются ${(adjustedPagination.page - 1) * adjustedPagination.limit + 1}-
+                ${Math.min(adjustedPagination.page * adjustedPagination.limit, adjustedPagination.total)} из ${adjustedPagination.total} результатов`
               ) : 'Нет результатов'}
             </p>
             <SortSelector />
@@ -230,15 +245,16 @@ export default async function CategoryPage({
                 listingCode={listing.listingCode}
                 categoryName={listing.category.name}
                 showCategory={false} // Don't show category on category-specific pages
+                dealType={(listing as any).dealType}
               />
             ))}
           </div>
           
           {/* Pagination */}
-          {pagination.pages > 1 && (
+          {adjustedPagination.pages > 1 && (
             <div className="mt-8 flex justify-center">
               <nav className="inline-flex">
-                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => {
+                {Array.from({ length: adjustedPagination.pages }, (_, i) => i + 1).map((page) => {
                   // Create a new URLSearchParams with all current parameters
                   const params = new URLSearchParams();
                   Object.entries(resolvedSearchParams).forEach(([key, value]) => {
@@ -257,7 +273,7 @@ export default async function CategoryPage({
                       key={page}
                       href={`/listing-category/${slug}?${params.toString()}`}
                       className={`px-4 py-2 text-sm border ${
-                        page === pagination.page
+                        page === adjustedPagination.page
                           ? 'bg-blue-500 text-white border-blue-500'
                           : 'border-gray-300 hover:bg-gray-50'
                       }`}

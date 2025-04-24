@@ -3,6 +3,8 @@
 
 ### NOW
 
+
+- Remove industrial option everywhere
 - Название 
 - Логотип
 

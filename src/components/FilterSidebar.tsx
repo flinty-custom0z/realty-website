@@ -71,7 +71,7 @@ export default function FilterSidebar({
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(isControlled ? filters.district || [] : searchParams?.getAll('district') || []);
   const [selectedConditions, setSelectedConditions] = useState<string[]>(isControlled ? filters.condition || [] : searchParams?.getAll('condition') || []);
   const [selectedRooms, setSelectedRooms] = useState<string[]>(isControlled ? filters.rooms || [] : searchParams?.getAll('rooms') || []);
-  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || 'SALE');
+  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || '');
   
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -312,7 +312,7 @@ export default function FilterSidebar({
     selectedRooms.length > 0 ||
     (!categorySlug && selectedCategories.length > 0);
     
-    const dealTypeChanged = selectedDealType !== 'SALE';
+    const dealTypeChanged = selectedDealType !== '';
     return hasSearchQuery || hasCustomPrice || hasOtherFilters || dealTypeChanged;
   };
   
@@ -344,7 +344,7 @@ export default function FilterSidebar({
       setSelectedDistricts(filters.district || []);
       setSelectedConditions(filters.condition || []);
       setSelectedRooms(filters.rooms || []);
-      setSelectedDealType(filters.dealType || 'SALE');
+      setSelectedDealType(filters.dealType || '');
     }
   }, [isControlled, filters]);
   
@@ -457,7 +457,7 @@ export default function FilterSidebar({
     setSelectedDistricts([]);
     setSelectedConditions([]);
     setSelectedRooms([]);
-    setSelectedDealType('SALE');
+    setSelectedDealType('');
     
     // Clear local search input in category pages
     if (categorySlug) {
@@ -605,36 +605,51 @@ export default function FilterSidebar({
   }
 
   const handleDealTypeChange = (dealType: string) => {
-    const newDealType = selectedDealType === dealType ? 'SALE' : dealType; // Default to SALE if deselected
+    const newDealType = selectedDealType === dealType ? '' : dealType;
     setSelectedDealType(newDealType);
     
-    // Update filters right away
-    const newFilters: Record<string, any> = {};
+    // Create new params to preserve existing ones
+    const params = new URLSearchParams(window.location.search);
+    
+    // Add or remove deal type parameter
     if (newDealType) {
-      newFilters.dealType = newDealType;
+      params.set('dealType', newDealType);
+    } else {
+      params.delete('dealType');
     }
     
-    // Include current category selections
-    if (selectedCategories.length > 0) {
-      newFilters.category = selectedCategories;
-    }
-    
-    // Clear category selections that don't apply to the deal type
-    if (newDealType === 'RENT') {
-      const validCategories = selectedCategories.filter(cat => 
-        ['apartments', 'commercial'].includes(cat)
-      );
-      if (validCategories.length !== selectedCategories.length) {
-        newFilters.category = validCategories;
-        setSelectedCategories(validCategories);
-      }
-    }
-    
-    updateFilters(newFilters);
-    
-    // If not controlled mode, update URL and refresh
+    // If not controlled mode, navigate immediately
     if (!isControlled) {
-      applyFilters();
+      let url = window.location.pathname;
+      const search = params.toString();
+      if (search) {
+        url += `?${search}`;
+      }
+      window.location.href = url;
+    } else {
+      // Update filters for controlled mode
+      const newFilters: Record<string, any> = {};
+      if (newDealType) {
+        newFilters.dealType = newDealType;
+      }
+      
+      // Include current category selections
+      if (selectedCategories.length > 0) {
+        newFilters.category = selectedCategories;
+      }
+      
+      // Clear category selections that don't apply to the deal type
+      if (newDealType === 'RENT') {
+        const validCategories = selectedCategories.filter(cat => 
+          ['apartments', 'commercial'].includes(cat)
+        );
+        if (validCategories.length !== selectedCategories.length) {
+          newFilters.category = validCategories;
+          setSelectedCategories(validCategories);
+        }
+      }
+      
+      updateFilters(newFilters);
     }
   };
 
