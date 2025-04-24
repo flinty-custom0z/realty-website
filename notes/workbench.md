@@ -6,6 +6,7 @@
 - Preview in edit history not working
 
 - Логотип
+
 - Добавить аренду (коммерция и жилая)
 - Убрать промышленную
 
@@ -23,7 +24,7 @@
 
 
 
-## Change
+## To Change
 
 Below is a **two-step fix** that always works with **Next .js 15**:
 

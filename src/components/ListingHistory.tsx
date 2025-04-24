@@ -112,7 +112,14 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
             <h4 className="font-medium text-sm">Добавлено {changes.added.length} {changes.added.length > 1 ? 'изображений' : 'изображение'}</h4>
             <div className="flex flex-wrap gap-2 mt-1">
               {changes.added.map((img, idx) => (
-                <div key={idx} className="relative w-16 h-16 border border-green-300 rounded overflow-hidden group">
+                <div
+                  key={idx}
+                  className="relative w-16 h-16 border border-green-300 rounded overflow-hidden group cursor-pointer"
+                  onClick={() => img.path && openImageModal(img.path)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && img.path && openImageModal(img.path)}
+                >
                   {img.path ? (
                     <>
                       <ClientImage
@@ -124,14 +131,12 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                       <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
                         
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => img.path && openImageModal(img.path)}
-                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                      <div
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
                         aria-label="Просмотр фото"
                       >
                         <Eye size={16} className="text-white" />
-                      </button>
+                      </div>
                     </>
                   ) : (
                     <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500 text-xs p-1 text-center">
@@ -156,7 +161,14 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
             <h4 className="font-medium text-sm text-red-600">Удалено {changes.deleted.length} {changes.deleted.length > 1 ? 'изображений' : 'изображение'}</h4>
             <div className="flex flex-wrap gap-2 mt-1">
               {changes.deleted.map((img) => (
-                <div key={img.id} className="relative w-16 h-16 border border-red-300 rounded overflow-hidden group">
+                <div
+                  key={img.id}
+                  className="relative w-16 h-16 border border-red-300 rounded overflow-hidden group cursor-pointer"
+                  onClick={() => openImageModal(img.path)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && openImageModal(img.path)}
+                >
                   <ClientImage
                     src={img.path}
                     alt="Удаленное изображение"
@@ -166,14 +178,12 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                   <div className="absolute bottom-0 left-0 right-0 history-badge-deleted text-center">
                     
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openImageModal(img.path)}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
-                  </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -185,7 +195,13 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
             <h4 className="font-medium text-sm">Изменено главное изображение</h4>
             {changes.featuredChanged.previousPath && changes.featuredChanged.newPath && (
               <div className="flex items-center gap-2 mt-2">
-                <div className="relative w-16 h-16 border border-gray-300 rounded overflow-hidden group">
+                <div
+                  className="relative w-16 h-16 border border-gray-300 rounded overflow-hidden group cursor-pointer"
+                  onClick={() => changes.featuredChanged?.previousPath && openImageModal(changes.featuredChanged.previousPath)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && changes.featuredChanged?.previousPath && openImageModal(changes.featuredChanged.previousPath)}
+                >
                   <ClientImage
                     src={changes.featuredChanged.previousPath}
                     alt="Предыдущее главное изображение"
@@ -195,19 +211,21 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                   <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
                     
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => changes.featuredChanged?.previousPath && openImageModal(changes.featuredChanged.previousPath)}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
-                  </button>
+                  </div>
                 </div>
-                
                 <span className="text-gray-500">→</span>
-                
-                <div className="relative w-16 h-16 border border-blue-300 rounded overflow-hidden group">
+                <div
+                  className="relative w-16 h-16 border border-blue-300 rounded overflow-hidden group cursor-pointer"
+                  onClick={() => changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
+                >
                   <ClientImage
                     src={changes.featuredChanged.newPath}
                     alt="Новое главное изображение"
@@ -217,14 +235,12 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                   <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
                     
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
-                  </button>
+                  </div>
                 </div>
               </div>
             )}
