@@ -18,11 +18,19 @@ interface FilterOption {
   available: boolean;
 }
 
+interface DealTypeOption {
+  value: string;
+  label: string;
+  count: number;
+  available: boolean;
+}
+
 interface FilterOptions {
   districts: FilterOption[];
   conditions: FilterOption[];
   rooms: FilterOption[];
   categories: Category[];
+  dealTypes: DealTypeOption[];
   priceRange: {
     min: number;
     max: number;
@@ -63,6 +71,7 @@ export default function FilterSidebar({
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>(isControlled ? filters.district || [] : searchParams?.getAll('district') || []);
   const [selectedConditions, setSelectedConditions] = useState<string[]>(isControlled ? filters.condition || [] : searchParams?.getAll('condition') || []);
   const [selectedRooms, setSelectedRooms] = useState<string[]>(isControlled ? filters.rooms || [] : searchParams?.getAll('rooms') || []);
+  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || '');
   
   // State to track loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +91,7 @@ export default function FilterSidebar({
     conditions: [],
     rooms: [],
     categories: [],
+    dealTypes: [],
     priceRange: { min: 0, max: 30000000 },
     totalCount: 0,
     hasFiltersApplied: false
@@ -111,6 +121,7 @@ export default function FilterSidebar({
     const paramQuery = categorySlug ? searchParams.get('categoryQuery') : searchParams.get('q');
     const minPriceParam = searchParams.get('minPrice');
     const maxPriceParam = searchParams.get('maxPrice');
+    const dealTypeParam = searchParams.get('dealType');
     
     if (paramQuery !== null) {
       setSearchInputValue(paramQuery);
@@ -124,6 +135,10 @@ export default function FilterSidebar({
     if (maxPriceParam !== null && isInitialLoadRef.current) {
         setMaxPrice(maxPriceParam);
       }
+
+    if (dealTypeParam !== null) {
+      setSelectedDealType(dealTypeParam);
+    }
     
     // Update selected filters from URL
     setSelectedCategories(searchParams.getAll('category'));
@@ -153,7 +168,7 @@ export default function FilterSidebar({
         fetchFilterOptions();
       }, 100);
     }
-  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories]);
+  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType]);
   
   // Fetch filter options for other changes (search, price, initial load)
    useEffect(() => {
@@ -226,6 +241,9 @@ export default function FilterSidebar({
     if (selectedRooms.length > 0) {
       selectedRooms.forEach((r: string) => params.append('rooms', r));
     }
+    if (selectedDealType) {
+      params.append('dealType', selectedDealType);
+    }
 
     // Add current price if provided
     if (minPrice) {
@@ -294,7 +312,8 @@ export default function FilterSidebar({
     selectedRooms.length > 0 ||
     (!categorySlug && selectedCategories.length > 0);
     
-    return hasSearchQuery || hasCustomPrice || hasOtherFilters;
+    const dealTypeChanged = selectedDealType !== '';
+    return hasSearchQuery || hasCustomPrice || hasOtherFilters || dealTypeChanged;
   };
   
   // Helper to scroll to listings section after navigation
@@ -312,6 +331,7 @@ export default function FilterSidebar({
     if (isControlled && onChange) {
       onChange(newFilters);
     }
+    if ('dealType' in newFilters) setSelectedDealType(newFilters.dealType);
   };
 
   // In controlled mode, update local state when filters prop changes
@@ -324,6 +344,7 @@ export default function FilterSidebar({
       setSelectedDistricts(filters.district || []);
       setSelectedConditions(filters.condition || []);
       setSelectedRooms(filters.rooms || []);
+      setSelectedDealType(filters.dealType || '');
     }
   }, [isControlled, filters]);
   
@@ -371,6 +392,11 @@ export default function FilterSidebar({
       selectedConditions.forEach((c: string) => params.append('condition', c));
       selectedRooms.forEach((r: string) => params.append('rooms', r));
       
+      // Add deal type to query params
+      if (selectedDealType) {
+        params.append('dealType', selectedDealType);
+      }
+      
       // Preserve navigation parameters
       const returnUrl = searchParams?.get('returnUrl');
       if (returnUrl) {
@@ -401,6 +427,7 @@ export default function FilterSidebar({
           district: selectedDistricts,
           condition: selectedConditions,
           rooms: selectedRooms,
+          dealType: selectedDealType,
         };
         updateFilters(newFilters);
       } else {
@@ -430,6 +457,7 @@ export default function FilterSidebar({
     setSelectedDistricts([]);
     setSelectedConditions([]);
     setSelectedRooms([]);
+    setSelectedDealType('');
     
     // Clear local search input in category pages
     if (categorySlug) {
@@ -571,6 +599,10 @@ export default function FilterSidebar({
     }
   }
 
+  const handleDealTypeChange = (dealType: string) => {
+    setSelectedDealType(prevType => prevType === dealType ? '' : dealType);
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
       <div className="mb-5">
@@ -622,6 +654,27 @@ export default function FilterSidebar({
             <div className="animate-pulse text-sm text-gray-400">Загрузка фильтров...</div>
           </div>
         )}
+        
+        {/* Deal Type Selector */}
+        <div className="filter-section mb-5">
+          <h3 className="filter-section-title">Тип сделки</h3>
+          <div className="deal-type-selector flex space-x-3 mt-2">
+            {filterOptions.dealTypes && filterOptions.dealTypes.map((dealType) => (
+              <button
+                key={dealType.value}
+                type="button"
+                onClick={() => handleDealTypeChange(dealType.value)}
+                className={`px-4 py-2 border rounded-md ${
+                  selectedDealType === dealType.value
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-800 hover:bg-gray-100'
+                }`}
+              >
+                {dealType.label} ({dealType.count})
+              </button>
+            ))}
+          </div>
+        </div>
         
         {/* Multi-category selection (only on general search page) */}
         {!categorySlug && categories.length > 0 && (

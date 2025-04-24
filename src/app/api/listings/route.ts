@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DealType } from '@prisma/client';
 
 const prismaApi = new PrismaClient();
 
@@ -13,6 +13,12 @@ export async function GET(req: NextRequest) {
     if (categorySlugs.length) {
       const cats = await prismaApi.category.findMany({ where: { slug: { in: categorySlugs } }, select: { id: true } });
       if (cats.length) filter.categoryId = { in: cats.map((c) => c.id) };
+    }
+
+    // Deal type filter
+    const dealType = searchParams.get('dealType');
+    if (dealType === 'SALE' || dealType === 'RENT') {
+      filter.dealType = dealType;
     }
 
     const q = searchParams.get('q');

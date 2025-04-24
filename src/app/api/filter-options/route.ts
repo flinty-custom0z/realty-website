@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DealType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const districts = searchParams.getAll('district');
     const conditions = searchParams.getAll('condition');
     const rooms = searchParams.getAll('rooms');
+    const dealType = searchParams.get('dealType');
 
     // Read flag from frontend: only apply price filter for available options if user has edited price
     const applyPriceFilter = searchParams.get('applyPriceFilter') === 'true';
@@ -26,6 +27,11 @@ export async function GET(req: NextRequest) {
         { title: { contains: searchQuery, mode: 'insensitive' } },
         { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
       ];
+    }
+
+    // Add dealType to base filter if provided
+    if (dealType === 'SALE' || dealType === 'RENT') {
+      baseFilterMinimal.dealType = dealType;
     }
 
     // Build filter that includes category
@@ -75,10 +81,11 @@ export async function GET(req: NextRequest) {
 
     // Calculate if any filters are applied beyond category/search
     const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
-                              rooms.length > 0 || minPrice !== null || maxPrice !== null;
+                              rooms.length > 0 || minPrice !== null || maxPrice !== null ||
+                              dealType !== null;
 
     // Helper: Build filter for available options, excluding a specific group
-    function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms') {
+    function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms' | 'dealType') {
       const filter: any = { ...baseFilter };
       // Only include price filters if applyPriceFilter is true
       if (applyPriceFilter && minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
@@ -89,8 +96,18 @@ export async function GET(req: NextRequest) {
         const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
         if (roomValues.length > 0) filter.rooms = { in: roomValues };
       }
+      if (exclude !== 'dealType' && dealType) {
+        filter.dealType = dealType;
+      }
       return filter;
     }
+
+    // Get available deal types with their counts
+    const dealTypes = await prisma.listing.groupBy({
+      by: ['dealType'],
+      where: buildAvailableFilter('dealType'),
+      _count: { dealType: true },
+    });
 
     // Run all queries in parallel
     const [
@@ -207,6 +224,22 @@ export async function GET(req: NextRequest) {
       available: hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true // CHANGED: Always available if no filters
     }));
 
+    // Process deal types
+    const processedDealTypes = [
+      {
+        value: 'SALE',
+        label: 'Продажа',
+        count: dealTypes.find(d => d.dealType === 'SALE')?._count?.dealType || 0,
+        available: true
+      },
+      {
+        value: 'RENT',
+        label: 'Аренда',
+        count: dealTypes.find(d => d.dealType === 'RENT')?._count?.dealType || 0,
+        available: true
+      }
+    ];
+
     // Process categories with availability
     const processedCategories = !categoryParams ? allCategories.map(cat => ({
       id: cat.id,
@@ -226,6 +259,7 @@ export async function GET(req: NextRequest) {
       conditions: processedConditions,
       rooms: processedRooms,
       categories: processedCategories,
+      dealTypes: processedDealTypes,
       priceRange: {
         min: minPriceValue,
         max: maxPriceValue
@@ -240,6 +274,10 @@ export async function GET(req: NextRequest) {
       conditions: [],
       rooms: [],
       categories: [],
+      dealTypes: [
+        { value: 'SALE', label: 'Продажа', count: 0, available: true },
+        { value: 'RENT', label: 'Аренда', count: 0, available: true }
+      ],
       priceRange: { min: 0, max: 30000000 },
       totalCount: 0,
       hasFiltersApplied: false,

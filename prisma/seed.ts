@@ -10,7 +10,6 @@ async function main() {
     { name: 'Дома', slug: 'houses' },
     { name: 'Земельные участки', slug: 'land' },
     { name: 'Коммерция', slug: 'commercial' },
-    { name: 'Промышленные объекты', slug: 'industrial' },
   ];
 
   for (const category of categories) {

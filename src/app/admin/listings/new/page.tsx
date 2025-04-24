@@ -24,6 +24,7 @@ interface FormData {
   noEncumbrances: boolean;
   noKids: boolean;
   price: string;
+  dealType: 'SALE' | 'RENT';
   status: string;
   userId: string;
 }
@@ -47,6 +48,7 @@ export default function NewListingPage() {
     noEncumbrances: false,
     noKids: false,
     price: '',
+    dealType: 'SALE',
     status: 'active',
     userId: '',
   });
@@ -230,8 +232,25 @@ export default function NewListingPage() {
             </div>
             
             <div>
+              <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
+                Тип сделки *
+              </label>
+              <select
+                id="dealType"
+                name="dealType"
+                value={formData.dealType}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                required
+              >
+                <option value="SALE">Продажа</option>
+                <option value="RENT">Аренда</option>
+              </select>
+            </div>
+            
+            <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                Цена (₽) *
+                Цена {formData.dealType === 'RENT' ? '(₽/месяц)' : '(₽)'} *
               </label>
               <input
                 type="number"

@@ -73,6 +73,11 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     ];
   }
 
+  // Deal type filter
+  if (searchParams.dealType === 'SALE' || searchParams.dealType === 'RENT') {
+    filter.dealType = searchParams.dealType;
+  }
+
   // Numeric filters
   if (searchParams.minPrice) {
     filter.price = { ...(filter.price || {}), gte: parseFloat(searchParams.minPrice as string) };
@@ -179,20 +184,45 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <p className="text-gray-600 max-w-2xl mx-auto">Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.</p>
       </div>
       
+      {/* Deal Type Tabs */}
+      <div className="mb-10 text-center">
+        <div className="inline-flex border border-gray-300 rounded-lg overflow-hidden">
+          <Link 
+            href={{ pathname: '/', query: { ...resolvedParams, dealType: 'SALE' } }}
+            className={`px-6 py-3 font-medium text-base ${!resolvedParams.dealType || resolvedParams.dealType === 'SALE' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+          >
+            Продажа
+          </Link>
+          <Link 
+            href={{ pathname: '/', query: { ...resolvedParams, dealType: 'RENT' } }}
+            className={`px-6 py-3 font-medium text-base ${resolvedParams.dealType === 'RENT' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800 hover:bg-gray-50'}`}
+          >
+            Аренда
+          </Link>
+        </div>
+      </div>
+      
       {/* Categories */}
       <div className="mb-14 md:mb-20">
         <h2 className="text-2xl font-medium text-gray-800 mb-8">Категории недвижимости</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-7">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
           {categories.map((category) => {
             const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
               categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
               defaultPlaceholder;
             const icon = categoryIcons[category.slug] || categoryIcons['apartments'];
             const categoryBgClass = `category-${category.slug}`;
+            
+            // Link with deal type preserved
+            const dealTypeQuery = resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {};
+            
             return (
               <Link 
                 key={category.id}
-                href={`/listing-category/${category.slug}`}
+                href={{
+                  pathname: `/listing-category/${category.slug}`,
+                  query: dealTypeQuery
+                }}
                 className={`category-card group ${categoryBgClass}`}
                 style={{ height: '220px' }}
               >
@@ -224,7 +254,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       <div className="mb-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <h2 className="text-2xl font-medium text-gray-800">Популярные предложения</h2>
-          <Link href="/search" className="mt-2 sm:mt-0 text-sm text-gray-600 hover:text-gray-900">
+          <Link href={{
+            pathname: "/search",
+            query: resolvedParams.dealType ? { dealType: resolvedParams.dealType } : {}
+          }} className="mt-2 sm:mt-0 text-sm text-gray-600 hover:text-gray-900">
             Показать все предложения →
           </Link>
         </div>

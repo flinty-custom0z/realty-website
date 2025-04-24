@@ -3,7 +3,7 @@
 import React, { ReactNode } from 'react';
 
 interface ImageOverlayProps {
-  type: 'category' | 'status' | 'price' | 'new' | 'deleted';
+  type: 'category' | 'status' | 'price' | 'new' | 'deleted' | 'sale' | 'rent';
   position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   children: ReactNode;
   className?: string;
@@ -22,6 +22,8 @@ const typeClasses = {
   'price': 'bg-white px-3 py-1.5 text-sm font-medium text-gray-900 rounded-md shadow-sm border border-transparent',
   'new': 'text-white text-xs font-medium px-3 py-1 rounded-md bg-gradient-to-br from-black/60 to-black/0 shadow-sm border border-white/20 backdrop-blur-sm',
   'deleted': 'text-white text-xs font-medium px-3 py-1 rounded-md bg-gradient-to-br from-red-500/60 to-red-500/0 shadow-sm border border-white/20 backdrop-blur-sm',
+  'sale': 'text-white text-xs font-medium px-3 py-1 rounded-md bg-gradient-to-br from-blue-600/70 to-blue-600/0 shadow-sm border border-white/20 backdrop-blur-sm',
+  'rent': 'text-white text-xs font-medium px-3 py-1 rounded-md bg-gradient-to-br from-green-600/70 to-green-600/0 shadow-sm border border-white/20 backdrop-blur-sm',
 };
 
 export default function ImageOverlay({ 

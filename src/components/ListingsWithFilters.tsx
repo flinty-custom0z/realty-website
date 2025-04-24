@@ -14,6 +14,7 @@ interface Listing {
   price: number;
   listingCode: string;
   status: string;
+  dealType: 'SALE' | 'RENT';
   category: {
     name: string;
   };
@@ -131,6 +132,7 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
               imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
               categoryName={l.category?.name}
               showCategory={true}
+              dealType={l.dealType}
             />
           ))}
         </div>

@@ -9,6 +9,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Enums
+enum DealType {
+  SALE
+  RENT
+}
+
 // Models
 model User {
   id        String    @id @default(cuid())
@@ -53,6 +59,7 @@ model Listing {
   noKids          Boolean?  @default(false)
   price           Float
   currency        String    @default("₽")
+  dealType        DealType  @default(SALE)
   dateAdded       DateTime  @default(now())
   listingCode     String    @unique
   status          String    @default("active")

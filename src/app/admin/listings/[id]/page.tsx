@@ -27,6 +27,7 @@ interface ListingFormData {
   noEncumbrances: boolean;
   noKids: boolean;
   price: string;
+  dealType: 'SALE' | 'RENT';
   status: string;
 }
 
@@ -105,6 +106,7 @@ export default function EditListingPage() {
     noEncumbrances: false,
     noKids: false,
     price: '',
+    dealType: 'SALE',
     status: 'active',
     userId: '',
   });
@@ -150,6 +152,7 @@ export default function EditListingPage() {
           noEncumbrances: listingData.noEncumbrances || false,
           noKids: listingData.noKids || false,
           price: listingData.price.toString(),
+          dealType: listingData.dealType || 'SALE',
           status: listingData.status,
           userId: listingData.user?.id || (usersData[0]?.id ?? ''),
         });
@@ -433,7 +436,7 @@ export default function EditListingPage() {
                 name="categoryId"
                 value={formData.categoryId}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
                 required
               >
                 {categories.map(category => (
@@ -445,8 +448,25 @@ export default function EditListingPage() {
             </div>
             
             <div>
+              <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
+                Тип сделки *
+              </label>
+              <select
+                id="dealType"
+                name="dealType"
+                value={formData.dealType}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
+                required
+              >
+                <option value="SALE">Продажа</option>
+                <option value="RENT">Аренда</option>
+              </select>
+            </div>
+            
+            <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                Цена (₽) *
+                Цена {formData.dealType === 'RENT' ? '(₽/месяц)' : '(₽)'} *
               </label>
               <input
                 type="number"
@@ -454,7 +474,7 @@ export default function EditListingPage() {
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
                 required
               />
             </div>

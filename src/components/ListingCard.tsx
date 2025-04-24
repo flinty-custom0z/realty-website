@@ -20,6 +20,7 @@ interface ListingCardProps {
   showCategory?: boolean;
   status?: 'active' | 'inactive';
   isNew?: boolean;
+  dealType?: 'SALE' | 'RENT';
 }
 
 export default function ListingCard({
@@ -39,6 +40,7 @@ export default function ListingCard({
   showCategory = false,
   status,
   isNew,
+  dealType = 'SALE',
 }: ListingCardProps) {
   return (
     <Link href={`/listing/${id}`} className="block group">
@@ -73,7 +75,7 @@ export default function ListingCard({
               
               {/* Price badge */}
               <ImageOverlay type="price" position="bottom-left">
-                {formatPrice(price)}
+                {formatPrice(price)}{dealType === 'RENT' ? '/мес' : ''}
               </ImageOverlay>
               
               {/* Category badge */}
@@ -82,6 +84,14 @@ export default function ListingCard({
                   {categoryName}
                 </ImageOverlay>
               )}
+              
+              {/* Deal type badge */}
+              <ImageOverlay 
+                type={dealType === 'SALE' ? 'sale' : 'rent'} 
+                position="bottom-right"
+              >
+                {dealType === 'SALE' ? 'Продажа' : 'Аренда'}
+              </ImageOverlay>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
