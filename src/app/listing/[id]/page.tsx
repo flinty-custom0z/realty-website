@@ -270,14 +270,7 @@ function ListingDetailClient({ id }: { id: string }) {
                 </div>
               )}
               <div className="contact-card-item mb-3">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-500 mr-3">
-                    <Hash size={16} />
-                  </div>
-                  <span className="text-gray-700">
-                    {listing.listingCode}
-                  </span>
-                </div>
+                {/* Removed listing code from contact card */}
               </div>
             </div>
           </div>

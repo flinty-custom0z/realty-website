@@ -126,7 +126,7 @@ export default function ListingCard({
           </div>
           
           <div className="mt-4 flex justify-end items-center">
-            <p className="text-xs text-gray-500">Код: {listingCode}</p>
+            {/* Removed listing code display */}
           </div>
         </div>
       </div>
