@@ -16,6 +16,13 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
 }
 
 /**
+ * Format a number with thousands separators using Russian locale
+ */
+export function formatNumber(num: number): string {
+  return num.toLocaleString('ru-RU');
+}
+
+/**
  * Format price to Russian ruble format
  */
 export function formatPrice(price: number): string {

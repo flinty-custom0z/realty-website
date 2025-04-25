@@ -35,6 +35,53 @@
   --btn-secondary-padding: 16px;
 }
 
+/* Deal type color themes */
+.deal-type-sale-theme {
+  --deal-accent-color: #3B82F6; /* Blue for confidence in sales */
+  --deal-accent-light: rgba(59, 130, 246, 0.1);
+  --deal-icon-filter: hue-rotate(0deg);
+}
+
+.deal-type-rent-theme {
+  --deal-accent-color: #10B981; /* Green for flexibility in rentals */
+  --deal-accent-light: rgba(16, 185, 129, 0.1);
+  --deal-icon-filter: hue-rotate(85deg);
+}
+
+/* Add animation for deal type transition */
+.deal-type-transition {
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, filter 0.4s ease;
+}
+
+/* Apply color to key UI elements based on deal type */
+.deal-accent-bg {
+  background-color: var(--deal-accent-color);
+}
+
+.deal-accent-border {
+  border-color: var(--deal-accent-color);
+}
+
+.deal-accent-text {
+  color: var(--deal-accent-color);
+}
+
+/* Section highlight */
+.deal-section-highlight {
+  position: relative;
+}
+
+.deal-section-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--deal-accent-color);
+  border-radius: 2px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

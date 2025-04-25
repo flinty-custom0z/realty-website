@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useRef } from 'react';
+import { useState, FormEvent, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Range } from 'react-range';
+import { useDealType } from '@/contexts/DealTypeContext';
+import DealTypeToggle from '@/components/DealTypeToggle';
 
 interface Category {
   id: string;
@@ -627,14 +629,19 @@ export default function FilterSidebar({
   }
 
   const handleDealTypeChange = (dealType: string) => {
-    const newDealType = selectedDealType === dealType ? '' : dealType;
-    setSelectedDealType(newDealType);
+    // If it's the same deal type, don't toggle it off (always keep one selected)
+    if (selectedDealType === dealType) {
+      return;
+    }
+    
+    // Set the new deal type
+    setSelectedDealType(dealType);
     
     // Create new params to preserve existing ones
     const params = new URLSearchParams(window.location.search);
     
     // Add or remove deal type parameter
-    if (newDealType === 'RENT') {
+    if (dealType === 'RENT') {
       params.set('deal', 'rent');
     } else {
       params.delete('deal');
@@ -651,7 +658,7 @@ export default function FilterSidebar({
     } else {
       // Update filters for controlled mode
       const newFilters: Record<string, any> = {};
-      if (newDealType === 'RENT') {
+      if (dealType === 'RENT') {
         newFilters.deal = 'rent'; 
       }
       
@@ -661,7 +668,7 @@ export default function FilterSidebar({
       }
       
       // Clear category selections that don't apply to the deal type
-      if (newDealType === 'RENT') {
+      if (dealType === 'RENT') {
         const validCategories = selectedCategories.filter(cat => 
           ['apartments', 'commercial'].includes(cat)
         );
@@ -729,25 +736,18 @@ export default function FilterSidebar({
         
         {/* Deal Type Selector */}
         <div className="filter-section mb-5">
-          <h3 className="filter-section-title">Тип</h3>
-          <div className="deal-type-selector flex space-x-3 mt-2">
-            {filterOptions.dealTypes && filterOptions.dealTypes.map((dealType) => (
-              <button
-                key={dealType.value}
-                type="button"
-                onClick={() => handleDealTypeChange(dealType.value)}
-                className={`flex-1 px-4 py-2.5 border rounded-md transition-colors ${
-                  selectedDealType === dealType.value
-                    ? 'bg-blue-500 text-white border-blue-500 font-medium shadow-sm'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                }`}
-              >
-                <span>{dealType.label}</span>
-                <span className={`ml-1 text-xs ${selectedDealType === dealType.value ? 'text-blue-100' : 'text-gray-400'}`}>
-                  ({dealType.count})
-                </span>
-              </button>
-            ))}
+          <h3 className="filter-section-title">Тип сделки</h3>
+          <div className="mt-2">
+            <DealTypeToggle 
+              current={selectedDealType === 'RENT' ? 'rent' : 'sale'} 
+              variant="sidebar" 
+              showCounts={true}
+              counts={{
+                sale: filterOptions.dealTypes?.find(dt => dt.value === 'SALE')?.count || 0,
+                rent: filterOptions.dealTypes?.find(dt => dt.value === 'RENT')?.count || 0
+              }}
+              onChange={(type) => handleDealTypeChange(type === 'rent' ? 'RENT' : 'SALE')}
+            />
           </div>
         </div>
         

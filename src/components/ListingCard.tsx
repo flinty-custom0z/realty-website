@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import ClientImage from '@/components/ClientImage';
 import ImageOverlay from '@/components/ui/ImageOverlay';
 import { formatPrice } from '@/lib/utils';
+import { useDealType } from '@/contexts/DealTypeContext';
 
 interface ListingCardProps {
   id: string;
@@ -42,6 +45,10 @@ export default function ListingCard({
   isNew,
   dealType = 'SALE',
 }: ListingCardProps) {
+  // For component styling, use the global context
+  // but display the actual listing's deal type in the badge
+  const { dealType: contextDealType } = useDealType();
+  
   return (
     <Link href={`/listing/${id}`} className="block group">
       <div className="bg-white rounded-lg overflow-hidden transition-all duration-300 listing-card border border-gray-100 hover:border-gray-200 hover:shadow-md">
@@ -73,10 +80,19 @@ export default function ListingCard({
                 </ImageOverlay>
               )}
               
-              {/* Price badge */}
-              <ImageOverlay type="price" position="bottom-left">
+              {/* Deal type indicator - more prominent */}
+              <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium 
+                           rounded-full z-10 deal-type-transition
+                           deal-accent-bg text-white shadow-sm">
+                {dealType === 'SALE' ? 'Продажа' : 'Аренда'}
+              </div>
+              
+              {/* Price overlay with accent border */}
+              <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-white text-gray-900 
+                           rounded-md shadow-sm z-10 text-sm font-medium
+                           border-l-4 deal-accent-border">
                 {formatPrice(price)}{dealType === 'RENT' ? '/мес' : ''}
-              </ImageOverlay>
+              </div>
               
               {/* Category badge */}
               {showCategory && categoryName && (
@@ -84,14 +100,6 @@ export default function ListingCard({
                   {categoryName}
                 </ImageOverlay>
               )}
-              
-              {/* Deal type badge */}
-              <ImageOverlay 
-                type={dealType === 'SALE' ? 'sale' : 'rent'} 
-                position="bottom-right"
-              >
-                {dealType === 'SALE' ? 'Продажа' : 'Аренда'}
-              </ImageOverlay>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">

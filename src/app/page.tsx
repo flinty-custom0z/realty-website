@@ -9,6 +9,7 @@ import SortSelector from '@/components/SortSelector';
 import { Suspense } from 'react';
 import ListingsWithFilters from '@/components/ListingsWithFilters';
 import DealTypeToggle from '@/components/DealTypeToggle';
+import HomeDealTypeToggle from '@/components/HomeDealTypeToggle';
 import CategoryTiles from '@/components/CategoryTiles';
 import { Metadata } from 'next';
 
@@ -245,6 +246,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   // Ensure placeholders exist
   await ensurePlaceholderImages();
 
+  // Get categories to pass to CategoryTiles
+  const categories = await getCategories();
+
   // Get listings for the main page (with filters/sort/pagination)
   const { listings, pagination } = await getListings(paramsWithDefaults);
   
@@ -264,13 +268,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       
       {/* Deal Type Toggle and Categories Section */}
       <div className="mb-14 md:mb-20">
-        <DealTypeToggle current={dealType} />
+        {/* Client-side DealTypeToggle will be rendered with context integration */}
+        <HomeDealTypeToggle />
         
-        <h2 className="text-2xl font-medium text-gray-800 mb-8">
+        <h2 className="text-2xl font-medium text-gray-800 mb-8 text-center deal-accent-text">
           Популярные предложения — {isDealRent ? 'аренда' : 'продажа'}
         </h2>
         
-        <CategoryTiles dealType={dealType} />
+        <CategoryTiles initialCategories={categories} />
       </div>
 
       {/* Featured listings section */}

@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     // Get all filter parameters - using getAll consistently for categories
     const categoryParams = searchParams.getAll('category');
     const searchQuery = searchParams.get('q');
+    const categoryQuery = searchParams.get('categoryQuery');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const districts = searchParams.getAll('district');
@@ -17,15 +18,18 @@ export async function GET(req: NextRequest) {
     const rooms = searchParams.getAll('rooms');
     const dealType = searchParams.get('deal');
 
+    // Use categoryQuery if available (for category pages search), otherwise use q (for global search)
+    const effectiveSearchQuery = categoryQuery || searchQuery;
+
     // Read flag from frontend: only apply price filter for available options if user has edited price
     const applyPriceFilter = searchParams.get('applyPriceFilter') === 'true';
 
     // Build base filter for active listings plus search query
     const baseFilterMinimal: any = { status: 'active' };
-    if (searchQuery && searchQuery.trim() !== '') {
+    if (effectiveSearchQuery && effectiveSearchQuery.trim() !== '') {
       baseFilterMinimal.OR = [
-        { title: { contains: searchQuery, mode: 'insensitive' } },
-        { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
+        { title: { contains: effectiveSearchQuery, mode: 'insensitive' } },
+        { publicDescription: { contains: effectiveSearchQuery, mode: 'insensitive' } },
       ];
     }
 
@@ -218,19 +222,19 @@ export async function GET(req: NextRequest) {
     const processedDistricts = allDistricts.map(d => ({
       value: d.district,
       count: d._count.district,
-      available: hasFiltersApplied ? availableDistrictSet.has(d.district) : true // CHANGED: Always available if no filters
+      available: hasFiltersApplied ? availableDistrictSet.has(d.district) : true
     }));
 
     const processedConditions = allConditions.map(c => ({
       value: c.condition,
       count: c._count.condition,
-      available: hasFiltersApplied ? availableConditionSet.has(c.condition) : true // CHANGED: Always available if no filters
+      available: hasFiltersApplied ? availableConditionSet.has(c.condition) : true
     }));
 
     const processedRooms = allRooms.map(r => ({
       value: r.rooms?.toString(),
       count: r._count.rooms,
-      available: hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true // CHANGED: Always available if no filters
+      available: hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true
     }));
 
     // Process deal types
@@ -255,12 +259,17 @@ export async function GET(req: NextRequest) {
       name: cat.name,
       slug: cat.slug,
       count: cat._count.listings,
-      available: hasFiltersApplied ? availableCategorySet.has(cat.slug) : true // CHANGED: Always available if no filters
+      available: hasFiltersApplied ? availableCategorySet.has(cat.slug) : true
     })) : [];
 
     // Set default values if no results
     const minPriceValue = priceRange._min.price !== null ? priceRange._min.price : 0;
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
+
+    // Calculate the total count based on the currently selected deal type
+    const effectiveTotalCount = dealType ? 
+      (dealType === 'rent' ? rentalsCount : salesCount) :
+      filteredTotal;
 
     // Return the filter options
     return NextResponse.json({
@@ -273,7 +282,7 @@ export async function GET(req: NextRequest) {
         min: minPriceValue,
         max: maxPriceValue
       },
-      totalCount: filteredTotal,
+      totalCount: effectiveTotalCount,
       hasFiltersApplied
     });
   } catch (err) {

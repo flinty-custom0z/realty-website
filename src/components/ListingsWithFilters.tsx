@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import FilterSidebar from './FilterSidebar';
 import ListingCard from './ListingCard';
 import SortSelector from './SortSelector';
 import { Category } from '@prisma/client';
 import { FC } from 'react';
+import { useDealType } from '@/contexts/DealTypeContext';
 
 interface Listing {
   id: string;
@@ -75,14 +76,26 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
   initialFilters,
   categories,
 }) => {
+  const { dealType } = useDealType();
   const [filters, setFilters] = useState(initialFilters);
+
+  // Update filters when dealType changes from context
+  useEffect(() => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      deal: dealType === 'rent' ? 'rent' : undefined
+    }));
+  }, [dealType]);
 
   // Build query string from filters
   const query = buildQueryString(filters);
   const { data, isValidating } = useSWR(
     `/api/listings?${query}`,
     fetcher,
-    { fallbackData: { listings: initialListings, pagination: initialPagination } }
+    { 
+      fallbackData: { listings: initialListings, pagination: initialPagination },
+      revalidateOnFocus: false
+    }
   );
 
   // Handler to update filters
@@ -114,28 +127,41 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
           <SortSelector filters={filters} onChange={handleFilterChange} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.listings.map((l: Listing) => (
-            <ListingCard
-              key={l.id}
-              id={l.id}
-              title={l.title}
-              price={l.price}
-              listingCode={l.listingCode}
-              status={mapListingStatus(l.status)}
-              district={l.district}
-              address={l.address}
-              rooms={l.rooms}
-              area={l.houseArea}
-              floor={l.floor}
-              totalFloors={l.totalFloors}
-              condition={l.condition}
-              imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
-              categoryName={l.category?.name}
-              showCategory={true}
-              dealType={l.dealType}
-            />
-          ))}
+          {isValidating ? (
+            // Loading state - display skeletons
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="bg-gray-100 rounded-lg h-80 animate-pulse"></div>
+            ))
+          ) : (
+            data.listings.map((l: Listing) => (
+              <ListingCard
+                key={l.id}
+                id={l.id}
+                title={l.title}
+                price={l.price}
+                listingCode={l.listingCode}
+                status={mapListingStatus(l.status)}
+                district={l.district}
+                address={l.address}
+                rooms={l.rooms}
+                area={l.houseArea}
+                floor={l.floor}
+                totalFloors={l.totalFloors}
+                condition={l.condition}
+                imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
+                categoryName={l.category?.name}
+                showCategory={true}
+                dealType={l.dealType}
+              />
+            ))
+          )}
         </div>
+        {data.listings.length === 0 && !isValidating && (
+          <div className="text-center py-8">
+            <h3 className="text-xl font-medium mb-2">Объявления не найдены</h3>
+            <p className="text-gray-500">Попробуйте изменить параметры поиска</p>
+          </div>
+        )}
         {/* Pagination, etc. */}
       </div>
     </div>

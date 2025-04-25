@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
+import { useEffect, useState } from 'react';
 import ClientImage from '@/components/ClientImage';
+import { useDealType } from '@/contexts/DealTypeContext';
+import { motion } from 'framer-motion';
 
 // Map category slugs to their placeholder images - using both plural and singular for redundancy
 const categoryImages = {
@@ -51,49 +55,46 @@ interface Category {
   _count: {
     listings: number;
   };
+  saleCount?: number;
+  rentCount?: number;
 }
 
 interface CategoryTilesProps {
-  dealType: 'sale' | 'rent';
+  initialCategories?: Category[];
 }
 
-export default async function CategoryTiles({ dealType }: CategoryTilesProps) {
-  const prisma = new PrismaClient();
+export default function CategoryTiles({ initialCategories = [] }: CategoryTilesProps) {
+  const { dealType, isDealTypeRent } = useDealType();
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   
-  // Map lowercase deal type to Prisma enum
-  const dealTypeEnum = dealType === 'rent' ? 'RENT' : 'SALE';
-  
-  // Fetch categories with filtered count based on deal type
-  const categories = await prisma.category.findMany({
-    include: {
-      _count: {
-        select: { 
-          listings: { 
-            where: { 
-              status: 'active',
-              ...{ dealType: dealTypeEnum } as any
-            } 
-          } 
-        },
-      },
-    },
-  });
+  // Fetch categories if not provided
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    
+    if (initialCategories.length === 0) {
+      fetchCategories();
+    }
+  }, [initialCategories]);
   
   // Filter based on deal type (typically we show fewer categories for rent)
-  let filteredCategories = categories;
-  if (dealType === 'rent') {
-    filteredCategories = categories.filter(category => 
-      ['apartments', 'commercial'].includes(category.slug)
-    );
-  } else {
-    filteredCategories = categories.filter(category => 
-      category.slug !== 'industrial'
-    );
-  }
+  const filteredCategories = isDealTypeRent
+    ? categories.filter(category => ['apartments', 'commercial'].includes(category.slug))
+    : categories.filter(category => category.slug !== 'industrial');
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7">
-      {filteredCategories.map((category: any) => { // Type assertion to include _count
+      {filteredCategories.map((category: Category) => { 
         const imageSrc = categoryImages[category.slug as keyof typeof categoryImages] || 
           categoryImages[(category.slug.endsWith('s') ? category.slug.slice(0, -1) : category.slug + 's') as keyof typeof categoryImages] || 
           defaultPlaceholder;
@@ -104,33 +105,60 @@ export default async function CategoryTiles({ dealType }: CategoryTilesProps) {
         const linkHref = dealType === 'sale' 
           ? `/listing-category/${category.slug}` 
           : `/listing-category/${category.slug}?deal=rent`;
+          
+        // Get count based on the deal type  
+        const listingCount = isDealTypeRent
+          ? (category.rentCount || 0)
+          : (category.saleCount || category._count?.listings || 0);
         
         return (
-          <Link 
+          <motion.div
             key={`${dealType}-${category.id}`}
-            href={linkHref}
-            className={`category-card group ${categoryBgClass}`}
-            style={{ height: '220px' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            {/* Background image with overlay for premium look */}
-            <div className="absolute inset-0 w-full h-full z-0">
-              <ClientImage
-                src={imageSrc}
-                alt={category.name}
-                fill
-                className="object-cover opacity-40"
-                priority
-                fallbackSrc={defaultPlaceholder}
-              />
-            </div>
-            <div className="category-card-content">
-              <div className="category-icon">{icon}</div>
-              <div className="category-title">{category.name}</div>
-              <div className="category-count">
-                {category._count.listings} {getListingText(category._count.listings)}
+            <Link 
+              href={linkHref}
+              className={`category-card group ${categoryBgClass} deal-type-transition`}
+              style={{ height: '220px' }}
+            >
+              {/* Background image with overlay */}
+              <div className="absolute inset-0 w-full h-full z-0">
+                <ClientImage
+                  src={imageSrc}
+                  alt={category.name}
+                  fill
+                  className="object-cover opacity-40"
+                  priority
+                  fallbackSrc={defaultPlaceholder}
+                />
+                
+                {/* Add subtle overlay based on deal type */}
+                <div className={`absolute inset-0 ${
+                  isDealTypeRent 
+                    ? 'bg-gradient-to-br from-green-500/10 to-transparent' 
+                    : 'bg-gradient-to-br from-blue-500/10 to-transparent'
+                }`}></div>
               </div>
-            </div>
-          </Link>
+              
+              {/* Add small deal type indicator */}
+              <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium deal-accent-text">
+                {isDealTypeRent ? 'Аренда' : 'Продажа'}
+              </div>
+              
+              <div className="category-card-content">
+                <div className="category-icon deal-type-transition" 
+                     style={{ filter: `var(--deal-icon-filter)` }}>
+                  {icon}
+                </div>
+                <div className="category-title">{category.name}</div>
+                <div className="category-count">
+                  {listingCount} {getListingText(listingCount)}
+                </div>
+              </div>
+            </Link>
+          </motion.div>
         );
       })}
     </div>
