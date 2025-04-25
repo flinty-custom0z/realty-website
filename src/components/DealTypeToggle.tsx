@@ -31,21 +31,21 @@ const DealTypeToggle = ({
       button: "py-2 px-5 text-sm rounded-full relative font-medium transition-all duration-200",
       active: "text-white",
       inactive: "text-gray-600 hover:text-gray-800",
-      background: "absolute inset-0 rounded-full bg-blue-500"
+      background: "absolute inset-0 rounded-full deal-accent-bg"
     },
     sidebar: {
       container: "flex w-full bg-gray-50 rounded-lg p-1 text-sm border border-gray-200",
       button: "py-2 flex-1 text-center rounded-md relative font-medium transition-all duration-200",
       active: "text-white",
       inactive: "text-gray-600 hover:text-gray-700",
-      background: "absolute inset-0 rounded-md bg-blue-500"
+      background: "absolute inset-0 rounded-md deal-accent-bg"
     },
     nav: {
       container: "flex space-x-6 items-center",
       button: "relative py-1 px-2 text-sm transition-colors duration-300",
-      active: "text-blue-500 font-medium",
+      active: "deal-accent-text font-medium",
       inactive: "text-gray-600 hover:text-gray-900",
-      background: "absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500"
+      background: "absolute -bottom-1 left-0 right-0 h-0.5 deal-accent-bg"
     }
   };
 
@@ -57,18 +57,30 @@ const DealTypeToggle = ({
     if (!showCounts) return '';
     return ` (${formatNumber(count)})`;
   };
+  
+  // Format label
+  const getLabel = (type: 'sale' | 'rent', count: number) => {
+    const countText = formatCount(count);
+    return (
+      <>
+        <span className="sr-only">{type === 'sale' ? 'For Sale' : 'For Rent'}</span>
+        <span aria-hidden="true">{type === 'sale' ? 'Продажа' : 'Аренда'}{countText}</span>
+      </>
+    );
+  };
 
   // Special case for nav variant
   if (normalizedVariant === 'nav') {
     return (
-      <div className={currentStyle.container}>
+      <div className={currentStyle.container} role="radiogroup" aria-label="Property deal type">
         <button
           type="button"
           onClick={() => onChange('sale')}
           className={`${currentStyle.button} ${current === 'sale' ? currentStyle.active : currentStyle.inactive}`}
-          aria-pressed={current === 'sale'}
+          aria-checked={current === 'sale'}
+          role="radio"
         >
-          <span>Продажа{formatCount(counts.sale)}</span>
+          {getLabel('sale', counts.sale)}
           {current === 'sale' && (
             <motion.div 
               layoutId="navIndicator"
@@ -82,9 +94,10 @@ const DealTypeToggle = ({
           type="button"
           onClick={() => onChange('rent')}
           className={`${currentStyle.button} ${current === 'rent' ? currentStyle.active : currentStyle.inactive}`}
-          aria-pressed={current === 'rent'}
+          aria-checked={current === 'rent'}
+          role="radio"
         >
-          <span>Аренда{formatCount(counts.rent)}</span>
+          {getLabel('rent', counts.rent)}
           {current === 'rent' && (
             <motion.div 
               layoutId="navIndicator"
@@ -100,11 +113,13 @@ const DealTypeToggle = ({
 
   // Default style for other variants
   return (
-    <div className={currentStyle.container}>
+    <div className={currentStyle.container} role="radiogroup" aria-label="Property deal type">
       <button
         type="button"
         onClick={() => onChange('sale')}
         className={`${currentStyle.button} ${current === 'sale' ? currentStyle.active : currentStyle.inactive}`}
+        aria-checked={current === 'sale'}
+        role="radio"
       >
         {current === 'sale' && (
           <motion.div
@@ -118,12 +133,14 @@ const DealTypeToggle = ({
             }}
           />
         )}
-        <span className="relative z-10">Продажа{formatCount(counts.sale)}</span>
+        <span className="relative z-10">{getLabel('sale', counts.sale)}</span>
       </button>
       <button
         type="button"
         onClick={() => onChange('rent')}
         className={`${currentStyle.button} ${current === 'rent' ? currentStyle.active : currentStyle.inactive}`}
+        aria-checked={current === 'rent'}
+        role="radio"
       >
         {current === 'rent' && (
           <motion.div
@@ -137,7 +154,7 @@ const DealTypeToggle = ({
             }}
           />
         )}
-        <span className="relative z-10">Аренда{formatCount(counts.rent)}</span>
+        <span className="relative z-10">{getLabel('rent', counts.rent)}</span>
       </button>
     </div>
   );

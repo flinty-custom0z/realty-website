@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 type DealType = 'sale' | 'rent';
@@ -18,6 +18,8 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [dealType, setDealTypeState] = useState<DealType>('sale');
+  // Keep track of scroll position for deal type changes
+  const scrollPositionRef = useRef<number>(0);
   
   // Sync state with URL
   useEffect(() => {
@@ -31,6 +33,9 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
   
   // Update URL when dealType changes
   const setDealType = (type: DealType) => {
+    // Remember current scroll position
+    scrollPositionRef.current = window.scrollY;
+    
     const params = new URLSearchParams(searchParams?.toString());
     
     if (type === 'sale') {
@@ -39,7 +44,22 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
       params.set('deal', 'rent');
     }
     
-    router.push(`${pathname}?${params.toString()}`);
+    // Use shallow routing with scroll=false to prevent page jump
+    router.push(`${pathname}?${params.toString()}`, { 
+      scroll: false,
+      shallow: true
+    });
+    
+    // Apply the state change immediately for a more responsive UI
+    setDealTypeState(type);
+    
+    // After route change, restore scroll position
+    setTimeout(() => {
+      window.scrollTo({
+        top: scrollPositionRef.current,
+        behavior: 'auto' // Use 'auto' to avoid animation
+      });
+    }, 0);
   };
   
   return (

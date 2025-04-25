@@ -59,6 +59,7 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const { dealType: globalDealType, setDealType: setGlobalDealType } = useDealType();
   
   // If controlled, use props for state
   const isControlled = typeof filters !== 'undefined' && typeof onChange === 'function';
@@ -138,8 +139,8 @@ export default function FilterSidebar({
         setMaxPrice(maxPriceParam);
       }
 
-    // Handle deal parameter
-    if (dealParam === 'rent') {
+    // Handle deal parameter - sync with global context
+    if (globalDealType === 'rent') {
       setSelectedDealType('RENT');
     } else {
       setSelectedDealType('SALE');
@@ -155,7 +156,7 @@ export default function FilterSidebar({
     if (isInitialLoadRef.current) {
     isInitialLoadRef.current = false;
     }
-  }, [searchParams]);
+  }, [searchParams, globalDealType]);
   
   // Fetch filter options immediately when any filter selection changes
   useEffect(() => {
@@ -455,7 +456,8 @@ export default function FilterSidebar({
         
         updateFilters(newFilters);
       } else {
-      router.push(`${base}?${params.toString()}`);
+        // Use scroll: false to prevent page from jumping to top
+        router.push(`${base}?${params.toString()}`, { scroll: false });
         if (pathname === '/') {
           setTimeout(scrollToListings, 200);
         }
@@ -637,25 +639,13 @@ export default function FilterSidebar({
     // Set the new deal type
     setSelectedDealType(dealType);
     
-    // Create new params to preserve existing ones
-    const params = new URLSearchParams(window.location.search);
+    // Use the global context to update deal type with scroll=false
+    // to prevent jumping to the top of the page
+    const dealTypeValue = dealType === 'RENT' ? 'rent' : 'sale';
+    setGlobalDealType(dealTypeValue);
     
-    // Add or remove deal type parameter
-    if (dealType === 'RENT') {
-      params.set('deal', 'rent');
-    } else {
-      params.delete('deal');
-    }
-    
-    // If not controlled mode, navigate immediately
-    if (!isControlled) {
-      let url = window.location.pathname;
-      const search = params.toString();
-      if (search) {
-        url += `?${search}`;
-      }
-      window.location.href = url;
-    } else {
+    // If controlled mode, also update the filters
+    if (isControlled) {
       // Update filters for controlled mode
       const newFilters: Record<string, any> = {};
       if (dealType === 'RENT') {
@@ -741,11 +731,7 @@ export default function FilterSidebar({
             <DealTypeToggle 
               current={selectedDealType === 'RENT' ? 'rent' : 'sale'} 
               variant="sidebar" 
-              showCounts={true}
-              counts={{
-                sale: filterOptions.dealTypes?.find(dt => dt.value === 'SALE')?.count || 0,
-                rent: filterOptions.dealTypes?.find(dt => dt.value === 'RENT')?.count || 0
-              }}
+              showCounts={false}
               onChange={(type) => handleDealTypeChange(type === 'rent' ? 'RENT' : 'SALE')}
             />
           </div>

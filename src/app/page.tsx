@@ -271,17 +271,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         {/* Client-side DealTypeToggle will be rendered with context integration */}
         <HomeDealTypeToggle />
         
-        <h2 className="text-2xl font-medium text-gray-800 mb-8 text-center deal-accent-text">
-          Популярные предложения — {isDealRent ? 'аренда' : 'продажа'}
-        </h2>
-        
         <CategoryTiles initialCategories={categories} />
       </div>
 
       {/* Featured listings section */}
       <div className="mb-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-          <h2 className="text-2xl font-medium text-gray-800">Популярные предложения</h2>
           <Link href={{
             pathname: "/search",
             query: { deal: isDealRent ? 'rent' : undefined }

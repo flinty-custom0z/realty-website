@@ -267,9 +267,10 @@ export async function GET(req: NextRequest) {
     const maxPriceValue = priceRange._max.price !== null ? priceRange._max.price : 30000000;
 
     // Calculate the total count based on the currently selected deal type
-    const effectiveTotalCount = dealType ? 
-      (dealType === 'rent' ? rentalsCount : salesCount) :
-      filteredTotal;
+    // If no deal type is explicitly set, default to showing SALE count
+    const effectiveTotalCount = dealType 
+      ? (dealType === 'rent' ? rentalsCount : salesCount) 
+      : salesCount;
 
     // Return the filter options
     return NextResponse.json({

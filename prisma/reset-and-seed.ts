@@ -32,7 +32,31 @@ interface SampleListing {
 }
 
 async function main() {
-  console.log('Starting to seed listings...');
+  console.log('Starting database reset and reseeding...');
+  
+  // First, delete all existing listings and their related data
+  console.log('Deleting existing listings and images...');
+  
+  try {
+    // Delete all images first (due to foreign key constraints)
+    await prisma.image.deleteMany({});
+    console.log('Deleted all images');
+    
+    // Delete all comments
+    await prisma.comment.deleteMany({});
+    console.log('Deleted all comments');
+    
+    // Delete all listing history entries
+    await prisma.listingHistory.deleteMany({});
+    console.log('Deleted all listing history entries');
+    
+    // Then delete all listings
+    await prisma.listing.deleteMany({});
+    console.log('Deleted all listings');
+  } catch (error) {
+    console.error('Error deleting existing data:', error);
+    return;
+  }
   
   // Get categories
   const categories = await prisma.category.findMany();
@@ -48,7 +72,7 @@ async function main() {
     return;
   }
   
-  // Sample data for different categories - FOR SALE
+  // Sample data for different categories
   const sampleListings: SampleListing[] = [
     // Apartments - FOR SALE
     {
@@ -162,6 +186,8 @@ async function main() {
     },
   ];
   
+  console.log('Creating new listings...');
+  
   // Create listings
   for (const listing of sampleListings) {
     // Find category
@@ -183,45 +209,50 @@ async function main() {
     // Get the appropriate placeholder image for this category
     const imagePath = categoryImages[listing.categorySlug as keyof typeof categoryImages] || '/images/placeholder.png';
     
-    // Create listing
-    await prisma.listing.create({
-      data: {
-        title: listing.title,
-        publicDescription: listing.publicDescription,
-        categoryId: category.id,
-        district: listing.district,
-        rooms: listing.rooms || null,
-        floor: listing.floor || null,
-        totalFloors: listing.totalFloors || null,
-        houseArea: listing.houseArea || null,
-        landArea: listing.landArea || null,
-        condition: listing.condition || null,
-        yearBuilt: listing.yearBuilt || null,
-        noEncumbrances: listing.noEncumbrances || false,
-        noKids: listing.noKids || false,
-        price: listing.price,
-        dealType: listing.dealType,
-        listingCode,
-        userId: user.id,
-        status: 'active',
-        images: {
-          create: {
-            path: imagePath,
-            isFeatured: true,
+    try {
+      // Create listing
+      await prisma.listing.create({
+        data: {
+          title: listing.title,
+          publicDescription: listing.publicDescription,
+          categoryId: category.id,
+          district: listing.district,
+          rooms: listing.rooms || null,
+          floor: listing.floor || null,
+          totalFloors: listing.totalFloors || null,
+          houseArea: listing.houseArea || null,
+          landArea: listing.landArea || null,
+          condition: listing.condition || null,
+          yearBuilt: listing.yearBuilt || null,
+          noEncumbrances: listing.noEncumbrances || false,
+          noKids: listing.noKids || false,
+          price: listing.price,
+          dealType: listing.dealType,
+          listingCode,
+          userId: user.id,
+          status: 'active',
+          images: {
+            create: {
+              path: imagePath,
+              isFeatured: true,
+            }
           }
-        }
-      },
-    });
+        },
+      });
+      console.log(`Created listing: ${listing.title}`);
+    } catch (error) {
+      console.error(`Error creating listing ${listing.title}:`, error);
+    }
   }
   
-  console.log('Sample listings have been created!');
+  console.log('Database has been reset and new listings have been created!');
 }
 
 main()
   .catch((e) => {
-    console.error('Error seeding listings:', e);
+    console.error('Error in reset and seed script:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
-  });
+  }); 

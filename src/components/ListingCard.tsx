@@ -80,13 +80,6 @@ export default function ListingCard({
                 </ImageOverlay>
               )}
               
-              {/* Deal type indicator - more prominent */}
-              <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium 
-                           rounded-full z-10 deal-type-transition
-                           deal-accent-bg text-white shadow-sm">
-                {dealType === 'SALE' ? 'Продажа' : 'Аренда'}
-              </div>
-              
               {/* Price overlay with accent border */}
               <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-white text-gray-900 
                            rounded-md shadow-sm z-10 text-sm font-medium

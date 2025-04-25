@@ -142,11 +142,6 @@ export default function CategoryTiles({ initialCategories = [] }: CategoryTilesP
                 }`}></div>
               </div>
               
-              {/* Add small deal type indicator */}
-              <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium deal-accent-text">
-                {isDealTypeRent ? 'Аренда' : 'Продажа'}
-              </div>
-              
               <div className="category-card-content">
                 <div className="category-icon deal-type-transition" 
                      style={{ filter: `var(--deal-icon-filter)` }}>
