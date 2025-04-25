@@ -73,6 +73,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             sizes="(max-width: 1200px) 100vw, 1200px"
             priority={true}
             fallbackSrc="/images/placeholder.png"
+            sizeVariant="medium"
           />
           
           {/* Zoom icon overlay */}
@@ -109,6 +110,8 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
                 className="object-cover"
                 sizes="(max-width: 768px) 16vw, 100px"
                 fallbackSrc="/images/placeholder.png"
+                sizeVariant="thumb"
+                quality={75}
               />
             </div>
           ))}
@@ -153,6 +156,8 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
               height={800}
               className="object-contain max-h-[90vh]"
               fallbackSrc="/images/placeholder.png"
+              sizeVariant="large"
+              priority={true}
             />
           </div>
           
