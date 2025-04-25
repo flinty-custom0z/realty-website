@@ -1,116 +1,17 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// Server component that renders listing details
 import Link from 'next/link';
-import ImageGallery from '@/components/ImageGallery';
+import { ArrowLeft } from 'lucide-react';
 import ClientImage from '@/components/ClientImage';
-import Button from '@/components/Button';
-import { ArrowLeft, Phone, Calendar, Hash, Share2, MapPin, User, AlertTriangle } from 'lucide-react';
 import { formatPhoneNumber, formatDate, formatPrice } from '@/lib/utils';
+import ListingInteractiveClient from './ListingInteractiveClient';
+import ImageGallery from '@/components/ImageGallery';
 
-export default function ListingDetailClient({ id }: { id: string }) {
-  const router = useRouter();
-  const [listing, setListing] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+interface ListingDetailProps {
+  listing: any;
+  isAdmin: boolean;
+}
 
-  useEffect(() => {
-    const fetchListing = async () => {
-      try {
-        const res = await fetch(`/api/listings/${id}`);
-        if (!res.ok) {
-          if (res.status === 404) {
-            router.push('/404');
-            return;
-          }
-          throw new Error('Failed to fetch listing');
-        }
-        
-        const data = await res.json();
-        setListing(data);
-      } catch (error) {
-        console.error('Error fetching listing:', error);
-        setError('Failed to load listing');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchListing();
-  }, [id, router]);
-
-  useEffect(() => {
-    // Check if current user is admin
-    const checkAdmin = async () => {
-      try {
-        const res = await fetch('/api/auth/check');
-        const data = await res.json();
-        setIsAdmin(data.isAuthenticated && data.user.role === 'ADMIN');
-      } catch (error) {
-        console.error('Failed to check admin status:', error);
-        setIsAdmin(false);
-      }
-    };
-    
-    checkAdmin();
-  }, []);
-
-  const handleDeleteListing = async () => {
-    if (!confirm('Вы уверены, что хотите удалить это объявление? Это действие невозможно отменить.')) {
-      return;
-    }
-    
-    setIsDeleting(true);
-    
-    try {
-      const response = await fetch(`/api/admin/listings/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete listing');
-      }
-      
-      // Redirect to admin listings page after successful deletion
-      router.push('/admin/listings');
-    } catch (error) {
-      console.error('Error deleting listing:', error);
-      alert('Произошла ошибка при удалении объявления. Пожалуйста, попробуйте еще раз.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <p>Загрузка...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !listing) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p>{error || 'Объявление не найдено'}</p>
-          <Link href="/" className="text-red-600 underline mt-2 inline-block">
-            Вернуться на главную
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
+export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) {
   const formattedDate = formatDate(listing.dateAdded);
   
   // Ensure main image is first
@@ -127,22 +28,9 @@ export default function ListingDetailClient({ id }: { id: string }) {
           <ArrowLeft size={16} className="mr-1" />
           На главную
         </Link>
-        <div className="flex space-x-3">
-          <Button 
-            variant="primary" 
-            className="shadow-sm"
-            onClick={() => router.push(`/admin/listings/${listing.id}`)}
-          >
-            Редактировать
-          </Button>
-          <Button 
-            variant="secondary"
-            className="shadow-sm"
-            onClick={() => router.push(`/admin/listings/${listing.id}/history`)}
-          >
-            История
-          </Button>
-        </div>
+        
+        {/* Admin buttons rendered client-side */}
+        {isAdmin && <ListingInteractiveClient listingId={listing.id} />}
       </div>
       
       {/* title & gallery */}
@@ -217,17 +105,9 @@ export default function ListingDetailClient({ id }: { id: string }) {
           
           {/* Delete button section - only visible to admins */}
           {isAdmin && (
-            <section className="bg-red-50 rounded-md p-6 border border-red-100 mb-6">
-              <h2 className="text-lg font-medium text-red-700 mb-4">Опасная зона</h2>
-              <p className="text-gray-700 mb-4">Удаление объявления приведет к полному удалению всех данных и не может быть отменено.</p>
-              <Button 
-                variant="danger"
-                onClick={handleDeleteListing}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Удаление...' : 'Удалить объявление'}
-              </Button>
-            </section>
+            <div id="admin-danger-zone">
+              <ListingInteractiveClient.DangerZone listingId={listing.id} />
+            </div>
           )}
         </div>
         
@@ -260,7 +140,9 @@ export default function ListingDetailClient({ id }: { id: string }) {
                 <div className="contact-card-item mb-3">
                   <a href={`tel:${listing.user.phone}`} className="flex items-center group">
                     <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-500 mr-3 group-hover:bg-blue-100 transition-all duration-200">
-                      <Phone size={16} />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
                     </div>
                     <span className="text-gray-700 group-hover:text-blue-500 transition-all duration-200">
                       {formatPhoneNumber(listing.user.phone)}
@@ -268,9 +150,6 @@ export default function ListingDetailClient({ id }: { id: string }) {
                   </a>
                 </div>
               )}
-              <div className="contact-card-item mb-3">
-                {/* Removed listing code from contact card */}
-              </div>
             </div>
           </div>
         </aside>
