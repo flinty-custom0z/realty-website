@@ -1,7 +1,17 @@
+import 'server-only';
 import { writeFile, mkdir, access, unlink } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '@/lib/prisma';
+import sharp from 'sharp';
+import { existsSync } from 'fs';
+
+// Define thumbnail sizes to generate
+const THUMBNAIL_SIZES = [
+  { width: 200, height: 200, suffix: 'thumb' },  // Small thumbnail for listings grid
+  { width: 600, height: undefined, suffix: 'medium' }, // Medium size for gallery previews
+  { width: 1200, height: undefined, suffix: 'large' }, // Large size for full-screen views
+];
 
 export class ImageService {
   /**
@@ -18,15 +28,17 @@ export class ImageService {
   }
 
   /**
-   * Saves an image file to disk and returns the relative path
+   * Saves an image file to disk, generates thumbnails and returns the relative path
    */
   static async saveImage(file: File, subdirectory: string = ''): Promise<string> {
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
+      // Determine extension while ensuring it's lowercase
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const filename = `${uuidv4()}.${ext}`;
+      const uuid = uuidv4();
+      const filename = `${uuid}.${ext}`;
 
       // Ensure images directory exists
       const baseDir = path.join(process.cwd(), 'public', 'images');
@@ -36,7 +48,58 @@ export class ImageService {
       const filePath = path.join(imagesDir, filename);
       console.log(`Saving image to: ${filePath}`);
 
-      await writeFile(filePath, buffer);
+      // Check if format is valid for sharp
+      const isProcessableFormat = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext);
+      
+      if (isProcessableFormat) {
+        // Process original image - compress it before saving
+        const sharpInstance = sharp(buffer);
+        
+        // Apply basic optimization based on format
+        let optimizedBuffer: Buffer;
+        
+        if (ext === 'png') {
+          optimizedBuffer = await sharpInstance.png({ quality: 90 }).toBuffer();
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          optimizedBuffer = await sharpInstance.jpeg({ quality: 85 }).toBuffer();
+        } else if (ext === 'webp') {
+          optimizedBuffer = await sharpInstance.webp({ quality: 85 }).toBuffer();
+        } else {
+          // For other formats, use the original buffer
+          optimizedBuffer = buffer;
+        }
+        
+        // Save the optimized original
+        await writeFile(filePath, optimizedBuffer);
+        
+        // Generate and save thumbnails
+        for (const size of THUMBNAIL_SIZES) {
+          try {
+            const thumbnailFilename = `${uuid}-${size.suffix}.webp`; // Always save thumbnails as WebP for better compression
+            const thumbnailPath = path.join(imagesDir, thumbnailFilename);
+            
+            const resizeOptions: sharp.ResizeOptions = {
+              width: size.width,
+              height: size.height,
+              fit: 'inside',
+              withoutEnlargement: true,
+            };
+            
+            await sharpInstance
+              .clone()
+              .resize(resizeOptions)
+              .webp({ quality: 80 })
+              .toFile(thumbnailPath);
+              
+          } catch (thumbError) {
+            console.error(`Error generating thumbnail for ${filename}:`, thumbError);
+            // Continue with next thumbnail or original save
+          }
+        }
+      } else {
+        // For unsupported formats (like SVG), just save the original
+        await writeFile(filePath, buffer);
+      }
       
       // Return path relative to public directory
       return subdirectory ? `/images/${subdirectory}/${filename}` : `/images/${filename}`;
@@ -47,19 +110,53 @@ export class ImageService {
   }
 
   /**
-   * Deletes an image file from disk
+   * Gets path for a specific size variant of an image
+   */
+  static getImageVariantPath(originalPath: string, size: string): string {
+    if (!originalPath) return '';
+    
+    const directory = path.dirname(originalPath);
+    const filename = path.basename(originalPath);
+    const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+    
+    return `${directory}/${filenameWithoutExt}-${size}.webp`;
+  }
+
+  /**
+   * Deletes an image file and its variants from disk
    */
   static async deleteImage(imagePath: string): Promise<boolean> {
     try {
       if (!imagePath) return false;
       
       // Convert relative path to absolute path
-      const absolutePath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
+      const originalPath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
       
-      await unlink(absolutePath);
+      // Get directory and filename info
+      const directory = path.dirname(originalPath);
+      const filename = path.basename(originalPath);
+      const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+      
+      // Try to delete the original file
+      try {
+        await unlink(originalPath);
+      } catch (err) {
+        console.error(`Error deleting original image ${imagePath}:`, err);
+      }
+      
+      // Also try to delete all thumbnail variants
+      for (const size of THUMBNAIL_SIZES) {
+        try {
+          const thumbnailPath = path.join(directory, `${filenameWithoutExt}-${size.suffix}.webp`);
+          await unlink(thumbnailPath);
+        } catch (err) {
+          // Ignore errors for thumbnail deletion
+        }
+      }
+      
       return true;
     } catch (error) {
-      console.error(`Error deleting image ${imagePath}:`, error);
+      console.error(`Error in deleteImage for ${imagePath}:`, error);
       return false;
     }
   }
@@ -117,5 +214,21 @@ export class ImageService {
         isFeatured: true
       }
     });
+  }
+
+  /**
+   * Checks if an image file exists
+   */
+  static async checkImageExists(imagePath: string): Promise<boolean> {
+    if (!imagePath) return false;
+    
+    try {
+      // Convert relative path to absolute path
+      const absolutePath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
+      return existsSync(absolutePath);
+    } catch (error) {
+      console.error(`Error checking if image exists: ${imagePath}`, error);
+      return false;
+    }
   }
 } 

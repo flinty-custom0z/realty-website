@@ -15,6 +15,19 @@ interface ClientImageProps {
   priority?: boolean;
   fallbackSrc?: string;
   showLoadingIndicator?: boolean;
+  quality?: number;
+  sizeVariant?: 'thumb' | 'medium' | 'large' | 'original';
+}
+
+// Helper function to generate variant path without importing ImageService
+function getImageVariantPath(originalPath: string, size: string): string {
+  if (!originalPath) return '';
+  
+  const directory = originalPath.substring(0, originalPath.lastIndexOf('/'));
+  const filename = originalPath.substring(originalPath.lastIndexOf('/') + 1);
+  const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  
+  return `${directory}/${filenameWithoutExt}-${size}.webp`;
 }
 
 export default function ClientImage({
@@ -28,6 +41,8 @@ export default function ClientImage({
   priority = false,
   fallbackSrc = '/images/placeholder.png',
   showLoadingIndicator = false,
+  quality = 80,
+  sizeVariant = 'original',
 }: ClientImageProps) {
   const [imgSrc, setImgSrc] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -37,14 +52,34 @@ export default function ClientImage({
     // If the path starts with /images/, convert it to use our API route
     if (src.startsWith('/images/')) {
       const imagePath = src.substring(8); // Remove "/images/" prefix
-      setImgSrc(`/api/image/${imagePath}`);
+      
+      // Check if we need a specific size variant
+      if (sizeVariant !== 'original') {
+        // First check if a pre-generated thumbnail would be appropriate
+        const originalFilename = src.split('/').pop() || '';
+        const filenameParts = originalFilename.split('.');
+        
+        // If filename has extension and appears to be a UUID-based filename
+        if (filenameParts.length > 1 && /^[a-f0-9-]{36}\.[a-z]{3,4}$/i.test(originalFilename)) {
+          // Use the pregenerated thumbnail variant if available
+          const variantPath = getImageVariantPath(src, sizeVariant);
+          setImgSrc(variantPath);
+        } else {
+          // For non-standard image paths or older uploads, use the dynamic API with params
+          const maxWidth = sizeVariant === 'thumb' ? 200 : sizeVariant === 'medium' ? 600 : 1200;
+          setImgSrc(`/api/image/${imagePath}?width=${maxWidth}&quality=${quality}`);
+        }
+      } else {
+        // Use original image through the API
+        setImgSrc(`/api/image/${imagePath}`);
+      }
     } else {
       setImgSrc(src);
     }
     
     setError(false);
     setIsLoading(true);
-  }, [src]);
+  }, [src, sizeVariant, quality]);
   
   const handleError = () => {
     console.log(`Image error loading: ${imgSrc}`);
@@ -77,6 +112,7 @@ export default function ClientImage({
     priority,
     onError: handleError,
     onLoad: handleLoad,
+    quality: quality,
   };
   
   return (

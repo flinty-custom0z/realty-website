@@ -1,7 +1,26 @@
+import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { existsSync } from 'fs';
+import sharp from 'sharp';
+
+// Define allowed image formats and their content types
+const ALLOWED_FORMATS = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+};
+
+// Path sanitization function to prevent directory traversal attacks
+function sanitizePath(imagePath: string): string {
+  // Remove any parent directory references
+  return imagePath.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+}
 
 export async function GET(
   request: NextRequest,
@@ -9,9 +28,16 @@ export async function GET(
 ) {
   try {
     const { path: pathSegments } = await params;
-
-    // Reconstruct the path
-    const imagePath = pathSegments.join('/');
+    const { searchParams } = new URL(request.url);
+    
+    // Extract resize parameters
+    const width = searchParams.get('width') ? parseInt(searchParams.get('width') as string) : null;
+    const height = searchParams.get('height') ? parseInt(searchParams.get('height') as string) : null;
+    const quality = searchParams.get('quality') ? parseInt(searchParams.get('quality') as string) : 80;
+    const format = searchParams.get('format') as keyof typeof ALLOWED_FORMATS || null;
+    
+    // Sanitize and reconstruct the path
+    const imagePath = sanitizePath(pathSegments.join('/'));
     
     // Build the full path to the image
     const fullPath = path.join(process.cwd(), 'public', 'images', imagePath);
@@ -42,30 +68,114 @@ export async function GET(
       const fileBuffer = await fs.readFile(fullPath);
       
       // Determine content type based on extension
-      const ext = path.extname(fullPath).toLowerCase();
-      let contentType = 'application/octet-stream';
+      const ext = path.extname(fullPath).toLowerCase().substring(1);
+      let contentType = ALLOWED_FORMATS[ext as keyof typeof ALLOWED_FORMATS] || 'application/octet-stream';
       
-      if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
-      else if (ext === '.png') contentType = 'image/png';
-      else if (ext === '.gif') contentType = 'image/gif';
-      else if (ext === '.svg') contentType = 'image/svg+xml';
-      else if (ext === '.webp') contentType = 'image/webp';
+      // Skip processing for SVG files
+      if (ext === 'svg') {
+        return new NextResponse(fileBuffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
+      
+      // Process the image with Sharp
+      let imageProcessor = sharp(fileBuffer);
+      
+      // Apply resizing if requested
+      if (width || height) {
+        imageProcessor = imageProcessor.resize({
+          width: width || undefined,
+          height: height || undefined,
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
+      }
+      
+      // Convert format if requested
+      if (format && ALLOWED_FORMATS[format]) {
+        switch(format) {
+          case 'jpeg':
+          case 'jpg':
+            imageProcessor = imageProcessor.jpeg({ quality });
+            contentType = ALLOWED_FORMATS.jpeg;
+            break;
+          case 'png':
+            imageProcessor = imageProcessor.png({ quality: Math.min(100, quality) });
+            contentType = ALLOWED_FORMATS.png;
+            break;
+          case 'webp':
+            imageProcessor = imageProcessor.webp({ quality });
+            contentType = ALLOWED_FORMATS.webp;
+            break;
+          case 'avif':
+            imageProcessor = imageProcessor.avif({ quality });
+            contentType = ALLOWED_FORMATS.avif;
+            break;
+          default:
+            // Keep original format, just optimize
+            break;
+        }
+      } else {
+        // Apply format-specific optimization
+        switch(ext) {
+          case 'jpg':
+          case 'jpeg':
+            imageProcessor = imageProcessor.jpeg({ quality });
+            break;
+          case 'png':
+            imageProcessor = imageProcessor.png({ quality: Math.min(100, quality) });
+            break;
+          case 'webp':
+            imageProcessor = imageProcessor.webp({ quality });
+            break;
+          case 'gif':
+            // No specific optimization for GIFs
+            break;
+          default:
+            // For unknown formats, convert to WebP for better compression
+            imageProcessor = imageProcessor.webp({ quality });
+            contentType = ALLOWED_FORMATS.webp;
+            break;
+        }
+      }
+      
+      // Process and get the output buffer
+      const processedImageBuffer = await imageProcessor.toBuffer();
       
       // Add better caching headers
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(processedImageBuffer, {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=31536000, immutable',
-          'Content-Length': fileBuffer.length.toString(),
+          'Content-Length': processedImageBuffer.length.toString(),
           'Accept-Ranges': 'bytes',
+          'Vary': 'Accept',
         },
       });
     } catch (err) {
-      console.error(`Error reading image file: ${fullPath}`, err);
-      return NextResponse.json(
-        { error: 'Error reading image file' },
-        { status: 500 }
-      );
+      console.error(`Error processing image file: ${fullPath}`, err);
+      
+      // If processing fails, try to return the original as fallback
+      try {
+        const originalBuffer = await fs.readFile(fullPath);
+        const ext = path.extname(fullPath).toLowerCase().substring(1);
+        const contentType = ALLOWED_FORMATS[ext as keyof typeof ALLOWED_FORMATS] || 'application/octet-stream';
+        
+        return new NextResponse(originalBuffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      } catch {
+        return NextResponse.json(
+          { error: 'Error reading image file' },
+          { status: 500 }
+        );
+      }
     }
   } catch (error) {
     console.error('Error serving image:', error);
