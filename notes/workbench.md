@@ -5,8 +5,6 @@
 
 ### Next
 
-- Sale/Rent toggle UI Improvement 
-
 - [[domain_and_hosting.md]]
 - Контактная форма (чат/мейл?)
 - Поиск с ИИ
@@ -17,4 +15,3 @@
 - SEO
 
 - Заполнение договоров
-- AI search/chat

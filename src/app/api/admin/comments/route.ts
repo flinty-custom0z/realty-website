@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
+import { CommentService } from '@/lib/services/CommentService';
 
 // Create comment (admin only)
 async function handleCreateComment(req: NextRequest, user: any) {
@@ -8,16 +8,19 @@ async function handleCreateComment(req: NextRequest, user: any) {
     const body = await req.json();
     const { listingId, content } = body;
 
-    const comment = await prisma.comment.create({
-      data: {
-        listingId,
-        content,
-      },
+    // Use CommentService to create the comment
+    const comment = await CommentService.createComment({
+      listingId,
+      content
     });
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error creating comment:', error);
+    return NextResponse.json({ 
+      error: 'Error creating comment',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
