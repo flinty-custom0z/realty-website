@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
@@ -6,8 +6,6 @@ import SortSelector from '@/components/SortSelector';
 
 // Force dynamic rendering so every request is fresh
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 /**
  * Helper function to get proper grammatical case for back links

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import * as bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
 
 // GET: Get user by id
 export const GET = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {

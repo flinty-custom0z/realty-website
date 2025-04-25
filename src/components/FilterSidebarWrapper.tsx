@@ -33,7 +33,7 @@ export default function FilterSidebarWrapper({
   const pathname = usePathname();
   
   // Determine if we are on a category page
-  const isCategoryPage = pathname.startsWith('/listing-category/');
+  const isCategoryPage = pathname ? pathname.startsWith('/listing-category/') : false;
 
   return (
     <SearchParamsProvider>

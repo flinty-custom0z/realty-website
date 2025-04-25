@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { Home, Building2, MapPin, Store, ListFilter, Plus } from 'lucide-react';
-
-const prisma = new PrismaClient();
 
 async function getDashboardStats() {
   const [

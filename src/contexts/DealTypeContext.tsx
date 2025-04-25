@@ -44,10 +44,9 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
       params.set('deal', 'rent');
     }
     
-    // Use shallow routing with scroll=false to prevent page jump
+    // Use scroll=false to prevent page jump
     router.push(`${pathname}?${params.toString()}`, { 
-      scroll: false,
-      shallow: true
+      scroll: false
     });
     
     // Apply the state change immediately for a more responsive UI

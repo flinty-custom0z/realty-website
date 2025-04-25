@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
-
-const prisma = new PrismaClient();
 
 // Create comment (admin only)
 async function handleCreateComment(req: NextRequest, user: any) {

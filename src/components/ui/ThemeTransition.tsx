@@ -30,6 +30,16 @@ const intensityMap = {
     light: 'ring-opacity-20',
     medium: 'ring-opacity-50',
     strong: 'ring-opacity-100'
+  },
+  'fill': {
+    light: 'fill-opacity-20',
+    medium: 'fill-opacity-50',
+    strong: 'fill-opacity-100'
+  },
+  'stroke': {
+    light: 'stroke-opacity-20',
+    medium: 'stroke-opacity-50',
+    strong: 'stroke-opacity-100'
   }
 }
 

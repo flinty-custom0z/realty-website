@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { promises as fs } from 'fs';
 import path from 'path';
 import ClientImage from '@/components/ClientImage';
@@ -38,8 +38,6 @@ export async function generateMetadata({
       'Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.',
   };
 }
-
-const prisma = new PrismaClient();
 
 // Map category slugs to their placeholder images - using both plural and singular for redundancy
 const categoryImages = {

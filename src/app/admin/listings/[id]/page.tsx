@@ -122,6 +122,13 @@ export default function EditListingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Check if params and id exist
+        if (!params || !params.id) {
+          setError('Invalid listing ID');
+          setIsLoading(false);
+          return;
+        }
+        
         // Fetch users
         const usersRes = await fetch('/api/admin/users');
         const usersData = usersRes.ok ? await usersRes.json() : [];
@@ -179,7 +186,7 @@ export default function EditListingPage() {
     };
     
     fetchData();
-  }, [params.id]);
+  }, [params?.id]);
   
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -259,6 +266,11 @@ export default function EditListingPage() {
     setError('');
     
     try {
+      // Check if params.id exists
+      if (!params || !params.id) {
+        throw new Error('Invalid listing ID');
+      }
+      
       const formDataToSend = new FormData();
       
       // Add form fields to FormData

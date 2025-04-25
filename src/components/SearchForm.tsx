@@ -92,7 +92,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     if (!query.trim()) return;
           
           // Store current path before navigating to search results
-          if (!previousPathRef.current && !pathname.startsWith('/search')) {
+    if (!previousPathRef.current && pathname && !pathname.startsWith('/search')) {
             previousPathRef.current = pathname;
           }
           
@@ -103,10 +103,10 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     params.append('q', query);
     
     // Store the origin of the search to return to later
-    if (pathname.startsWith('/listing-category/') && categorySlug) {
+    if (pathname && pathname.startsWith('/listing-category/') && categorySlug) {
             // If coming from a category page, mark this search with the from param
             params.append('from', 'global-search');
-    } else if (!pathname.startsWith('/search')) {
+    } else if (pathname && !pathname.startsWith('/search')) {
             params.append('returnUrl', encodeURIComponent(pathname));
     }
     
@@ -131,7 +131,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           }
           
           // If in a category, just clear the search parameter
-          if (pathname.startsWith('/listing-category/')) {
+          if (pathname && pathname.startsWith('/listing-category/')) {
             router.push(pathname);
             return;
           }
@@ -146,7 +146,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
             });
             
             // Navigate with updated parameters
-          router.push(`${pathname}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
+          router.push(`${pathname || ''}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
         };
   
   // Fetch suggestions (debounced)
@@ -214,12 +214,11 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   // Submit handler (internal, can be called from suggestion click)
   const handleSubmitInternal = (searchValue: string) => {
     if (!searchValue.trim()) return;
-    // ... existing code ...
     const params = new URLSearchParams();
     params.append('q', searchValue);
-    if (pathname.startsWith('/listing-category/') && categorySlug) {
+    if (pathname && pathname.startsWith('/listing-category/') && categorySlug) {
       params.append('from', 'global-search');
-    } else if (!pathname.startsWith('/search')) {
+    } else if (pathname && !pathname.startsWith('/search')) {
       params.append('returnUrl', encodeURIComponent(pathname));
     }
     if (categorySlug) {

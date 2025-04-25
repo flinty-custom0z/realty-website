@@ -32,7 +32,7 @@ export default function SearchFormWrapper({
     const urlQuery = searchParams.get('q');
     
     // If we're on a category page, check if it matches the current category
-    if (pathname.startsWith('/listing-category/')) {
+          if (pathname && pathname.startsWith('/listing-category/')) {
       const currentCategorySlug = pathname.split('/')[2]?.split('?')[0];
       
       if (currentCategorySlug === categorySlug) {

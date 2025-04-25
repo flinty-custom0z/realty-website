@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prismaApi = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +9,7 @@ export async function GET(req: NextRequest) {
     const filter: any = { status: 'active' };
 
     if (categorySlugs.length) {
-      const cats = await prismaApi.category.findMany({ where: { slug: { in: categorySlugs } }, select: { id: true } });
+      const cats = await prisma.category.findMany({ where: { slug: { in: categorySlugs } }, select: { id: true } });
       if (cats.length) filter.categoryId = { in: cats.map((c) => c.id) };
     }
 
@@ -54,8 +52,8 @@ export async function GET(req: NextRequest) {
     const sortOrder = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
     const [total, listings] = await Promise.all([
-      prismaApi.listing.count({ where: filter }),
-      prismaApi.listing.findMany({
+      prisma.listing.count({ where: filter }),
+      prisma.listing.findMany({
       where: filter,
       include: {
         category: true,

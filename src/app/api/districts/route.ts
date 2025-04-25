@@ -1,8 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prismaDistrict = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,11 +9,11 @@ export async function GET(req: NextRequest) {
     const whereFilter: any = { status: 'active', district: { not: null } };
 
     if (categorySlug) {
-      const cat = await prismaDistrict.category.findUnique({ where: { slug: categorySlug } });
+      const cat = await prisma.category.findUnique({ where: { slug: categorySlug } });
       if (cat) whereFilter.categoryId = cat.id;
     }
 
-    const districts = await prismaDistrict.listing.groupBy({
+    const districts = await prisma.listing.groupBy({
       by: ['district'],
       where: whereFilter,
       _count: { district: true },

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import ListingCard from '@/components/ListingCard';
 import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
@@ -10,8 +10,6 @@ import { Metadata } from 'next';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 // Generate metadata for the page with proper titles
 export async function generateMetadata(

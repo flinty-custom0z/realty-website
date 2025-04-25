@@ -1,9 +1,8 @@
 import { MetadataRoute } from 'next';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://example.com';
-  const prisma = new PrismaClient();
   
   // Get all active categories
   const categories = await prisma.category.findMany();
