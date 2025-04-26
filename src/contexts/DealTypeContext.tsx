@@ -51,6 +51,7 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
     
     const params = new URLSearchParams(searchParams?.toString());
     
+    // 1. update "deal" param
     if (type === 'sale') {
       params.delete('deal');
       
@@ -64,6 +65,12 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
       document.body.classList.remove('deal-type-sale-theme');
       document.body.classList.add('deal-type-rent-theme');
     }
+    
+    // 2. remove filters that belong only to the *previous* deal type
+    //    (otherwise the request can return 0 rows)
+    ['category', 'district', 'condition', 'rooms'].forEach((key) =>
+      params.delete(key)
+    );
     
     // Apply the state change immediately for a responsive UI
     setDealTypeState(type);

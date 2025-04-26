@@ -13,6 +13,7 @@ import {
   PriceRangeFilter
 } from '@/components/filters';
 import { FilterSidebarProps } from '@/types/filters';
+import { useDealType } from '@/contexts/DealTypeContext';
 
 export default function FilterSidebar({
   categorySlug = '',
@@ -21,6 +22,9 @@ export default function FilterSidebar({
   filters,
   onChange,
 }: FilterSidebarProps) {
+  // Use the deal type context
+  const { setDealType } = useDealType();
+  
   // Use the filter state hook to manage state and side effects
   const {
     state,
@@ -95,75 +99,21 @@ export default function FilterSidebar({
   }, [applyFilters, onChange]);
   
   // Create a synchronized deal type handler that works with the DealTypeFilter component
-  const handleLocalDealTypeChange = useCallback((dealType: string) => {
-    const newDealType = dealType === 'RENT' ? 'RENT' : 'SALE';
-    
-    // The DealTypeFilter component now handles updating the global context
-    // Here we just need to handle the local filter state updates
-    
-    // Use the hook's handler to update filter state and global context
-    filterStateDealTypeChange(dealType);
-    
-    // In controlled mode, update via onChange
-    if (typeof onChange === 'function') {
-      const newFilters: Record<string, any> = {};
-      
-      // Set deal type - explicitly set deal for both types
-      if (newDealType === 'RENT') {
-        newFilters.deal = 'rent';
-      } else {
-        newFilters.deal = 'sale'; // Explicitly set sale type to ensure proper filtering
+  const handleLocalDealTypeChange = useCallback(
+    (type: string) => {
+      // update reducer so the sidebar UI stays in sync
+      filterStateDealTypeChange(type);
+
+      // let the *context* own the navigation; nothing else is necessary
+      setDealType(type === 'RENT' ? 'rent' : 'sale');
+
+      // controlled sidebars still need the final onChange()
+      if (typeof onChange === 'function') {
+        onChange({ deal: type === 'RENT' ? 'rent' : undefined });
       }
-      
-      // Filter categories for rent
-      if (newDealType === 'RENT' && state.selectedCategories.length > 0) {
-        const validCategories = state.selectedCategories.filter(cat => 
-          ['apartments', 'commercial'].includes(cat)
-        );
-        if (validCategories.length > 0) {
-          newFilters.category = validCategories;
-        }
-      } else if (state.selectedCategories.length > 0) {
-        newFilters.category = state.selectedCategories;
-      }
-      
-      // Include other filters
-      if (state.selectedDistricts.length > 0) newFilters.district = state.selectedDistricts;
-      if (state.selectedConditions.length > 0) newFilters.condition = state.selectedConditions;
-      if (state.selectedRooms.length > 0) newFilters.rooms = state.selectedRooms;
-      if (state.minPrice) newFilters.minPrice = state.minPrice;
-      if (state.maxPrice) newFilters.maxPrice = state.maxPrice;
-      
-      // First update the filters
-      onChange(newFilters);
-      
-      // Then apply filters with a delay to ensure state is updated
-      setTimeout(() => {
-        // Get current filters with latest deal type and apply them
-        const filterValues = applyFilters();
-        if (filterValues) {
-          onChange(filterValues);
-        }
-      }, 10);
-    } else {
-      // In uncontrolled mode, ensure applyFilters is called with a delay
-      setTimeout(() => {
-        applyFilters();
-      }, 10);
-    }
-    
-    // No need to call fetchFilterOptions as it's already called by filterStateDealTypeChange
-  }, [
-    state.selectedCategories,
-    state.selectedDistricts,
-    state.selectedConditions,
-    state.selectedRooms,
-    state.minPrice, 
-    state.maxPrice,
-    onChange,
-    filterStateDealTypeChange,
-    applyFilters
-  ]);
+    },
+    [filterStateDealTypeChange, setDealType, onChange]
+  );
   
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
