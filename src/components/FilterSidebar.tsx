@@ -526,6 +526,9 @@ export default function FilterSidebar({
     setSelectedRooms([]);
     setSelectedDealType('');
     
+    // Reset global deal type to 'sale' (default)
+    setGlobalDealType('sale');
+    
     // Clear local search input in category pages
     if (categorySlug) {
       setSearchInputValue('');
