@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useRef, useMemo } from 'react';
+import { useState, FormEvent, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Range } from 'react-range';
 import { useDealType } from '@/contexts/DealTypeContext';
@@ -48,6 +48,15 @@ interface FilterSidebarProps {
   filters?: Record<string, any>;
   onChange?: (filters: Record<string, any>) => void;
 }
+
+// Add a utility for a debounced handler
+const useDebouncedEffect = (effect: Function, deps: any[], delay: number) => {
+  useEffect(() => {
+    const handler = setTimeout(() => effect(), delay);
+    return () => clearTimeout(handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, delay]);
+};
 
 export default function FilterSidebar({
   categorySlug = '',
@@ -108,6 +117,18 @@ export default function FilterSidebar({
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestCounter = useRef(0);
   
+  // Add a state to track visible filter options that's separate from the actual options
+  const [visibleFilterOptions, setVisibleFilterOptions] = useState<FilterOptions>(filterOptions);
+  
+  // Update visible options after a small delay to prevent flickering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisibleFilterOptions(filterOptions);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [filterOptions]);
+  
   // Helper to determine if price filter should be applied
   const shouldApplyPriceFilter = () => {
     // Only apply if user has entered a value different from the default
@@ -158,54 +179,38 @@ export default function FilterSidebar({
     }
   }, [searchParams, globalDealType]);
   
-  // Fetch filter options immediately when any filter selection changes
-  useEffect(() => {
-    // This runs for every filter change
-    if (!isInitialLoadRef.current) {
-      shouldUpdatePrices.current = true;
-    
-      // Clear any existing timeout
-      if (filterChangeTimeoutRef.current) {
-        clearTimeout(filterChangeTimeoutRef.current);
-      }
-      
-      // Use a smaller timeout for filter changes to make it feel more responsive
-      filterChangeTimeoutRef.current = setTimeout(() => {
+  // Replace the existing filter options effect with a debounced one
+  useDebouncedEffect(
+    () => {
+      if (!isInitialLoadRef.current) {
+        shouldUpdatePrices.current = true;
         fetchFilterOptions();
-      }, 100);
-    }
-  }, [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType]);
-  
-  // Fetch filter options for other changes (search, price, initial load)
-   useEffect(() => {
-    // Skip if this is just a filter selection (handled by the other effect)
-    if (shouldUpdatePrices.current) return;
-    
-    // Clear any existing timeout
-    if (filterChangeTimeoutRef.current) {
-      clearTimeout(filterChangeTimeoutRef.current);
-    }
-    
-    // Standard debounce timeout
-      filterChangeTimeoutRef.current = setTimeout(() => {
-      fetchFilterOptions();
-    }, 300);
-    
-    return () => {
-      if (filterChangeTimeoutRef.current) {
-        clearTimeout(filterChangeTimeoutRef.current);
       }
-    };
-  }, [
-    categorySlug,
-    searchInputValue,
-    minPrice,
-    maxPrice
-  ]);
+    },
+    [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType],
+    200
+  );
+  
+  // Also replace the other effect with a debounced one
+  useDebouncedEffect(
+    () => {
+      // Skip if this is just a filter selection (handled by the other effect)
+      if (shouldUpdatePrices.current) return;
+      fetchFilterOptions();
+    },
+    [categorySlug, searchInputValue, minPrice, maxPrice],
+    300
+  );
   
   // Fetch filtered options based on current selections
   const fetchFilterOptions = async () => {
-    setIsLoading(true);
+    // Save current state to avoid immediate visual changes
+    const wasLoading = isLoading;
+    
+    // Only show loading state if it takes more than 100ms
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(true);
+    }, 100);
 
     // Cancel previous fetch if any
     if (abortControllerRef.current) {
@@ -291,6 +296,7 @@ export default function FilterSidebar({
       if (error.name === 'AbortError') return;
       console.error('Error fetching filter options:', error);
     } finally {
+      clearTimeout(loadingTimer);
       if (currentRequest === requestCounter.current) {
         setIsLoading(false);
         shouldUpdatePrices.current = false;
@@ -299,32 +305,32 @@ export default function FilterSidebar({
   };
     
   // Determine if custom filters are applied
-  const hasCustomFilters = () => {
+  const hasCustomFilters = useCallback(() => {
     // For category pages, search query is a filter
     const hasSearchQuery = categorySlug && searchInputValue.trim() !== '';
     
-  // For global search, if there's a query, it's considered the base state, not a filter
-  const globalSearchQuery = searchParams?.get('q') || '';
+    // For global search, if there's a query, it's considered the base state, not a filter
+    const globalSearchQuery = searchParams?.get('q') || '';
     
-  // Custom price filters - check if they differ from the base price range
+    // Custom price filters - check if they differ from the base price range
     const hasCustomPrice = 
-    (minPrice !== '' && 
-     filterOptions.priceRange.min !== undefined && 
-       parseInt(minPrice) !== filterOptions.priceRange.min) || 
-    (maxPrice !== '' && 
-     filterOptions.priceRange.max !== undefined && 
-       parseInt(maxPrice) !== filterOptions.priceRange.max);
+      (minPrice !== '' && 
+       filterOptions.priceRange.min !== undefined && 
+         parseInt(minPrice) !== filterOptions.priceRange.min) || 
+      (maxPrice !== '' && 
+       filterOptions.priceRange.max !== undefined && 
+         parseInt(maxPrice) !== filterOptions.priceRange.max);
     
     // Other filters
     const hasOtherFilters = 
-    selectedDistricts.length > 0 || 
-    selectedConditions.length > 0 || 
-    selectedRooms.length > 0 ||
-    (!categorySlug && selectedCategories.length > 0);
+      selectedDistricts.length > 0 || 
+      selectedConditions.length > 0 || 
+      selectedRooms.length > 0 ||
+      (!categorySlug && selectedCategories.length > 0);
     
     const dealTypeChanged = selectedDealType !== '';
     return hasSearchQuery || hasCustomPrice || hasOtherFilters || dealTypeChanged;
-  };
+  }, [categorySlug, searchInputValue, minPrice, maxPrice, selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType, filterOptions.priceRange, searchParams]);
   
   // Helper to scroll to listings section after navigation
   const scrollToListings = () => {
@@ -532,34 +538,34 @@ export default function FilterSidebar({
     }
   };
   
-  // Handler functions for filter changes (use functional updates)
-  const handleCategoryToggle = (slug: string) => {
+  // Handler functions for filter changes (use functional updates with useCallback to prevent unnecessary re-renders)
+  const handleCategoryToggle = useCallback((slug: string) => {
     shouldUpdatePrices.current = true;
     setSelectedCategories((prev: string[]) =>
       prev.includes(slug) ? prev.filter((s: string) => s !== slug) : [...prev, slug]
     );
-  };
+  }, []);
   
-  const handleDistrictToggle = (district: string) => {
+  const handleDistrictToggle = useCallback((district: string) => {
     shouldUpdatePrices.current = true;
     setSelectedDistricts((prev: string[]) =>
       prev.includes(district) ? prev.filter((d: string) => d !== district) : [...prev, district]
     );
-  };
+  }, []);
   
-  const handleConditionToggle = (cond: string) => {
+  const handleConditionToggle = useCallback((cond: string) => {
     shouldUpdatePrices.current = true;
     setSelectedConditions((prev: string[]) =>
       prev.includes(cond) ? prev.filter((c: string) => c !== cond) : [...prev, cond]
     );
-  };
+  }, []);
   
-  const handleRoomToggle = (room: string) => {
+  const handleRoomToggle = useCallback((room: string) => {
     shouldUpdatePrices.current = true;
     setSelectedRooms((prev: string[]) =>
       prev.includes(room) ? prev.filter((r: string) => r !== room) : [...prev, room]
     );
-  };
+  }, []);
   
   const handlePriceChange = (type: 'min' | 'max', value: string) => {
     if (type === 'min') {
@@ -630,7 +636,7 @@ export default function FilterSidebar({
     }
   }
 
-  const handleDealTypeChange = (dealType: string) => {
+  const handleDealTypeChange = useCallback((dealType: string) => {
     // If it's the same deal type, don't toggle it off (always keep one selected)
     if (selectedDealType === dealType) {
       return;
@@ -670,7 +676,7 @@ export default function FilterSidebar({
       
       updateFilters(newFilters);
     }
-  };
+  }, [selectedDealType, isControlled, selectedCategories, setGlobalDealType, updateFilters]);
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
@@ -688,8 +694,8 @@ export default function FilterSidebar({
           )}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {filterOptions.totalCount > 0 ? (
-            <span>Найдено: {filterOptions.totalCount} {getListingText(filterOptions.totalCount)}</span>
+          {visibleFilterOptions.totalCount > 0 ? (
+            <span>Найдено: {visibleFilterOptions.totalCount} {getListingText(visibleFilterOptions.totalCount)}</span>
           ) : (
             <span>Нет объявлений по заданным параметрам</span>
           )}
@@ -718,7 +724,7 @@ export default function FilterSidebar({
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Loading state */}
-        {isLoading && filterOptions.districts.length === 0 && (
+        {isLoading && visibleFilterOptions.districts.length === 0 && (
           <div className="text-center py-2">
             <div className="animate-pulse text-sm text-gray-400">Загрузка фильтров...</div>
           </div>
@@ -797,11 +803,11 @@ export default function FilterSidebar({
           <div className="px-1 py-2">
             <Range
               step={10000}
-              min={filterOptions.priceRange.min}
-              max={filterOptions.priceRange.max}
+              min={visibleFilterOptions.priceRange.min}
+              max={visibleFilterOptions.priceRange.max}
               values={[
-                minPrice ? parseInt(minPrice) : filterOptions.priceRange.min,
-                maxPrice ? parseInt(maxPrice) : filterOptions.priceRange.max,
+                minPrice ? parseInt(minPrice) : visibleFilterOptions.priceRange.min,
+                maxPrice ? parseInt(maxPrice) : visibleFilterOptions.priceRange.max,
               ]}
               onChange={([newMin, newMax]) => {
                 // Snap to nearest 10,000 except for min and max
@@ -809,8 +815,8 @@ export default function FilterSidebar({
                   if (val === bound) return val;
                   return Math.round(val / 10000) * 10000;
                 };
-                const snappedMin = snap(newMin, filterOptions.priceRange.min);
-                const snappedMax = snap(newMax, filterOptions.priceRange.max);
+                const snappedMin = snap(newMin, visibleFilterOptions.priceRange.min);
+                const snappedMax = snap(newMax, visibleFilterOptions.priceRange.max);
                 setMinPrice(snappedMin.toString());
                 setMaxPrice(snappedMax.toString());
                 setUserEditedPrice({ min: true, max: true });
@@ -853,18 +859,18 @@ export default function FilterSidebar({
               }}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>{filterOptions.priceRange.min.toLocaleString()} ₽</span>
-              <span>{filterOptions.priceRange.max.toLocaleString()} ₽</span>
+              <span>{visibleFilterOptions.priceRange.min.toLocaleString()} ₽</span>
+              <span>{visibleFilterOptions.priceRange.max.toLocaleString()} ₽</span>
             </div>
           </div>
         </div>
         
         {/* Available Districts */}
-        {filterOptions.districts.length > 0 && (
+        {visibleFilterOptions.districts.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Районы</h4>
             <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2">
-              {filterOptions.districts.map((dist) => (
+              {visibleFilterOptions.districts.map((dist) => (
                 <button
                   key={dist.value}
                   type="button"
@@ -887,11 +893,11 @@ export default function FilterSidebar({
         )}
         
         {/* Available Conditions */}
-        {filterOptions.conditions.length > 0 && (
+        {visibleFilterOptions.conditions.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Состояние</h4>
             <div className="flex flex-wrap gap-2">
-              {filterOptions.conditions.map((cond) => (
+              {visibleFilterOptions.conditions.map((cond) => (
                 <button
                   key={cond.value}
                   type="button"
@@ -914,11 +920,11 @@ export default function FilterSidebar({
         )}
         
         {/* Available Rooms */}
-        {filterOptions.rooms.length > 0 && (
+        {visibleFilterOptions.rooms.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Комнаты</h4>
             <div className="flex flex-wrap gap-2">
-              {filterOptions.rooms.map((room) => (
+              {visibleFilterOptions.rooms.map((room) => (
                 <button
                   key={room.value}
                   type="button"
@@ -940,17 +946,16 @@ export default function FilterSidebar({
           </div>
         )}
         
-        {!isControlled && (
-          <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 mt-6">
-            <button
-              type="submit"
-              disabled={isLoading || filterOptions.totalCount === 0}
-              className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
-            >
-              {isLoading ? 'Загрузка...' : 'Применить фильтры'}
-            </button>
-          </div>
-        )}
+        {/* Buttons */}
+        <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 mt-6">
+          <button
+            type="submit"
+            disabled={isLoading || visibleFilterOptions.totalCount === 0}
+            className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            {isLoading ? 'Загрузка...' : 'Применить фильтры'}
+          </button>
+        </div>
       </form>
     </div>
   );
