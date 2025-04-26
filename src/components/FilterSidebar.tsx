@@ -58,38 +58,6 @@ const useDebouncedEffect = (effect: Function, deps: any[], delay: number) => {
   }, [...deps, delay]);
 };
 
-// Add a utility for tracking filter apply operations
-const useFilterApplyState = () => {
-  const [isPending, setIsPending] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const startApplying = () => {
-    setIsPending(true);
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-  };
-  
-  const finishApplying = () => {
-    // Use a timeout to ensure UI state is consistent
-    timeoutRef.current = setTimeout(() => {
-      setIsPending(false);
-    }, 500);
-  };
-  
-  useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-  
-  return { isPending, startApplying, finishApplying };
-};
-
 export default function FilterSidebar({
   categorySlug = '',
   categories = [],
@@ -406,23 +374,16 @@ export default function FilterSidebar({
     }
   }, [isControlled, filters]);
   
-  // Use the filter apply state tracker
-  const { isPending, startApplying, finishApplying } = useFilterApplyState();
-  
   // Apply filters when form is submitted
-  const applyFilters = useCallback(() => {
+  const applyFilters = () => {
     if (isApplyingRef.current) return;
     isApplyingRef.current = true;
-    
-    // Indicate that we're starting to apply filters
-    startApplying();
     
     try {
       // When user explicitly clicks Apply, respect their price entries
       if (minPrice) setUserEditedPrice(prev => ({ ...prev, min: true }));
       if (maxPrice) setUserEditedPrice(prev => ({ ...prev, max: true }));
       
-      // Create a fresh params object to avoid stale parameters
       const params = new URLSearchParams();
       
       // Add search query
@@ -448,20 +409,14 @@ export default function FilterSidebar({
         params.append('maxPrice', maxPrice);
       }
       
-      // Add multi-select filters - use the current state, not stale values
-      const currentCategories = [...selectedCategories];
-      if (currentCategories.length > 0) {
-        currentCategories.forEach((c: string) => params.append('category', c));
+      // Add multi-select filters
+      if (selectedCategories.length > 0) {
+        selectedCategories.forEach((c: string) => params.append('category', c));
       }
       
-      const currentDistricts = [...selectedDistricts];
-      currentDistricts.forEach((d: string) => params.append('district', d));
-      
-      const currentConditions = [...selectedConditions];
-      currentConditions.forEach((c: string) => params.append('condition', c));
-      
-      const currentRooms = [...selectedRooms];
-      currentRooms.forEach((r: string) => params.append('rooms', r));
+      selectedDistricts.forEach((d: string) => params.append('district', d));
+      selectedConditions.forEach((c: string) => params.append('condition', c));
+      selectedRooms.forEach((r: string) => params.append('rooms', r));
       
       // Add deal type to query params - only add for rent, not for sale (default)
       if (selectedDealType === 'RENT') {
@@ -479,9 +434,6 @@ export default function FilterSidebar({
         params.append('from', fromParam);
       }
       
-      // Add a parameter to force fresh results and avoid caching issues
-      params.append('t', Date.now().toString());
-      
       // Navigate to appropriate page
       let base;
       if (categorySlug) {
@@ -491,17 +443,16 @@ export default function FilterSidebar({
       } else {
         base = '/search';
       }
-      
       if (isControlled) {
         // Build new filters object
         const newFilters: Record<string, any> = {
           q: searchInputValue,
           minPrice,
           maxPrice,
-          category: currentCategories,
-          district: currentDistricts,
-          condition: currentConditions,
-          rooms: currentRooms,
+          category: selectedCategories,
+          district: selectedDistricts,
+          condition: selectedConditions,
+          rooms: selectedRooms,
         };
         
         // Only add deal parameter for rent
@@ -518,38 +469,14 @@ export default function FilterSidebar({
         }
       }
     } finally {
-      // Complete the apply operation
-      finishApplying();
-      
       setTimeout(() => {
         isApplyingRef.current = false;
-      }, 300);
+      }, 200);
     }
-  }, [
-    categorySlug, 
-    searchInputValue, 
-    minPrice, 
-    maxPrice, 
-    selectedCategories, 
-    selectedDistricts, 
-    selectedConditions,
-    selectedRooms,
-    selectedDealType,
-    searchParams,
-    pathname,
-    isControlled,
-    router,
-    startApplying,
-    finishApplying,
-    updateFilters,
-    scrollToListings
-  ]);
+  };
   
-  // Reset all filters - improve this function too
-  const resetFilters = useCallback(() => {
-    // Start applying state
-    startApplying();
-    
+  // Reset all filters
+  const resetFilters = () => {
     // Reset to initial values
     if (filterOptions.priceRange.min !== undefined) {
       setMinPrice(filterOptions.priceRange.min.toString());
@@ -558,7 +485,6 @@ export default function FilterSidebar({
       setMaxPrice(filterOptions.priceRange.max.toString());
     }
     
-    // Clear all selections
     setSelectedCategories([]);
     setSelectedDistricts([]);
     setSelectedConditions([]);
@@ -593,9 +519,6 @@ export default function FilterSidebar({
       params.append('from', fromParam);
     }
     
-    // Add a cache-busting parameter
-    params.append('t', Date.now().toString());
-    
     // Navigate with reset filters
     let base;
     if (categorySlug) {
@@ -605,31 +528,15 @@ export default function FilterSidebar({
     } else {
       base = '/search';
     }
-    
     if (isControlled) {
       updateFilters({});
     } else {
-      router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
+    router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
       if (pathname === '/') {
         setTimeout(scrollToListings, 200);
       }
     }
-    
-    // Complete the apply operation
-    finishApplying();
-  }, [
-    categorySlug,
-    filterOptions.priceRange.min,
-    filterOptions.priceRange.max,
-    searchParams,
-    pathname,
-    isControlled,
-    router,
-    updateFilters,
-    scrollToListings,
-    startApplying,
-    finishApplying
-  ]);
+  };
   
   // Handler functions for filter changes (use functional updates with useCallback to prevent unnecessary re-renders)
   const handleCategoryToggle = useCallback((slug: string) => {
@@ -1043,10 +950,10 @@ export default function FilterSidebar({
           <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 mt-6">
             <button
               type="submit"
-              disabled={isLoading || visibleFilterOptions.totalCount === 0 || isPending}
+            disabled={isLoading || visibleFilterOptions.totalCount === 0}
               className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
             >
-              {isLoading || isPending ? 'Загрузка...' : 'Применить фильтры'}
+              {isLoading ? 'Загрузка...' : 'Применить фильтры'}
             </button>
           </div>
       </form>
