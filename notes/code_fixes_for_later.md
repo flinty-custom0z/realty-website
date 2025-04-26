@@ -6,6 +6,28 @@
 
 **No API Versioning:** The API endpoints are defined under `/api/...` without a version prefix. While not critical now, any future changes to API contracts could break clients (though in this case, the client is the same Next app). **Recommendation:** If you foresee third-party API consumers or significant evolution, consider a versioning strategy (e.g., `/api/v1/...`). For internal use, this can be deferred. 
 
+
+---
+
+### Add Role-Based Access Control
+
+I have a Next.js 13+ app with App Router using PostgreSQL and Prisma. Currently, I have basic JWT-based authentication, but all authenticated users are treated as admins.  
+ 
+I want to implement simple **role-based access control** for just **two users**:
+- `ADMIN`: Full access to all features, including managing listings and users.  
+- `MODERATOR`: Can manage listings only, but not users or settings.  
+
+Please help me with the following:
+1. Modify my `User` model in `prisma/schema.prisma` to support roles using an enum.  
+2. Update Prisma with a migration to add the new `role` field.  
+3. Modify my JWT logic so that `role` is included in the token.  
+4. Update route protection so that only `ADMIN` and `MODERATOR` can access `/admin`, but only `ADMIN` can access user management routes (e.g., `/api/admin/users`).  
+5. Show me how to manually assign roles in the DB (e.g., make me `ADMIN` and the other user `MODERATOR`).  
+6. Bonus: Optional – in the frontend, show or hide UI links based on role.  
+
+Please provide clean and minimal code examples for each step.
+
+
 ---
 
 ### Remove from repo

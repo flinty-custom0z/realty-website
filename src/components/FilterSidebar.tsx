@@ -1,11 +1,13 @@
+// Fixed FilterSidebar.tsx
 'use client';
 
-import { useState, FormEvent, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useReducer, useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Range } from 'react-range';
 import { useDealType } from '@/contexts/DealTypeContext';
 import DealTypeToggle from '@/components/DealTypeToggle';
 
+// Types
 interface Category {
   id: string;
   name: string;
@@ -31,14 +33,214 @@ interface FilterOptions {
   districts: FilterOption[];
   conditions: FilterOption[];
   rooms: FilterOption[];
-  categories: Category[];
   dealTypes: DealTypeOption[];
   priceRange: {
     min: number;
     max: number;
+    currentMin: number | null;
+    currentMax: number | null;
   };
+  categories: Category[];
   totalCount: number;
   hasFiltersApplied: boolean;
+}
+
+// Filter state interface
+interface FilterState {
+  // Filter values
+  minPrice: string;
+  maxPrice: string;
+  selectedCategories: string[];
+  selectedDistricts: string[];
+  selectedConditions: string[];
+  selectedRooms: string[];
+  selectedDealType: string;
+  searchInputValue: string;
+  
+  // UI & control states
+  isLoading: boolean;
+  userEditedPrice: {
+    min: boolean;
+    max: boolean;
+  };
+  filterOptions: FilterOptions;
+  visibleFilterOptions: FilterOptions;
+}
+
+// Filter actions
+type FilterAction =
+  | { type: 'INIT_FROM_URL'; payload: any }
+  | { type: 'SET_SEARCH_INPUT'; payload: string }
+  | { type: 'TOGGLE_CATEGORY'; payload: string }
+  | { type: 'TOGGLE_DISTRICT'; payload: string }
+  | { type: 'TOGGLE_CONDITION'; payload: string }
+  | { type: 'TOGGLE_ROOM'; payload: string }
+  | { type: 'SET_PRICE'; payload: { type: 'min' | 'max'; value: string } }
+  | { type: 'SET_PRICE_RANGE'; payload: { min: string; max: string } }
+  | { type: 'SET_DEAL_TYPE'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_FILTER_OPTIONS'; payload: FilterOptions }
+  | { type: 'UPDATE_VISIBLE_OPTIONS' }
+  | { type: 'RESET_FILTERS'; payload: { priceRange: { min: number; max: number; currentMin: number | null; currentMax: number | null } } };
+
+// Default filter state
+const initialFilterState: FilterState = {
+  minPrice: '',
+  maxPrice: '',
+  selectedCategories: [],
+  selectedDistricts: [],
+  selectedConditions: [],
+  selectedRooms: [],
+  selectedDealType: '',
+  searchInputValue: '',
+  isLoading: true,
+  userEditedPrice: {
+    min: false,
+    max: false
+  },
+  filterOptions: {
+    districts: [],
+    conditions: [],
+    rooms: [],
+    dealTypes: [],
+    priceRange: { min: 0, max: 100000000, currentMin: null, currentMax: null },
+    categories: [],
+    totalCount: 0,
+    hasFiltersApplied: false
+  },
+  visibleFilterOptions: {
+    districts: [],
+    conditions: [],
+    rooms: [],
+    dealTypes: [],
+    priceRange: { min: 0, max: 100000000, currentMin: null, currentMax: null },
+    categories: [],
+    totalCount: 0,
+    hasFiltersApplied: false
+  }
+};
+
+// Filter reducer function
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case 'INIT_FROM_URL':
+      return {
+        ...state,
+        ...action.payload
+      };
+    case 'SET_SEARCH_INPUT':
+      return {
+        ...state,
+        searchInputValue: action.payload
+      };
+    case 'TOGGLE_CATEGORY':
+      return {
+        ...state,
+        selectedCategories: state.selectedCategories.includes(action.payload)
+          ? state.selectedCategories.filter(c => c !== action.payload)
+          : [...state.selectedCategories, action.payload]
+      };
+    case 'TOGGLE_DISTRICT':
+      return {
+        ...state,
+        selectedDistricts: state.selectedDistricts.includes(action.payload)
+          ? state.selectedDistricts.filter(d => d !== action.payload)
+          : [...state.selectedDistricts, action.payload]
+      };
+    case 'TOGGLE_CONDITION':
+      return {
+        ...state,
+        selectedConditions: state.selectedConditions.includes(action.payload)
+          ? state.selectedConditions.filter(c => c !== action.payload)
+          : [...state.selectedConditions, action.payload]
+      };
+    case 'TOGGLE_ROOM':
+      return {
+        ...state,
+        selectedRooms: state.selectedRooms.includes(action.payload)
+          ? state.selectedRooms.filter(r => r !== action.payload)
+          : [...state.selectedRooms, action.payload]
+      };
+    case 'SET_PRICE':
+      return {
+        ...state,
+        [action.payload.type === 'min' ? 'minPrice' : 'maxPrice']: action.payload.value,
+        userEditedPrice: {
+          ...state.userEditedPrice,
+          [action.payload.type]: true
+        }
+      };
+    case 'SET_PRICE_RANGE':
+      return {
+        ...state,
+        minPrice: action.payload.min,
+        maxPrice: action.payload.max,
+        userEditedPrice: {
+          min: true,
+          max: true
+        }
+      };
+    case 'SET_DEAL_TYPE':
+      return {
+        ...state,
+        selectedDealType: action.payload,
+        // When changing deal type, filter categories for rent
+        selectedCategories: action.payload === 'RENT'
+          ? state.selectedCategories.filter(cat => ['apartments', 'commercial'].includes(cat))
+          : state.selectedCategories
+      };
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload
+      };
+    case 'SET_FILTER_OPTIONS':
+      return {
+        ...state,
+        filterOptions: action.payload,
+        // If user hasn't manually set prices, update from API response
+        minPrice: (!state.userEditedPrice.min && action.payload.priceRange.min !== undefined)
+          ? Math.min(action.payload.priceRange.min, action.payload.priceRange.max).toString()
+          : state.minPrice,
+        maxPrice: (!state.userEditedPrice.max && action.payload.priceRange.max !== undefined)
+          ? action.payload.priceRange.max.toString()
+          : state.maxPrice
+      };
+    case 'UPDATE_VISIBLE_OPTIONS':
+      return {
+        ...state,
+        visibleFilterOptions: state.filterOptions
+      };
+    case 'RESET_FILTERS':
+      return {
+        ...initialFilterState,
+        filterOptions: state.filterOptions,
+        visibleFilterOptions: state.visibleFilterOptions,
+        minPrice: Math.min(action.payload.priceRange.min, state.filterOptions.priceRange.max).toString(),
+        maxPrice: Math.min(action.payload.priceRange.max, state.filterOptions.priceRange.max).toString(),
+        searchInputValue: '',
+        selectedDealType: '',
+      };
+    default:
+      return state;
+  }
+}
+
+// Add debounce utility
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
 
 interface FilterSidebarProps {
@@ -48,15 +250,6 @@ interface FilterSidebarProps {
   filters?: Record<string, any>;
   onChange?: (filters: Record<string, any>) => void;
 }
-
-// Add a utility for a debounced handler
-const useDebouncedEffect = (effect: Function, deps: any[], delay: number) => {
-  useEffect(() => {
-    const handler = setTimeout(() => effect(), delay);
-    return () => clearTimeout(handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, delay]);
-};
 
 export default function FilterSidebar({
   categorySlug = '',
@@ -70,78 +263,110 @@ export default function FilterSidebar({
   const pathname = usePathname();
   const { dealType: globalDealType, setDealType: setGlobalDealType } = useDealType();
   
-  // If controlled, use props for state
+  // Check if controlled mode (via props)
   const isControlled = typeof filters !== 'undefined' && typeof onChange === 'function';
   
-  // State for search input (for category-specific search)
-  const [searchInputValue, setSearchInputValue] = useState(searchQuery || (isControlled ? filters.q || '' : ''));
+  // Use reducer for filter state management
+  const [state, dispatch] = useReducer(filterReducer, initialFilterState);
   
-  // States for filter values
-  const [minPrice, setMinPrice] = useState(isControlled ? filters.minPrice || '' : searchParams?.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState(isControlled ? filters.maxPrice || '' : searchParams?.get('maxPrice') || '');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(isControlled ? filters.category || [] : searchParams?.getAll('category') || []);
-  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(isControlled ? filters.district || [] : searchParams?.getAll('district') || []);
-  const [selectedConditions, setSelectedConditions] = useState<string[]>(isControlled ? filters.condition || [] : searchParams?.getAll('condition') || []);
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(isControlled ? filters.rooms || [] : searchParams?.getAll('rooms') || []);
-  const [selectedDealType, setSelectedDealType] = useState(isControlled ? filters.dealType || '' : searchParams?.get('dealType') || '');
+  // Debounced state for API calls
+  const debouncedState = useDebounce({
+    searchInputValue: state.searchInputValue,
+    selectedCategories: state.selectedCategories,
+    selectedDistricts: state.selectedDistricts, 
+    selectedConditions: state.selectedConditions,
+    selectedRooms: state.selectedRooms,
+    selectedDealType: state.selectedDealType,
+    minPrice: state.minPrice,
+    maxPrice: state.maxPrice
+  }, 300);
   
-  // State to track loading state
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Simplified tracking of user edit intentions
-  const [userEditedPrice, setUserEditedPrice] = useState({
-    min: false,
-    max: false
-  });
-  
-  // Flag to immediately force price update when filters change
-  const shouldUpdatePrices = useRef(false);
-  
-  // State for current filter options
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    districts: [],
-    conditions: [],
-    rooms: [],
-    categories: [],
-    dealTypes: [],
-    priceRange: { min: 0, max: 30000000 },
-    totalCount: 0,
-    hasFiltersApplied: false
-  });
-
-  // Flags to control behavior
-  const isApplyingRef = useRef(false);
-  const filterChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs for handling side effects
   const isInitialLoadRef = useRef(true);
-  
+  const isApplyingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestCounter = useRef(0);
   
-  // Add a state to track visible filter options that's separate from the actual options
-  const [visibleFilterOptions, setVisibleFilterOptions] = useState<FilterOptions>(filterOptions);
-  
-  // Update visible options after a small delay to prevent flickering
+  // Initialize state from URL or props (controlled mode)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisibleFilterOptions(filterOptions);
-    }, 50);
-    
-    return () => clearTimeout(timer);
-  }, [filterOptions]);
+    if (isInitialLoadRef.current) {
+      // Initialize the state based on URL params or controlled props
+      if (isControlled && filters) {
+        // Initialize from props in controlled mode
+        dispatch({ 
+          type: 'INIT_FROM_URL', 
+          payload: {
+            minPrice: filters.minPrice || '',
+            maxPrice: filters.maxPrice || '',
+            selectedCategories: filters.category || [],
+            selectedDistricts: filters.district || [],
+            selectedConditions: filters.condition || [],
+            selectedRooms: filters.rooms || [],
+            selectedDealType: filters.deal === 'rent' ? 'RENT' : 'SALE',
+            searchInputValue: filters.q || searchQuery || '',
+            userEditedPrice: {
+              min: !!filters.minPrice,
+              max: !!filters.maxPrice
+            }
+          }
+        });
+      } else {
+        // Initialize from URL in uncontrolled mode
+        const urlDealType = searchParams?.get('deal');
+        const initialDealType = urlDealType === 'rent' ? 'RENT' : 'SALE';
+        
+        // Initialize search input
+        const urlSearchInput = searchParams?.get('q') || searchQuery || '';
+        
+        // Initialize categories
+        const urlCategories = searchParams?.getAll('category') || [];
+        let effectiveCategories = urlCategories;
+        
+        // For rent, only allow apartments and commercial
+        if (initialDealType === 'RENT' && urlCategories.length > 0) {
+          effectiveCategories = urlCategories.filter(cat => 
+            ['apartments', 'commercial'].includes(cat)
+          );
+        }
+        
+        // Initialize districts, conditions, and rooms
+        const urlDistricts = searchParams?.getAll('district') || [];
+        const urlConditions = searchParams?.getAll('condition') || [];
+        const urlRooms = searchParams?.getAll('rooms') || [];
+        
+        // Initialize price range
+        const urlMinPrice = searchParams?.get('minPrice') || '';
+        const urlMaxPrice = searchParams?.get('maxPrice') || '';
+        
+        dispatch({ 
+          type: 'INIT_FROM_URL', 
+          payload: {
+            minPrice: urlMinPrice,
+            maxPrice: urlMaxPrice,
+            selectedCategories: effectiveCategories,
+            selectedDistricts: urlDistricts,
+            selectedConditions: urlConditions,
+            selectedRooms: urlRooms,
+            selectedDealType: initialDealType,
+            searchInputValue: urlSearchInput,
+            userEditedPrice: {
+              min: !!urlMinPrice,
+              max: !!urlMaxPrice
+            }
+          }
+        });
+        
+        // Sync with global deal type context
+        setGlobalDealType(urlDealType === 'rent' ? 'rent' : 'sale');
+      }
+      
+      isInitialLoadRef.current = false;
+    }
+  }, [searchParams, searchQuery, filters, isControlled, setGlobalDealType]);
   
-  // Helper to determine if price filter should be applied
-  const shouldApplyPriceFilter = () => {
-    // Only apply if user has entered a value different from the default
-    return (
-      (minPrice && filterOptions.priceRange.min !== undefined && minPrice !== filterOptions.priceRange.min.toString()) ||
-      (maxPrice && filterOptions.priceRange.max !== undefined && maxPrice !== filterOptions.priceRange.max.toString())
-    );
-  };
-  
-  // Move fetchFilterOptions declaration before it's used
-  // Define the function to fetch filter options
-  const fetchFilterOptions = useCallback(async () => {
-    // Cancellation logic for pending requests
+  // Helper to fetch filter options from API
+  const fetchFilterOptions = useCallback(async (applyPriceFilter = false) => {
+    // Cancel any pending requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -152,55 +377,57 @@ export default function FilterSidebar({
     // Update request counter
     const currentRequest = ++requestCounter.current;
     
-    // Set loading indicator after a small delay
+    // Set loading after a small delay to prevent flashing
     const loadingTimer = setTimeout(() => {
-      if (!isLoading) setIsLoading(true);
+      if (!state.isLoading) {
+        dispatch({ type: 'SET_LOADING', payload: true });
+      }
     }, 200); 
     
     try {
       // Build filter params
       const params = new URLSearchParams();
       
-      // Add filters that are currently selected
-      if (selectedCategories.length > 0) {
-        selectedCategories.forEach(category => params.append('category', category));
+      // Add category filter
+      if (state.selectedCategories.length > 0) {
+        state.selectedCategories.forEach(category => params.append('category', category));
       }
       
-      if (selectedDistricts.length > 0) {
-        selectedDistricts.forEach(district => params.append('district', district));
+      // Add district filter
+      if (state.selectedDistricts.length > 0) {
+        state.selectedDistricts.forEach(district => params.append('district', district));
       }
       
-      if (selectedConditions.length > 0) {
-        selectedConditions.forEach(condition => params.append('condition', condition));
+      // Add condition filter
+      if (state.selectedConditions.length > 0) {
+        state.selectedConditions.forEach(condition => params.append('condition', condition));
       }
       
-      if (selectedRooms.length > 0) {
-        selectedRooms.forEach(rooms => params.append('rooms', rooms));
+      // Add room filter
+      if (state.selectedRooms.length > 0) {
+        state.selectedRooms.forEach(rooms => params.append('rooms', rooms));
       }
       
-      // Always include price values, but only apply them based on applyPriceFilter parameter
-      if (minPrice) {
-        params.append('minPrice', minPrice);
+      // Add price filters (always include in params)
+      if (state.minPrice) {
+        params.append('minPrice', state.minPrice);
       }
       
-      if (maxPrice) {
-        params.append('maxPrice', maxPrice);
+      if (state.maxPrice) {
+        params.append('maxPrice', state.maxPrice);
       }
       
-      // Only apply price filters when explicitly applying filters or during price-only updates
-      const shouldApplyPrices = isApplyingRef.current || shouldUpdatePrices.current;
+      // Flag to apply price filters (only when explicitly applying)
+      params.append('applyPriceFilter', applyPriceFilter.toString());
       
-      // Add price filter flag to only apply price filters when explicitly applied
-      params.append('applyPriceFilter', shouldApplyPrices.toString());
+      // Add deal type
+      params.append('deal', state.selectedDealType === 'RENT' ? 'rent' : 'sale');
       
-      // Add deal type from global context
-      params.append('deal', selectedDealType === 'RENT' ? 'rent' : 'sale');
-      
-      // Add search query or category-specific query
-      if (categorySlug) {
-        params.append('categoryQuery', searchInputValue);
-      } else if (searchInputValue) {
-        params.append('q', searchInputValue);
+      // Add search query
+      if (categorySlug && state.searchInputValue) {
+        params.append('categoryQuery', state.searchInputValue);
+      } else if (state.searchInputValue) {
+        params.append('q', state.searchInputValue);
       }
       
       // Make API request
@@ -216,19 +443,12 @@ export default function FilterSidebar({
       
       // Only update state if this is still the most recent request
       if (currentRequest === requestCounter.current) {
-        setFilterOptions(data);
+        dispatch({ type: 'SET_FILTER_OPTIONS', payload: data });
         
-        // If we don't have any custom price values and it's the first load or 
-        // we're forcing a price update, set the min/max from API
-        if ((!userEditedPrice.min || shouldUpdatePrices.current) && 
-            data.priceRange && data.priceRange.min !== undefined) {
-          setMinPrice(data.priceRange.min.toString());
-        }
-        
-        if ((!userEditedPrice.max || shouldUpdatePrices.current) && 
-            data.priceRange && data.priceRange.max !== undefined) {
-          setMaxPrice(data.priceRange.max.toString());
-        }
+        // Schedule an update of visible options after a small delay
+        setTimeout(() => {
+          dispatch({ type: 'UPDATE_VISIBLE_OPTIONS' });
+        }, 50);
       }
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
@@ -237,433 +457,103 @@ export default function FilterSidebar({
     } finally {
       clearTimeout(loadingTimer);
       if (currentRequest === requestCounter.current) {
-        setIsLoading(false);
-        shouldUpdatePrices.current = false;
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     }
-  }, [categorySlug, searchInputValue, minPrice, maxPrice, selectedCategories, selectedDistricts, selectedConditions, selectedRooms, selectedDealType, userEditedPrice, isLoading]);
-
-  // Initialize from search params or context when component mounts
-  useEffect(() => {
-    if (isInitialLoadRef.current) {
-      // Get deal type from search params or use default
-      const urlDealType = searchParams?.get('deal');
-      const initialDealType = urlDealType === 'rent' ? 'RENT' : 'SALE';
-      
-      // Sync with the deal type context
-      setSelectedDealType(initialDealType);
-      setGlobalDealType(urlDealType === 'rent' ? 'rent' : 'sale');
-      
-      // Initialize search input from URL if available
-      const urlSearchInput = searchParams?.get('q') || '';
-      if (urlSearchInput) {
-        setSearchInputValue(urlSearchInput);
-      }
-      
-      // Initialize category filters from URL
-      const urlCategories = searchParams?.getAll('category') || [];
-      if (urlCategories.length > 0) {
-        // For rent, only allow apartments and commercial
-        if (initialDealType === 'RENT') {
-          const validCategories = urlCategories.filter(cat => 
-            ['apartments', 'commercial'].includes(cat)
-          );
-          setSelectedCategories(validCategories);
-        } else {
-          setSelectedCategories(urlCategories);
-        }
-      }
-      
-      // Initialize district filters from URL
-      const urlDistricts = searchParams?.getAll('district') || [];
-      if (urlDistricts.length > 0) {
-        setSelectedDistricts(urlDistricts);
-      }
-      
-      // Initialize condition filters from URL
-      const urlConditions = searchParams?.getAll('condition') || [];
-      if (urlConditions.length > 0) {
-        setSelectedConditions(urlConditions);
-      }
-      
-      // Initialize room filters from URL
-      const urlRooms = searchParams?.getAll('rooms') || [];
-      if (urlRooms.length > 0) {
-        setSelectedRooms(urlRooms);
-      }
-      
-      // Initialize price range from URL
-      const urlMinPrice = searchParams?.get('minPrice');
-      const urlMaxPrice = searchParams?.get('maxPrice');
-      
-      if (urlMinPrice) {
-        setMinPrice(urlMinPrice);
-        setUserEditedPrice(prev => ({ ...prev, min: true }));
-      }
-      
-      if (urlMaxPrice) {
-        setMaxPrice(urlMaxPrice);
-        setUserEditedPrice(prev => ({ ...prev, max: true }));
-      }
-      
-      isInitialLoadRef.current = false;
-      
-      // Fetch filter options with initial parameters
-      fetchFilterOptions();
-    }
-  }, [searchParams, fetchFilterOptions, setGlobalDealType]);
+  }, [
+    categorySlug, 
+    state.selectedCategories, 
+    state.selectedDistricts, 
+    state.selectedConditions, 
+    state.selectedRooms, 
+    state.selectedDealType,
+    state.minPrice,
+    state.maxPrice,
+    state.searchInputValue,
+    state.isLoading
+  ]);
   
-  // Replace the existing filter options effect with a debounced one
-  useDebouncedEffect(
-    () => {
+  // Fetch filter options when debounced state changes
+  useEffect(() => {
     if (!isInitialLoadRef.current) {
-      shouldUpdatePrices.current = true;
-        fetchFilterOptions();
+      // Only fetch options if the component has been initialized
+      fetchFilterOptions(false);
     }
-    },
-    [selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType],
-    200
-  );
+  }, [
+    debouncedState.selectedCategories,
+    debouncedState.selectedDistricts,
+    debouncedState.selectedConditions,
+    debouncedState.selectedRooms,
+    debouncedState.selectedDealType,
+    fetchFilterOptions
+  ]);
   
-  // Also replace the other effect with a debounced one
-  useDebouncedEffect(
-    () => {
-    // Skip if this is just a filter selection (handled by the other effect)
-    if (shouldUpdatePrices.current) return;
-      fetchFilterOptions();
-    },
-    [categorySlug, searchInputValue, minPrice, maxPrice],
-    300
-  );
-  
-  // Determine if custom filters are applied
-  const hasCustomFilters = useCallback(() => {
-    // For category pages, search query is a filter
-    const hasSearchQuery = categorySlug && searchInputValue.trim() !== '';
-    
-  // For global search, if there's a query, it's considered the base state, not a filter
-  const globalSearchQuery = searchParams?.get('q') || '';
-    
-  // Custom price filters - check if they differ from the base price range
-    const hasCustomPrice = 
-    (minPrice !== '' && 
-     filterOptions.priceRange.min !== undefined && 
-       parseInt(minPrice) !== filterOptions.priceRange.min) || 
-    (maxPrice !== '' && 
-     filterOptions.priceRange.max !== undefined && 
-       parseInt(maxPrice) !== filterOptions.priceRange.max);
-    
-    // Other filters
-    const hasOtherFilters = 
-    selectedDistricts.length > 0 || 
-    selectedConditions.length > 0 || 
-    selectedRooms.length > 0 ||
-    (!categorySlug && selectedCategories.length > 0);
-    
-    const dealTypeChanged = selectedDealType !== '';
-    return hasSearchQuery || hasCustomPrice || hasOtherFilters || dealTypeChanged;
-  }, [categorySlug, searchInputValue, minPrice, maxPrice, selectedDistricts, selectedConditions, selectedRooms, selectedCategories, selectedDealType, filterOptions.priceRange, searchParams]);
-  
-  // Helper to scroll to listings section after navigation
-  const scrollToListings = () => {
-    if (typeof window !== 'undefined') {
-      const el = document.getElementById('listings-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  };
-  
-  // Handler for controlled mode
-  const updateFilters = (newFilters: Record<string, any>) => {
-    if (isControlled && onChange) {
-      onChange(newFilters);
-    }
-    
-    // Handle deal parameter and set internal state 
-    if ('deal' in newFilters) {
-      setSelectedDealType(newFilters.deal === 'rent' ? 'RENT' : 'SALE');
-    }
-  };
-
-  // In controlled mode, update local state when filters prop changes
+  // Fetch on search/price changes with lower priority
   useEffect(() => {
-    if (isControlled && filters) {
-      setSearchInputValue(filters.q || '');
-      setMinPrice(filters.minPrice || '');
-      setMaxPrice(filters.maxPrice || '');
-      setSelectedCategories(filters.category || []);
-      setSelectedDistricts(filters.district || []);
-      setSelectedConditions(filters.condition || []);
-      setSelectedRooms(filters.rooms || []);
-      
-      // Handle deal parameter
-      if (filters.deal === 'rent') {
-        setSelectedDealType('RENT');
-      } else {
-        setSelectedDealType('SALE');
-      }
+    if (!isInitialLoadRef.current && !isApplyingRef.current) {
+      // Avoid fetching during explicit filter application
+      fetchFilterOptions(false);
     }
-  }, [isControlled, filters]);
+  }, [
+    debouncedState.searchInputValue,
+    debouncedState.minPrice,
+    debouncedState.maxPrice,
+    fetchFilterOptions
+  ]);
   
-  // Apply filters when form is submitted
-  const applyFilters = () => {
-    if (isApplyingRef.current) return;
-    isApplyingRef.current = true;
-    
-    try {
-      // When user explicitly clicks Apply, respect their price entries
-      if (minPrice) setUserEditedPrice(prev => ({ ...prev, min: true }));
-      if (maxPrice) setUserEditedPrice(prev => ({ ...prev, max: true }));
-      
-      // Fetch filter options with applyPriceFilter=true
-      fetchFilterOptions();
-      
-      const params = new URLSearchParams();
-      
-      // Add search query
-      if (categorySlug) {
-        // In category, use ONLY the local search input with a DIFFERENT parameter name
-        if (searchInputValue.trim()) {
-          params.append('categoryQuery', searchInputValue);
-        }
-      } else {
-        // In global search, preserve the query parameter
-        const currentQuery = searchParams?.get('q');
-        if (currentQuery) {
-          params.append('q', currentQuery);
-        }
-      }
-      
-      // Add price filters - only if they have values
-      if (minPrice) {
-        params.append('minPrice', minPrice);
-      }
-      
-      if (maxPrice) {
-        params.append('maxPrice', maxPrice);
-      }
-      
-      // Add multi-select filters
-      if (selectedCategories.length > 0) {
-        selectedCategories.forEach((c: string) => params.append('category', c));
-      }
-      
-      selectedDistricts.forEach((d: string) => params.append('district', d));
-      selectedConditions.forEach((c: string) => params.append('condition', c));
-      selectedRooms.forEach((r: string) => params.append('rooms', r));
-      
-      // Add deal type to query params - only add for rent, not for sale (default)
-      if (selectedDealType === 'RENT') {
-        params.append('deal', 'rent');
-      }
-      
-      // Preserve navigation parameters
-      const returnUrl = searchParams?.get('returnUrl');
-      if (returnUrl) {
-        params.append('returnUrl', returnUrl);
-      }
-      
-      const fromParam = searchParams?.get('from');
-      if (fromParam) {
-        params.append('from', fromParam);
-      }
-      
-      // Navigate to appropriate page
-      let base;
-      if (categorySlug) {
-        base = `/listing-category/${categorySlug}`;
-      } else if (pathname === '/') {
-        base = '/';
-      } else {
-        base = '/search';
-      }
-      if (isControlled) {
-        // Build new filters object
-        const newFilters: Record<string, any> = {
-          q: searchInputValue,
-          minPrice,
-          maxPrice,
-          category: selectedCategories,
-          district: selectedDistricts,
-          condition: selectedConditions,
-          rooms: selectedRooms,
-        };
-        
-        // Only add deal parameter for rent
-        if (selectedDealType === 'RENT') {
-          newFilters.deal = 'rent';
-        }
-        
-        updateFilters(newFilters);
-      } else {
-        // Use scroll: false to prevent page from jumping to top
-        router.push(`${base}?${params.toString()}`, { scroll: false });
-        if (pathname === '/') {
-          setTimeout(scrollToListings, 200);
-        }
-      }
-    } finally {
-      setTimeout(() => {
-        isApplyingRef.current = false;
-      }, 200);
+  // Initial fetch
+  useEffect(() => {
+    if (!isInitialLoadRef.current) {
+      fetchFilterOptions(false);
     }
-  };
+  }, [fetchFilterOptions]);
   
-  // Reset all filters
-  const resetFilters = () => {
-    // Reset to initial values
-    if (filterOptions.priceRange.min !== undefined) {
-      setMinPrice(filterOptions.priceRange.min.toString());
-    }
-    if (filterOptions.priceRange.max !== undefined) {
-      setMaxPrice(filterOptions.priceRange.max.toString());
-    }
+  // Determine if any custom filters are applied
+  const hasCustomFilters = useCallback(() => {
+    const hasSearchQuery = categorySlug && state.searchInputValue.trim() !== '';
     
-    setSelectedCategories([]);
-    setSelectedDistricts([]);
-    setSelectedConditions([]);
-    setSelectedRooms([]);
-    setSelectedDealType('');
+    const hasCustomPrice = 
+      (state.minPrice !== '' && 
+       state.filterOptions.priceRange.min !== undefined && 
+       parseInt(state.minPrice) !== state.filterOptions.priceRange.min) || 
+      (state.maxPrice !== '' && 
+       state.filterOptions.priceRange.max !== undefined && 
+       parseInt(state.maxPrice) !== state.filterOptions.priceRange.max);
     
-    // Reset global deal type to 'sale' (default)
-    setGlobalDealType('sale');
+    const hasOtherFilters = 
+      state.selectedDistricts.length > 0 || 
+      state.selectedConditions.length > 0 || 
+      state.selectedRooms.length > 0 ||
+      (!categorySlug && state.selectedCategories.length > 0);
     
-    // Clear local search input in category pages
-    if (categorySlug) {
-      setSearchInputValue('');
-    }
-    
-    // Reset user edit flags
-    setUserEditedPrice({ min: false, max: false });
-    
-    // Create params preserving only global search if appropriate
-    const params = new URLSearchParams();
-    
-    // Always preserve global search query (q), not local category search (categoryQuery)
-    const currentQuery = searchParams?.get('q');
-    if (currentQuery && pathname === '/search') {
-        params.append('q', currentQuery);
-    }
-    
-    // Keep navigation parameters
-    const returnUrl = searchParams?.get('returnUrl');
-    if (returnUrl) {
-      params.append('returnUrl', returnUrl);
-    }
-    
-    const fromParam = searchParams?.get('from');
-    if (fromParam) {
-      params.append('from', fromParam);
-    }
-    
-    // Navigate with reset filters
-    let base;
-    if (categorySlug) {
-      base = `/listing-category/${categorySlug}`;
-    } else if (pathname === '/') {
-      base = '/';
-    } else {
-      base = '/search';
-    }
-    if (isControlled) {
-      updateFilters({});
-    } else {
-    router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
-      if (pathname === '/') {
-        setTimeout(scrollToListings, 200);
-      }
-    }
-  };
+    return hasSearchQuery || hasCustomPrice || hasOtherFilters || state.selectedDealType !== '';
+  }, [
+    categorySlug,
+    state.searchInputValue,
+    state.minPrice,
+    state.maxPrice,
+    state.selectedDistricts,
+    state.selectedConditions,
+    state.selectedRooms,
+    state.selectedCategories,
+    state.selectedDealType,
+    state.filterOptions.priceRange
+  ]);
   
-  // Handler functions for filter changes (use functional updates with useCallback to prevent unnecessary re-renders)
-  const handleCategoryToggle = useCallback((slug: string) => {
-    shouldUpdatePrices.current = true;
-    setSelectedCategories((prev: string[]) =>
-      prev.includes(slug) ? prev.filter((s: string) => s !== slug) : [...prev, slug]
-    );
-  }, []);
-  
-  const handleDistrictToggle = useCallback((district: string) => {
-    shouldUpdatePrices.current = true;
-    setSelectedDistricts((prev: string[]) =>
-      prev.includes(district) ? prev.filter((d: string) => d !== district) : [...prev, district]
-    );
-  }, []);
-  
-  const handleConditionToggle = useCallback((cond: string) => {
-    shouldUpdatePrices.current = true;
-    setSelectedConditions((prev: string[]) =>
-      prev.includes(cond) ? prev.filter((c: string) => c !== cond) : [...prev, cond]
-    );
-  }, []);
-  
-  const handleRoomToggle = useCallback((room: string) => {
-    shouldUpdatePrices.current = true;
-    setSelectedRooms((prev: string[]) =>
-      prev.includes(room) ? prev.filter((r: string) => r !== room) : [...prev, room]
-    );
-  }, []);
-  
-  const handlePriceChange = (type: 'min' | 'max', value: string) => {
-    if (type === 'min') {
-      setMinPrice(value);
-      // Mark as user edited to prevent automatic updates
-      setUserEditedPrice(prev => ({ ...prev, min: true }));
-    } else {
-      setMaxPrice(value);
-      // Mark as user edited to prevent automatic updates
-      setUserEditedPrice(prev => ({ ...prev, max: true }));
-    }
-  };
-  
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    applyFilters();
-  };
-  
-  // Category-specific search
-  const handleCategorySearch = (e: FormEvent) => {
-    e.preventDefault();
-    applyFilters();
-  };
-  
-  // Determine which categories are available
-  const getCategoryAvailability = (slug: string) => {
-    // In a category page, all categories are considered available
-    if (categorySlug) return true;
-    
-    // For rent, only show apartments and commercial
-    if (selectedDealType === 'RENT') {
-      return ['apartments', 'commercial'].includes(slug);
-    }
-    
-    // If we have availability data from the API, use it
-    if (filterOptions.categories && filterOptions.categories.length > 0) {
-      const category = filterOptions.categories.find(c => c.slug === slug);
-      return category ? category.available !== false : true;
-    }
-    
-    // Default to available if we don't have data
-    return true;
-  };
-  
-  // Add a helper to format numbers with spaces as thousands separators
+  // Helper to format price with thousands separators
   function formatPriceInput(value: string) {
     if (!value) return '';
-    // Remove all non-digit characters
     const numeric = value.replace(/\D/g, '');
     if (!numeric) return '';
-    // Format with spaces
     return parseInt(numeric, 10).toLocaleString('ru-RU');
   }
-
-  // Add a helper to parse formatted input back to a number string
+  
+  // Helper to parse formatted price input
   function parsePriceInput(formatted: string) {
     return formatted.replace(/\D/g, '');
   }
   
-  // Function to get correct Russian pluralization for listings count
+  // Helper to get proper Russian pluralization for listings count
   function getListingText(count: number) {
     if (count % 10 === 1 && count % 100 !== 11) {
       return 'объявление';
@@ -673,92 +563,345 @@ export default function FilterSidebar({
       return 'объявлений';
     }
   }
-
-  const handleDealTypeChange = useCallback((dealType: string) => {
-    // If it's the same deal type, don't toggle it off (always keep one selected)
-    if (selectedDealType === dealType) {
-      return;
-    }
+  
+  // Apply filters handler
+  const applyFilters = useCallback(() => {
+    if (isApplyingRef.current) return;
+    isApplyingRef.current = true;
     
-    // Set the new deal type
-    setSelectedDealType(dealType);
-    
-    // Use the global context to update deal type with scroll=false
-    // to prevent jumping to the top of the page
-    const dealTypeValue = dealType === 'RENT' ? 'rent' : 'sale';
-    setGlobalDealType(dealTypeValue);
-    
-    // We need to refetch filter options for the new deal type
-    // But we don't want to automatically apply price filters when changing deal type
-    // So we'll only update category options that are known to be incompatible
-    
-    // Clear all filters that may not apply to the new deal type
-    // We'll check availability after the filter options are refreshed
-    if (selectedCategories.length > 0) {
-      // For rent, only keep apartment and commercial properties
-      if (dealType === 'RENT') {
-        const validRentCategories = selectedCategories.filter(cat => 
-          ['apartments', 'commercial'].includes(cat)
-        );
+    try {
+      // Fetch with applyPriceFilter=true to respect user price entries
+      fetchFilterOptions(true);
+      
+      if (isControlled && onChange) {
+        // In controlled mode, call onChange with new filters
+        const newFilters: Record<string, any> = {};
         
-        if (validRentCategories.length !== selectedCategories.length) {
-          setSelectedCategories(validRentCategories);
+        // Add search query
+        if (state.searchInputValue) {
+          if (categorySlug) {
+            newFilters.categoryQuery = state.searchInputValue;
+          } else {
+            newFilters.q = state.searchInputValue;
+          }
+        }
+        
+        // Add price filters
+        if (state.minPrice) newFilters.minPrice = state.minPrice;
+        if (state.maxPrice) newFilters.maxPrice = state.maxPrice;
+        
+        // Add multi-select filters
+        if (state.selectedCategories.length > 0) {
+          newFilters.category = state.selectedCategories;
+        }
+        
+        if (state.selectedDistricts.length > 0) {
+          newFilters.district = state.selectedDistricts;
+        }
+        
+        if (state.selectedConditions.length > 0) {
+          newFilters.condition = state.selectedConditions;
+        }
+        
+        if (state.selectedRooms.length > 0) {
+          newFilters.rooms = state.selectedRooms;
+        }
+        
+        // Add deal type (only for rent, not for sale which is default)
+        if (state.selectedDealType === 'RENT') {
+          newFilters.deal = 'rent';
+        }
+        
+        onChange(newFilters);
+      } else {
+        // In uncontrolled mode, update URL
+        const params = new URLSearchParams();
+        
+        // Add search query
+        if (categorySlug) {
+          if (state.searchInputValue.trim()) {
+            params.append('categoryQuery', state.searchInputValue);
+          }
+        } else {
+          const currentQuery = searchParams?.get('q');
+          if (currentQuery) {
+            params.append('q', currentQuery);
+          }
+        }
+        
+        // Add price filters
+        if (state.minPrice) params.append('minPrice', state.minPrice);
+        if (state.maxPrice) params.append('maxPrice', state.maxPrice);
+        
+        // Add multi-select filters
+        if (state.selectedCategories.length > 0) {
+          state.selectedCategories.forEach(c => params.append('category', c));
+        }
+        
+        state.selectedDistricts.forEach(d => params.append('district', d));
+        state.selectedConditions.forEach(c => params.append('condition', c));
+        state.selectedRooms.forEach(r => params.append('rooms', r));
+        
+        // Add deal type (only for rent, not for sale which is default)
+        if (state.selectedDealType === 'RENT') {
+          params.append('deal', 'rent');
+        }
+        
+        // Preserve navigation parameters
+        const returnUrl = searchParams?.get('returnUrl');
+        if (returnUrl) params.append('returnUrl', returnUrl);
+        
+        const fromParam = searchParams?.get('from');
+        if (fromParam) params.append('from', fromParam);
+        
+        // Determine base URL
+        let base;
+        if (categorySlug) {
+          base = `/listing-category/${categorySlug}`;
+        } else if (pathname === '/') {
+          base = '/';
+        } else {
+          base = '/search';
+        }
+        
+        // Navigate with scroll=false to prevent page jumps
+        router.push(`${base}?${params.toString()}`, { scroll: false });
+        
+        // Scroll to listings section if we're on the home page
+        if (pathname === '/') {
+          setTimeout(() => {
+            const el = document.getElementById('listings-section');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 200);
         }
       }
+    } finally {
+      // Clear applying flag after a short delay
+      setTimeout(() => {
+        isApplyingRef.current = false;
+      }, 200);
+    }
+  }, [
+    state.searchInputValue,
+    state.minPrice,
+    state.maxPrice,
+    state.selectedCategories,
+    state.selectedDistricts,
+    state.selectedConditions,
+    state.selectedRooms,
+    state.selectedDealType,
+    categorySlug,
+    fetchFilterOptions,
+    isControlled,
+    onChange,
+    router,
+    pathname,
+    searchParams
+  ]);
+  
+  // Reset filters handler
+  const resetFilters = useCallback(() => {
+    // Reset to initial state but keep filter options
+    dispatch({ 
+      type: 'RESET_FILTERS', 
+      payload: {
+        priceRange: {
+          ...state.filterOptions.priceRange,
+          currentMin: null,
+          currentMax: null
+        }
+      }
+    });
+    
+    // Reset global deal type to 'sale' (default)
+    setGlobalDealType('sale');
+    
+    // Handle URLs in uncontrolled mode
+    if (!isControlled) {
+      const params = new URLSearchParams();
+      
+      // Preserve global search query
+      const currentQuery = searchParams?.get('q');
+      if (currentQuery && pathname === '/search') {
+        params.append('q', currentQuery);
+      }
+      
+      // Keep navigation parameters
+      const returnUrl = searchParams?.get('returnUrl');
+      if (returnUrl) params.append('returnUrl', returnUrl);
+      
+      const fromParam = searchParams?.get('from');
+      if (fromParam) params.append('from', fromParam);
+      
+      // Determine URL
+      let base;
+      if (categorySlug) {
+        base = `/listing-category/${categorySlug}`;
+      } else if (pathname === '/') {
+        base = '/';
+      } else {
+        base = '/search';
+      }
+      
+      router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
+      
+      if (pathname === '/') {
+        setTimeout(() => {
+          const el = document.getElementById('listings-section');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 200);
+      }
+    } else if (onChange) {
+      // In controlled mode, clear all filters
+      onChange({});
     }
     
-    // If controlled mode, also update the filters
-    if (isControlled) {
-      // Update filters for controlled mode
+    // Fetch updated filter options
+    fetchFilterOptions(false);
+  }, [
+    state.filterOptions.priceRange,
+    searchParams,
+    pathname,
+    categorySlug,
+    isControlled,
+    onChange,
+    router,
+    setGlobalDealType,
+    fetchFilterOptions
+  ]);
+  
+  // Deal type change handler
+  const handleDealTypeChange = useCallback((dealType: string) => {
+    const newDealType = dealType === 'RENT' ? 'RENT' : 'SALE';
+    
+    // Update local state
+    dispatch({ type: 'SET_DEAL_TYPE', payload: newDealType });
+    
+    // Update global context
+    setGlobalDealType(dealType === 'RENT' ? 'rent' : 'sale');
+    
+    // In controlled mode, update via onChange
+    if (isControlled && onChange) {
       const newFilters: Record<string, any> = {};
       
       // Set deal type
-      newFilters.deal = dealTypeValue;
-      
-      // Include filtered category selections
-      if (dealType === 'RENT' && selectedCategories.length > 0) {
-        const validCategories = selectedCategories.filter(cat => 
-          ['apartments', 'commercial'].includes(cat)
-        );
-        newFilters.category = validCategories;
-      } else if (selectedCategories.length > 0) {
-        newFilters.category = selectedCategories;
+      if (newDealType === 'RENT') {
+        newFilters.deal = 'rent';
       }
       
-      // Include existing selections for other filters
-      if (selectedDistricts.length > 0) newFilters.district = selectedDistricts;
-      if (selectedConditions.length > 0) newFilters.condition = selectedConditions;
-      if (selectedRooms.length > 0) newFilters.rooms = selectedRooms;
-      if (minPrice) newFilters.minPrice = minPrice;
-      if (maxPrice) newFilters.maxPrice = maxPrice;
+      // Filter categories for rent
+      if (newDealType === 'RENT' && state.selectedCategories.length > 0) {
+        const validCategories = state.selectedCategories.filter(cat => 
+          ['apartments', 'commercial'].includes(cat)
+        );
+        if (validCategories.length > 0) {
+          newFilters.category = validCategories;
+        }
+      } else if (state.selectedCategories.length > 0) {
+        newFilters.category = state.selectedCategories;
+      }
       
-      updateFilters(newFilters);
-    } else {
-      // Not in controlled mode, update the URL directly
+      // Include other filters
+      if (state.selectedDistricts.length > 0) newFilters.district = state.selectedDistricts;
+      if (state.selectedConditions.length > 0) newFilters.condition = state.selectedConditions;
+      if (state.selectedRooms.length > 0) newFilters.rooms = state.selectedRooms;
+      if (state.minPrice) newFilters.minPrice = state.minPrice;
+      if (state.maxPrice) newFilters.maxPrice = state.maxPrice;
+      
+      onChange(newFilters);
+    } else if (!isControlled) {
+      // In uncontrolled mode, update URL parameters
       const updatedParams = new URLSearchParams(searchParams?.toString() || '');
       
       // Update deal type parameter
-      updatedParams.set('deal', dealTypeValue);
+      if (newDealType === 'RENT') {
+        updatedParams.set('deal', 'rent');
+      } else {
+        updatedParams.delete('deal');
+      }
       
-      // Update category parameters if needed
+      // Update category parameters
       updatedParams.delete('category');
-      const effectiveCategories = dealType === 'RENT'
-        ? selectedCategories.filter(cat => ['apartments', 'commercial'].includes(cat))
-        : selectedCategories;
-        
+      const effectiveCategories = newDealType === 'RENT'
+        ? state.selectedCategories.filter(cat => ['apartments', 'commercial'].includes(cat))
+        : state.selectedCategories;
+      
       effectiveCategories.forEach(cat => {
         updatedParams.append('category', cat);
       });
       
-      // Update URL
-      const newPathname = pathname + '?' + updatedParams.toString();
-      router.push(newPathname, { scroll: false });
+      // Update URL without page reload
+      const newUrl = pathname + (updatedParams.toString() ? `?${updatedParams.toString()}` : '');
+      router.push(newUrl, { scroll: false });
     }
     
-    // Refresh the filter options immediately but don't apply price filters
-    fetchFilterOptions();
-  }, [selectedDealType, isControlled, selectedCategories, setGlobalDealType, updateFilters, selectedDistricts, selectedConditions, selectedRooms, fetchFilterOptions, searchParams, pathname, router, minPrice, maxPrice]);
-
+    // Always fetch updated filter options when deal type changes
+    setTimeout(() => {
+      fetchFilterOptions(false);
+    }, 50);
+  }, [
+    state.selectedCategories,
+    state.selectedDistricts,
+    state.selectedConditions,
+    state.selectedRooms,
+    state.minPrice, 
+    state.maxPrice,
+    isControlled,
+    onChange,
+    searchParams,
+    pathname,
+    router,
+    setGlobalDealType,
+    fetchFilterOptions
+  ]);
+  
+  // Helper to determine category availability
+  const getCategoryAvailability = useCallback((slug: string) => {
+    // On a category page, all categories are available
+    if (categorySlug) return true;
+    
+    // For rent, only allow apartments and commercial
+    if (state.selectedDealType === 'RENT') {
+      return ['apartments', 'commercial'].includes(slug);
+    }
+    
+    // Use API availability data if available
+    if (state.visibleFilterOptions.categories && state.visibleFilterOptions.categories.length > 0) {
+      const category = state.visibleFilterOptions.categories.find(c => c.slug === slug);
+      return category ? category.available !== false : true;
+    }
+    
+    return true;
+  }, [
+    categorySlug,
+    state.selectedDealType,
+    state.visibleFilterOptions.categories
+  ]);
+  
+  // Price input change handler
+  const handlePriceChange = useCallback((type: 'min' | 'max', value: string) => {
+    dispatch({
+      type: 'SET_PRICE',
+      payload: { type, value: parsePriceInput(value) }
+    });
+  }, []);
+  
+  // Form submission handler
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    applyFilters();
+  }, [applyFilters]);
+  
+  // Category search handler
+  const handleCategorySearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    applyFilters();
+  }, [applyFilters]);
+  
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
       <div className="mb-5">
@@ -775,8 +918,8 @@ export default function FilterSidebar({
           )}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {visibleFilterOptions.totalCount > 0 ? (
-            <span>Найдено: {visibleFilterOptions.totalCount} {getListingText(visibleFilterOptions.totalCount)}</span>
+          {state.visibleFilterOptions.totalCount > 0 ? (
+            <span>Найдено: {state.visibleFilterOptions.totalCount} {getListingText(state.visibleFilterOptions.totalCount)}</span>
           ) : (
             <span>Нет объявлений по заданным параметрам</span>
           )}
@@ -794,8 +937,8 @@ export default function FilterSidebar({
             </div>
             <input
               type="text"
-              value={searchInputValue}
-              onChange={(e) => setSearchInputValue(e.target.value)}
+              value={state.searchInputValue}
+              onChange={(e) => dispatch({ type: 'SET_SEARCH_INPUT', payload: e.target.value })}
               placeholder="Поиск в категории"
               className="w-full py-2 pl-10 pr-4 rounded-md bg-gray-50 border border-gray-200 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-200 text-sm"
             />
@@ -805,7 +948,7 @@ export default function FilterSidebar({
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Loading state */}
-        {isLoading && visibleFilterOptions.districts.length === 0 && (
+        {state.isLoading && state.visibleFilterOptions.districts.length === 0 && (
           <div className="text-center py-2">
             <div className="animate-pulse text-sm text-gray-400">Загрузка фильтров...</div>
           </div>
@@ -816,7 +959,7 @@ export default function FilterSidebar({
           <h3 className="filter-section-title">Тип сделки</h3>
           <div className="mt-2">
             <DealTypeToggle 
-              current={selectedDealType === 'RENT' ? 'rent' : 'sale'} 
+              current={state.selectedDealType === 'RENT' ? 'rent' : 'sale'} 
               variant="sidebar" 
               showCounts={false}
               onChange={(type) => handleDealTypeChange(type === 'rent' ? 'RENT' : 'SALE')}
@@ -824,7 +967,7 @@ export default function FilterSidebar({
           </div>
         </div>
         
-        {/* Multi-category selection (only on general search page) */}
+        {/* Category selection (only on general search page) */}
         {!categorySlug && categories.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Категории</h4>
@@ -835,15 +978,15 @@ export default function FilterSidebar({
                   <button
                     key={cat.slug}
                     type="button"
-                    onClick={() => handleCategoryToggle(cat.slug)}
+                    onClick={() => dispatch({ type: 'TOGGLE_CATEGORY', payload: cat.slug })}
                     className={`px-3 py-2 rounded-md text-sm transition-all ${
-                      selectedCategories.includes(cat.slug)
+                      state.selectedCategories.includes(cat.slug)
                         ? 'bg-blue-500 text-white font-medium shadow-sm'
                         : isAvailable
                           ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
                           : 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
                     }`}
-                    disabled={!isAvailable && !selectedCategories.includes(cat.slug)}
+                    disabled={!isAvailable && !state.selectedCategories.includes(cat.slug)}
                   >
                     {cat.name}
                   </button>
@@ -861,8 +1004,8 @@ export default function FilterSidebar({
               <input
                 type="text"
                 inputMode="numeric"
-                value={formatPriceInput(minPrice)}
-                onChange={(e) => handlePriceChange('min', parsePriceInput(e.target.value))}
+                value={formatPriceInput(state.minPrice)}
+                onChange={(e) => handlePriceChange('min', e.target.value)}
                 min={0}
                 className="w-full py-2 px-3 rounded-md bg-gray-50 border border-gray-200 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-200 text-sm"
                 placeholder="От"
@@ -872,98 +1015,116 @@ export default function FilterSidebar({
               <input
                 type="text"
                 inputMode="numeric"
-                value={formatPriceInput(maxPrice)}
-                onChange={(e) => handlePriceChange('max', parsePriceInput(e.target.value))}
+                value={formatPriceInput(state.maxPrice)}
+                onChange={(e) => handlePriceChange('max', e.target.value)}
                 min={0}
                 className="w-full py-2 px-3 rounded-md bg-gray-50 border border-gray-200 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-200 text-sm"
                 placeholder="До"
               />
             </div>
           </div>
+          
           {/* Price Range Slider */}
-          <div className="px-1 py-2">
-            <Range
-              step={10000}
-              min={visibleFilterOptions.priceRange.min}
-              max={visibleFilterOptions.priceRange.max}
-              values={[
-                minPrice ? parseInt(minPrice) : visibleFilterOptions.priceRange.min,
-                maxPrice ? parseInt(maxPrice) : visibleFilterOptions.priceRange.max,
-              ]}
-              onChange={([newMin, newMax]) => {
-                // Snap to nearest 10,000 except for min and max
-                const snap = (val: number, bound: number) => {
-                  if (val === bound) return val;
-                  return Math.round(val / 10000) * 10000;
-                };
-                const snappedMin = snap(newMin, visibleFilterOptions.priceRange.min);
-                const snappedMax = snap(newMax, visibleFilterOptions.priceRange.max);
-                setMinPrice(snappedMin.toString());
-                setMaxPrice(snappedMax.toString());
-                setUserEditedPrice({ min: true, max: true });
-              }}
-              renderTrack={({ props, children }) => (
-                <div
-                  {...props}
-                  style={{
-                    ...props.style,
-                    height: '4px',
-                    background: '#e5e7eb',
-                    borderRadius: '2px',
-                    margin: '16px 0',
-                  }}
-                >
-                  {children}
-                </div>
-              )}
-              renderThumb={({ props }) => {
-                // Explicitly destructure key and style, then spread the rest
-                const { key, style, ...restThumbProps } = props;
-                return (
+          {!state.isLoading && state.visibleFilterOptions.priceRange.min !== undefined && (
+            <div className="px-1 py-2">
+              <Range
+                step={10000}
+                min={state.visibleFilterOptions.priceRange.min}
+                max={state.visibleFilterOptions.priceRange.max}
+                values={[
+                  Math.max(
+                    Math.min(
+                      state.minPrice ? parseInt(state.minPrice) : state.visibleFilterOptions.priceRange.min,
+                      state.visibleFilterOptions.priceRange.max
+                    ),
+                    state.visibleFilterOptions.priceRange.min
+                  ),
+                  Math.min(
+                    state.maxPrice ? parseInt(state.maxPrice) : state.visibleFilterOptions.priceRange.max,
+                    state.visibleFilterOptions.priceRange.max
+                  ),
+                ]}
+                onChange={([newMin, newMax]) => {
+                  // Snap to nearest 10,000 except for min and max
+                  const snap = (val: number, bound: number) => {
+                    if (val === bound) return val;
+                    return Math.round(val / 10000) * 10000;
+                  };
+                  
+                  const snappedMin = snap(newMin, state.visibleFilterOptions.priceRange.min);
+                  const snappedMax = snap(newMax, state.visibleFilterOptions.priceRange.max);
+                  
+                  dispatch({
+                    type: 'SET_PRICE_RANGE',
+                    payload: {
+                      min: snappedMin.toString(),
+                      max: snappedMax.toString()
+                    }
+                  });
+                }}
+                renderTrack={({ props, children }) => (
                   <div
-                    key={key} // Pass the key directly
-                    {...restThumbProps} // Spread the remaining props
-                    style={{ // Apply style separately, merging original and custom
-                      ...style,
-                      height: '18px',
-                      width: '18px',
-                      borderRadius: '50%',
-                      backgroundColor: '#4b5563',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      outline: 'none',
+                    {...props}
+                    style={{
+                      ...props.style,
+                      height: '4px',
+                      background: '#e5e7eb',
+                      borderRadius: '2px',
+                      margin: '16px 0',
                     }}
-                  />
-                );
-              }}
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>{visibleFilterOptions.priceRange.min.toLocaleString()} ₽</span>
-              <span>{visibleFilterOptions.priceRange.max.toLocaleString()} ₽</span>
+                  >
+                    {children}
+                  </div>
+                )}
+                renderThumb={({ props }) => {
+                  // Explicitly destructure key and style, then spread the rest
+                  const { key, style, ...restThumbProps } = props;
+                  return (
+                    <div
+                      key={key}
+                      {...restThumbProps}
+                      style={{
+                        ...style,
+                        height: '18px',
+                        width: '18px',
+                        borderRadius: '50%',
+                        backgroundColor: '#4b5563',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        outline: 'none',
+                      }}
+                    />
+                  );
+                }}
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>{state.visibleFilterOptions.priceRange.min.toLocaleString()} ₽</span>
+                <span>{state.visibleFilterOptions.priceRange.max.toLocaleString()} ₽</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         
         {/* Available Districts */}
-        {visibleFilterOptions.districts.length > 0 && (
+        {state.visibleFilterOptions.districts.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Районы</h4>
             <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2">
-              {visibleFilterOptions.districts.map((dist) => (
+              {state.visibleFilterOptions.districts.map((dist) => (
                 <button
                   key={dist.value}
                   type="button"
-                  onClick={() => handleDistrictToggle(dist.value)}
+                  onClick={() => dispatch({ type: 'TOGGLE_DISTRICT', payload: dist.value })}
                   className={`px-3 py-2 rounded-md text-sm transition-all ${
-                    selectedDistricts.includes(dist.value)
+                    state.selectedDistricts.includes(dist.value)
                       ? 'bg-blue-500 text-white font-medium shadow-sm'
-                      : dist.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      : dist.available
+                        ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        : 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
                   }`}
-                  disabled={!dist.available && !selectedDistricts.includes(dist.value)}
+                  disabled={!dist.available && !state.selectedDistricts.includes(dist.value)}
                 >
                   <span>{dist.value}</span>
                   <span className="ml-1 text-xs opacity-80">({dist.count})</span>
@@ -974,23 +1135,23 @@ export default function FilterSidebar({
         )}
         
         {/* Available Conditions */}
-        {visibleFilterOptions.conditions.length > 0 && (
+        {state.visibleFilterOptions.conditions.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Состояние</h4>
             <div className="flex flex-wrap gap-2">
-              {visibleFilterOptions.conditions.map((cond) => (
+              {state.visibleFilterOptions.conditions.map((cond) => (
                 <button
                   key={cond.value}
                   type="button"
-                  onClick={() => handleConditionToggle(cond.value)}
+                  onClick={() => dispatch({ type: 'TOGGLE_CONDITION', payload: cond.value })}
                   className={`px-3 py-2 rounded-md text-sm transition-all ${
-                    selectedConditions.includes(cond.value)
+                    state.selectedConditions.includes(cond.value)
                       ? 'bg-blue-500 text-white font-medium shadow-sm'
-                      : cond.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      : cond.available
+                        ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        : 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
                   }`}
-                  disabled={!cond.available && !selectedConditions.includes(cond.value)}
+                  disabled={!cond.available && !state.selectedConditions.includes(cond.value)}
                 >
                   <span>{cond.value}</span>
                   <span className="ml-1 text-xs opacity-80">({cond.count})</span>
@@ -1001,23 +1162,23 @@ export default function FilterSidebar({
         )}
         
         {/* Available Rooms */}
-        {visibleFilterOptions.rooms.length > 0 && (
+        {state.visibleFilterOptions.rooms.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-3">Комнаты</h4>
             <div className="flex flex-wrap gap-2">
-              {visibleFilterOptions.rooms.map((room) => (
+              {state.visibleFilterOptions.rooms.map((room) => (
                 <button
                   key={room.value}
                   type="button"
-                  onClick={() => handleRoomToggle(room.value)}
+                  onClick={() => dispatch({ type: 'TOGGLE_ROOM', payload: room.value })}
                   className={`px-3 py-2 rounded-md text-sm transition-all ${
-                    selectedRooms.includes(room.value)
+                    state.selectedRooms.includes(room.value)
                       ? 'bg-blue-500 text-white font-medium shadow-sm'
-                      : room.count === 0
-                        ? 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      : room.available
+                        ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        : 'bg-gray-50 text-gray-400 opacity-60 border border-gray-200'
                   }`}
-                  disabled={!room.available && !selectedRooms.includes(room.value)}
+                  disabled={!room.available && !state.selectedRooms.includes(room.value)}
                 >
                   <span>{room.value}</span>
                   <span className="ml-1 text-xs opacity-80">({room.count})</span>
@@ -1027,16 +1188,16 @@ export default function FilterSidebar({
           </div>
         )}
         
-        {/* Buttons */}
-          <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 mt-6">
-            <button
-              type="submit"
-            disabled={isLoading || visibleFilterOptions.totalCount === 0}
-              className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
-            >
-              {isLoading ? 'Загрузка...' : 'Применить фильтры'}
-            </button>
-          </div>
+        {/* Apply Filters Button */}
+        <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 mt-6">
+          <button
+            type="submit"
+            disabled={state.isLoading || state.visibleFilterOptions.totalCount === 0}
+            className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            {state.isLoading ? 'Загрузка...' : 'Применить фильтры'}
+          </button>
+        </div>
       </form>
     </div>
   );

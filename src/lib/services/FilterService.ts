@@ -1,3 +1,4 @@
+// src/lib/services/FilterService.ts - Fixed version
 import { prisma } from '@/lib/prisma';
 
 export interface FilterParams {
@@ -50,6 +51,7 @@ export interface FilterOptions {
     available: boolean;
   }>;
   totalCount: number;
+  hasFiltersApplied: boolean;
 }
 
 export class FilterService {
@@ -106,7 +108,7 @@ export class FilterService {
     // Add dealType to base filter if provided
     if (dealType === 'rent') {
       baseFilterMinimal.dealType = 'RENT';
-    } else if (dealType === 'sale') {
+    } else {
       baseFilterMinimal.dealType = 'SALE';
     }
 
@@ -125,276 +127,298 @@ export class FilterService {
       }
     }
 
-    // Create the full filter with all current selections 
-    // This determines what's currently available
-    const fullFilter = { ...baseFilter };
-    
-    // Add price range filter to full filter ONLY when explicitly requested
+    // Create the price filter separate from other filters to control when it's applied
+    const priceFilter: any = {};
     if (applyPriceFilter) {
       if (minPrice) {
-        fullFilter.price = { ...(fullFilter.price || {}), gte: parseFloat(minPrice) };
+        priceFilter.price = { ...(priceFilter.price || {}), gte: parseFloat(minPrice) };
       }
       if (maxPrice) {
-        fullFilter.price = { ...(fullFilter.price || {}), lte: parseFloat(maxPrice) };
+        priceFilter.price = { ...(priceFilter.price || {}), lte: parseFloat(maxPrice) };
       }
     }
     
-    // Add district filter to full filter
-    if (districts.length > 0) {
-      fullFilter.district = { in: districts };
-    }
+    // Create the full filter with all current selections except price
+    const fullFilterWithoutPrice = { 
+      ...baseFilter,
+      ...(districts.length > 0 ? { district: { in: districts } } : {}),
+      ...(conditions.length > 0 ? { condition: { in: conditions } } : {}),
+      ...(rooms.length > 0 ? { 
+        rooms: { 
+          in: rooms.map(r => parseInt(r)).filter(r => !isNaN(r)) 
+        } 
+      } : {})
+    };
     
-    // Add condition filter to full filter
-    if (conditions.length > 0) {
-      fullFilter.condition = { in: conditions };
-    }
-    
-    // Add room filter to full filter
-    if (rooms.length > 0) {
-      const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
-      if (roomValues.length > 0) {
-        fullFilter.rooms = { in: roomValues };
-      }
-    }
+    // Full filter with price when needed
+    const fullFilter = {
+      ...fullFilterWithoutPrice,
+      ...(Object.keys(priceFilter).length > 0 ? priceFilter : {})
+    };
 
-    // Calculate if any filters are applied beyond category/search
+    // Calculate if any filters are applied beyond category/search/deal type
     const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
-                              rooms.length > 0 || minPrice !== null || maxPrice !== null ||
-                              dealType !== null;
+                             rooms.length > 0 || 
+                             (applyPriceFilter && (minPrice !== null || maxPrice !== null));
 
-    // Helper: Build filter for available options, excluding a specific group
-    function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms' | 'dealType') {
-      const filter: any = { ...baseFilter };
-      // Only include price filters if applyPriceFilter is true
-      if (applyPriceFilter) {
-        if (minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
-        if (maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
+    // For available options, we want to show what's available with the currently selected filters
+    // except for the filter type we're calculating options for
+
+    // Helper function to create filter excluding specific category
+    const createFilterExcluding = (excludeFilter: string) => {
+      const filter = { ...baseFilter };
+      
+      // Include price filter if explicitly requested
+      if (applyPriceFilter && Object.keys(priceFilter).length > 0) {
+        Object.assign(filter, priceFilter);
       }
-      if (exclude !== 'district' && districts.length > 0) filter.district = { in: districts };
-      if (exclude !== 'condition' && conditions.length > 0) filter.condition = { in: conditions };
-      if (exclude !== 'rooms' && rooms.length > 0) {
+      
+      // Add all filters except the one being excluded
+      if (excludeFilter !== 'district' && districts.length > 0) {
+        filter.district = { in: districts };
+      }
+      
+      if (excludeFilter !== 'condition' && conditions.length > 0) {
+        filter.condition = { in: conditions };
+      }
+      
+      if (excludeFilter !== 'rooms' && rooms.length > 0) {
         const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
-        if (roomValues.length > 0) filter.rooms = { in: roomValues };
-      }
-      if (exclude !== 'dealType' && dealType) {
-        if (dealType === 'rent') {
-          filter.dealType = 'RENT';
-        } else {
-          filter.dealType = 'SALE';
+        if (roomValues.length > 0) {
+          filter.rooms = { in: roomValues };
         }
       }
+      
       return filter;
-    }
-
-    // Create filters for specific deal types (for checking availability in each context)
-    const saleFilter = { ...buildAvailableFilter('dealType'), dealType: 'SALE' };
-    const rentFilter = { ...buildAvailableFilter('dealType'), dealType: 'RENT' };
-
-    // Run all queries in parallel
+    };
+    
+    // Run all queries in parallel for better performance
     const [
-      // Count listings for sale and rent
-      salesCount,
-      rentalsCount,
-      // All districts (with counts, ignoring district filter)
-      allDistricts,
-      // All conditions (with counts, ignoring condition filter)
-      allConditions,
-      // All rooms (with counts, ignoring rooms filter)
-      allRooms,
-      // Price range (as before)
-      priceRange,
-      // Get total matches for full filter
-      filteredTotal,
-      // Available districts (with all filters except district)
-      availableDistricts,
-      // Available conditions (with all filters except condition)
-      availableConditions,
-      // Available rooms (with all filters except rooms)
-      availableRooms,
-      // Get all categories for filters
-      allCategories,
-      // Get available categories for graying out
-      availableCategories,
-      // Get districts available in the current deal type
-      districtsInCurrentDealType,
-      // Get conditions available in the current deal type
-      conditionsInCurrentDealType,
-      // Get rooms available in the current deal type
-      roomsInCurrentDealType,
-      // Get categories available in the current deal type
-      categoriesInCurrentDealType
+      // Get total count with all filters applied
+      totalWithAllFilters,
+      
+      // Get price range from active listings
+      priceStats,
+      
+      // Get all available options for each filter type (excluding its own filter)
+      districtOptions,
+      conditionOptions,
+      roomOptions,
+      
+      // Get categories that match current deal type and other filters
+      categoryOptions,
+      
+      // Count listings for sale and rent (both deal types)
+      saleCount,
+      rentCount
     ] = await Promise.all([
-      prisma.listing.count({
-        where: { ...buildAvailableFilter('dealType'), dealType: 'SALE' }
-      }),
-      prisma.listing.count({
-        where: { ...buildAvailableFilter('dealType'), dealType: 'RENT' }
-      }),
-      prisma.listing.groupBy({
-        by: ['district'],
-        where: { ...buildAvailableFilter('district'), district: { not: null } },
-        _count: { district: true },
-        orderBy: { district: 'asc' },
-      }),
-      prisma.listing.groupBy({
-        by: ['condition'],
-        where: { ...buildAvailableFilter('condition'), condition: { not: null } },
-        _count: { condition: true },
-        orderBy: { condition: 'asc' },
-      }),
-      prisma.listing.groupBy({
-        by: ['rooms'],
-        where: { ...buildAvailableFilter('rooms'), rooms: { not: null } },
-        _count: { rooms: true },
-        orderBy: { rooms: 'asc' },
-      }),
+      // Total count with all filters
+      prisma.listing.count({ where: fullFilter }),
+      
+      // Price range
       prisma.listing.aggregate({
-        where: hasFiltersApplied ? { 
-          ...fullFilter, 
-          price: undefined 
-        } : baseFilter,
+        where: baseFilter, // Only apply base filter for price range
         _min: { price: true },
         _max: { price: true },
       }),
-      prisma.listing.count({
-        where: fullFilter
-      }),
+      
+      // District options - exclude district filter
       prisma.listing.groupBy({
         by: ['district'],
-        where: { ...buildAvailableFilter('district'), district: { not: null } },
+        where: { 
+          ...createFilterExcluding('district'),
+          district: { not: null } 
+        },
+        _count: { district: true },
+        orderBy: { district: 'asc' },
       }),
+      
+      // Condition options - exclude condition filter
       prisma.listing.groupBy({
         by: ['condition'],
-        where: { ...buildAvailableFilter('condition'), condition: { not: null } },
+        where: { 
+          ...createFilterExcluding('condition'),
+          condition: { not: null } 
+        },
+        _count: { condition: true },
+        orderBy: { condition: 'asc' },
       }),
+      
+      // Room options - exclude room filter
       prisma.listing.groupBy({
         by: ['rooms'],
-        where: { ...buildAvailableFilter('rooms'), rooms: { not: null } },
+        where: { 
+          ...createFilterExcluding('rooms'),
+          rooms: { not: null } 
+        },
+        _count: { rooms: true },
+        orderBy: { rooms: 'asc' },
       }),
-      !categoryParams.length ? prisma.category.findMany({
+      
+      // Category options - exclude category filter
+      prisma.category.findMany({
         where: {
           listings: {
-            some: baseFilterMinimal
+            some: createFilterExcluding('category')
           }
         },
         include: {
           _count: {
-            select: { listings: { where: baseFilterMinimal } }
+            select: { 
+              listings: { 
+                where: createFilterExcluding('category')
+              }
+            }
           }
         },
         orderBy: { name: 'asc' }
-      }) : Promise.resolve([]),
-      !categoryParams.length ? prisma.category.findMany({
-        where: {
-          listings: {
-            some: {
-              ...(hasFiltersApplied ? fullFilter : baseFilter),
-              categoryId: undefined
-            }
-          }
-        },
-        select: { slug: true }
-      }) : Promise.resolve([]),
-      // New queries to get options available for the current deal type
-      dealType ? prisma.listing.groupBy({
-        by: ['district'],
-        where: { ...baseFilterMinimal, district: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
-      }) : Promise.resolve([]),
-      dealType ? prisma.listing.groupBy({
-        by: ['condition'],
-        where: { ...baseFilterMinimal, condition: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
-      }) : Promise.resolve([]),
-      dealType ? prisma.listing.groupBy({
-        by: ['rooms'],
-        where: { ...baseFilterMinimal, rooms: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
-      }) : Promise.resolve([]),
-      !categoryParams.length && dealType ? prisma.category.findMany({
-        where: {
-          listings: {
-            some: {
-              ...baseFilterMinimal, 
-              dealType: dealType === 'rent' ? 'RENT' : 'SALE'
-            }
-          }
-        },
-        select: { slug: true }
-      }) : Promise.resolve([])
+      }),
+      
+      // Sale count
+      prisma.listing.count({
+        where: { 
+          ...baseFilterMinimal, 
+          dealType: 'SALE',
+          // Don't include price filter here
+        }
+      }),
+      
+      // Rent count
+      prisma.listing.count({
+        where: { 
+          ...baseFilterMinimal, 
+          dealType: 'RENT',
+          // Don't include price filter here
+        }
+      })
     ]);
-
-    // Create sets of available values for fast lookups
-    const availableDistrictSet = new Set(availableDistricts.map(d => d.district));
-    const availableConditionSet = new Set(availableConditions.map(c => c.condition));
-    const availableRoomSet = new Set(availableRooms.map(r => r.rooms?.toString()));
-    const availableCategorySet = new Set(availableCategories.map(c => c.slug));
-
-    // Create sets for deal type specific availability
-    const dealTypeDistrictSet = new Set(districtsInCurrentDealType.map(d => d.district));
-    const dealTypeConditionSet = new Set(conditionsInCurrentDealType.map(c => c.condition));
-    const dealTypeRoomSet = new Set(roomsInCurrentDealType.map(r => r.rooms?.toString()));
-    const dealTypeCategorySet = new Set(categoriesInCurrentDealType.map(c => c.slug));
-
-    // Process all options and mark availability
-    const processedDistricts = allDistricts.map(d => ({
-      value: d.district || '',
-      count: d._count.district,
-      available: (hasFiltersApplied ? availableDistrictSet.has(d.district) : true) && 
-                (!dealType || dealTypeDistrictSet.has(d.district))
-    }));
-
-    const processedConditions = allConditions.map(c => ({
-      value: c.condition || '',
-      count: c._count.condition,
-      available: (hasFiltersApplied ? availableConditionSet.has(c.condition) : true) && 
-                (!dealType || dealTypeConditionSet.has(c.condition))
-    }));
-
-    const processedRooms = allRooms.map(r => ({
-      value: r.rooms?.toString() || '',
-      count: r._count.rooms,
-      available: (hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true) && 
-                (!dealType || dealTypeRoomSet.has(r.rooms?.toString()))
-    }));
-
-    // Process deal types
-    const processedDealTypes = [
+    
+    // Get all available options with counts
+    
+    // Available options when all filters (including the current one) are applied
+    const [
+      districtsWithFullFilter,
+      conditionsWithFullFilter,
+      roomsWithFullFilter,
+      categoriesWithFullFilter,
+    ] = await Promise.all([
+      // Get districts with full filter
+      prisma.listing.groupBy({
+        by: ['district'],
+        where: { 
+          ...fullFilter,
+          district: { not: null } 
+        },
+        _count: { district: true },
+      }),
+      
+      // Get conditions with full filter
+      prisma.listing.groupBy({
+        by: ['condition'],
+        where: { 
+          ...fullFilter,
+          condition: { not: null } 
+        },
+        _count: { condition: true },
+      }),
+      
+      // Get rooms with full filter
+      prisma.listing.groupBy({
+        by: ['rooms'],
+        where: { 
+          ...fullFilter,
+          rooms: { not: null } 
+        },
+        _count: { rooms: true },
+      }),
+      
+      // Get categories with full filter
+      prisma.category.findMany({
+        where: {
+          listings: {
+            some: fullFilter
+          }
+        },
+        select: { slug: true }
+      })
+    ]);
+    
+    // Create sets for quick lookup
+    const districtWithFullFilterSet = new Set(districtsWithFullFilter.map(d => d.district));
+    const conditionWithFullFilterSet = new Set(conditionsWithFullFilter.map(c => c.condition));
+    const roomWithFullFilterSet = new Set(roomsWithFullFilter.map(r => r.rooms?.toString()));
+    const categoryWithFullFilterSet = new Set(categoriesWithFullFilter.map(c => c.slug));
+    
+    // Determine which deal types to show based on current selection
+    const dealTypes = [
       {
         value: 'SALE',
         label: 'Продажа',
-        count: salesCount,
+        count: saleCount,
         available: true
       },
       {
         value: 'RENT',
         label: 'Аренда',
-        count: rentalsCount,
+        count: rentCount,
         available: true
       }
     ];
-
-    // Process categories with counts and availability
-    const processedCategories = allCategories.map(c => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description,
-      count: c._count.listings,
-      available: (hasFiltersApplied ? availableCategorySet.has(c.slug) : true) && 
-                (!dealType || dealTypeCategorySet.has(c.slug))
+    
+    // Process categories to include availability info
+    const processedCategories = categoryOptions.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      count: category._count.listings,
+      // A category is available if it appears in the full filter results
+      // or if no filters are applied
+      available: !hasFiltersApplied || categoryWithFullFilterSet.has(category.slug)
     }));
-
+    
+    // Process district options
+    const processedDistricts = districtOptions.map(district => ({
+      value: district.district!,
+      count: district._count.district,
+      // A district is available if it appears in the full filter results
+      // or if no filters are applied
+      available: !hasFiltersApplied || districtWithFullFilterSet.has(district.district)
+    }));
+    
+    // Process condition options
+    const processedConditions = conditionOptions.map(condition => ({
+      value: condition.condition!,
+      count: condition._count.condition,
+      // A condition is available if it appears in the full filter results
+      // or if no filters are applied
+      available: !hasFiltersApplied || conditionWithFullFilterSet.has(condition.condition)
+    }));
+    
+    // Process room options
+    const processedRooms = roomOptions.map(room => ({
+      value: room.rooms?.toString() || '',
+      count: room._count.rooms,
+      // A room option is available if it appears in the full filter results
+      // or if no filters are applied
+      available: !hasFiltersApplied || roomWithFullFilterSet.has(room.rooms?.toString())
+    }));
+    
+    // Return compiled filter options
     return {
       districts: processedDistricts,
       conditions: processedConditions,
       rooms: processedRooms,
-      dealTypes: processedDealTypes,
+      dealTypes,
       priceRange: {
-        min: priceRange._min.price || 0,
-        max: priceRange._max.price || 10000000,
+        min: priceStats._min.price || 0,
+        max: priceStats._max.price || 10000000,
         currentMin: minPrice ? parseFloat(minPrice) : null,
         currentMax: maxPrice ? parseFloat(maxPrice) : null
       },
       categories: processedCategories,
-      totalCount: filteredTotal
+      totalCount: totalWithAllFilters,
+      hasFiltersApplied
     };
   }
-} 
+}

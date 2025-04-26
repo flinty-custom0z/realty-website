@@ -1,3 +1,4 @@
+// src/contexts/DealTypeContext.tsx - Fixed version
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
@@ -18,16 +19,28 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [dealType, setDealTypeState] = useState<DealType>('sale');
+  
   // Keep track of scroll position for deal type changes
   const scrollPositionRef = useRef<number>(0);
   
-  // Sync state with URL
+  // Theme transition ref for smooth color changes
+  const themeTransitionTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // Sync state with URL on first load and URL changes
   useEffect(() => {
     const dealParam = searchParams?.get('deal');
     if (dealParam === 'rent') {
       setDealTypeState('rent');
+      
+      // Set CSS class for theme
+      document.body.classList.remove('deal-type-sale-theme');
+      document.body.classList.add('deal-type-rent-theme');
     } else {
       setDealTypeState('sale');
+      
+      // Set CSS class for theme
+      document.body.classList.remove('deal-type-rent-theme');
+      document.body.classList.add('deal-type-sale-theme');
     }
   }, [searchParams]);
   
@@ -40,17 +53,30 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
     
     if (type === 'sale') {
       params.delete('deal');
+      
+      // Update theme immediately for better UX
+      document.body.classList.remove('deal-type-rent-theme');
+      document.body.classList.add('deal-type-sale-theme');
     } else {
       params.set('deal', 'rent');
+      
+      // Update theme immediately for better UX
+      document.body.classList.remove('deal-type-sale-theme');
+      document.body.classList.add('deal-type-rent-theme');
+    }
+    
+    // Apply the state change immediately for a responsive UI
+    setDealTypeState(type);
+    
+    // Cancel any existing theme transition timer
+    if (themeTransitionTimer.current) {
+      clearTimeout(themeTransitionTimer.current);
     }
     
     // Use scroll=false to prevent page jump
     router.push(`${pathname}?${params.toString()}`, { 
       scroll: false
     });
-    
-    // Apply the state change immediately for a more responsive UI
-    setDealTypeState(type);
     
     // After route change, restore scroll position
     setTimeout(() => {
@@ -80,4 +106,4 @@ export function useDealType() {
     throw new Error('useDealType must be used within a DealTypeProvider');
   }
   return context;
-} 
+}
