@@ -10,6 +10,9 @@ export async function POST() {
       value: '',
       expires: new Date(0),
       path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
     });
 
     return NextResponse.json({ success: true });
