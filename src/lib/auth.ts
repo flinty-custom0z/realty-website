@@ -3,6 +3,18 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { JWT_SECRET } from '@/lib/env';
+import { CookieOptions } from 'next/dist/server/web/spec-extension/cookies';
+
+// Helper function for consistent cookie settings
+export function getSecureCookieOptions(maxAge: number): CookieOptions {
+  return {
+    httpOnly: true,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge,
+    sameSite: 'strict',
+  };
+}
 
 export async function authenticateUser(username: string, password: string) {
   console.log(`Auth lib: authenticating ${username}`);
@@ -28,7 +40,7 @@ export async function authenticateUser(username: string, password: string) {
 
 export function generateToken(userId: string) {
   console.log(`Auth lib: generating token for user ${userId}`);
-  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1d' });
 }
 
 export async function verifyAuth(req: NextRequest) {

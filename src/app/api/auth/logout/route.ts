@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getSecureCookieOptions } from '@/lib/auth';
 
 export async function POST() {
   try {
@@ -9,10 +10,7 @@ export async function POST() {
       name: 'token',
       value: '',
       expires: new Date(0),
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      ...getSecureCookieOptions(0), // Immediate expiration
     });
 
     return NextResponse.json({ success: true });

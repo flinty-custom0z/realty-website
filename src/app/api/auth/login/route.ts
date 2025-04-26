@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, generateToken } from '@/lib/auth';
+import { authenticateUser, generateToken, getSecureCookieOptions } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,11 +32,7 @@ export async function POST(req: NextRequest) {
     response.cookies.set({
       name: 'token',
       value: token,
-      httpOnly: true,
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: 'strict',
+      ...getSecureCookieOptions(60 * 60 * 24), // 1 day in seconds
     });
     
     return response;
