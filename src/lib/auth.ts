@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+import { JWT_SECRET } from '@/lib/env';
 
 export async function authenticateUser(username: string, password: string) {
   console.log(`Auth lib: authenticating ${username}`);

@@ -3,8 +3,10 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import jwt from 'jsonwebtoken';
 import ListingDetail from './ListingDetail';
+import { JWT_SECRET } from '@/lib/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Remove the hardcoded fallback
+// const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Force dynamic rendering so cookies() can be used
 export const dynamic = 'force-dynamic';

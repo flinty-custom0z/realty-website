@@ -2,7 +2,18 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, set up your environment variables:
+
+1. Copy `.env.example` to a new file named `.env`
+2. Generate a strong JWT secret:
+   ```bash
+   openssl rand -base64 32
+   ```
+3. Add this value to your `.env` file as `JWT_SECRET`
+
+The application will not start without a properly configured JWT_SECRET.
+
+Then, run the development server:
 
 ```bash
 npm run dev

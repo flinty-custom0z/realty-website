@@ -7,8 +7,10 @@ import Link from 'next/link';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import AdminSidebar from '@/components/AdminSidebar';
+import { JWT_SECRET } from '@/lib/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Remove the hardcoded fallback
+// const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 async function getUserFromCookie() {
   try {

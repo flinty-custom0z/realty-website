@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { JWT_SECRET } from '@/lib/env';
 
-// Secret key for JWT verification
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Remove the hardcoded fallback
+// const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
