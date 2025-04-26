@@ -138,46 +138,180 @@ export default function FilterSidebar({
     );
   };
   
-  // Sync with URL parameters
-  useEffect(() => {
-    if (!searchParams) return;
-    
-    const paramQuery = categorySlug ? searchParams.get('categoryQuery') : searchParams.get('q');
-    const minPriceParam = searchParams.get('minPrice');
-    const maxPriceParam = searchParams.get('maxPrice');
-    const dealParam = searchParams.get('deal');
-    
-    if (paramQuery !== null) {
-      setSearchInputValue(paramQuery);
+  // Move fetchFilterOptions declaration before it's used
+  // Define the function to fetch filter options
+  const fetchFilterOptions = useCallback(async () => {
+    // Cancellation logic for pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
     
-    // Update prices from URL if they exist and we're loading for the first time
-    if (minPriceParam !== null && isInitialLoadRef.current) {
-        setMinPrice(minPriceParam);
-      }
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
     
-    if (maxPriceParam !== null && isInitialLoadRef.current) {
-        setMaxPrice(maxPriceParam);
+    // Update request counter
+    const currentRequest = ++requestCounter.current;
+    
+    // Set loading indicator after a small delay
+    const loadingTimer = setTimeout(() => {
+      if (!isLoading) setIsLoading(true);
+    }, 200); 
+    
+    try {
+      // Build filter params
+      const params = new URLSearchParams();
+      
+      // Add filters that are currently selected
+      if (selectedCategories.length > 0) {
+        selectedCategories.forEach(category => params.append('category', category));
       }
+      
+      if (selectedDistricts.length > 0) {
+        selectedDistricts.forEach(district => params.append('district', district));
+      }
+      
+      if (selectedConditions.length > 0) {
+        selectedConditions.forEach(condition => params.append('condition', condition));
+      }
+      
+      if (selectedRooms.length > 0) {
+        selectedRooms.forEach(rooms => params.append('rooms', rooms));
+      }
+      
+      // Always include price values, but only apply them based on applyPriceFilter parameter
+      if (minPrice) {
+        params.append('minPrice', minPrice);
+      }
+      
+      if (maxPrice) {
+        params.append('maxPrice', maxPrice);
+      }
+      
+      // Only apply price filters when explicitly applying filters or during price-only updates
+      const shouldApplyPrices = isApplyingRef.current || shouldUpdatePrices.current;
+      
+      // Add price filter flag to only apply price filters when explicitly applied
+      params.append('applyPriceFilter', shouldApplyPrices.toString());
+      
+      // Add deal type from global context
+      params.append('deal', selectedDealType === 'RENT' ? 'rent' : 'sale');
+      
+      // Add search query or category-specific query
+      if (categorySlug) {
+        params.append('categoryQuery', searchInputValue);
+      } else if (searchInputValue) {
+        params.append('q', searchInputValue);
+      }
+      
+      // Make API request
+      const response = await fetch(`/api/filter-options?${params.toString()}`, {
+        signal: abortControllerRef.current.signal
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch filter options');
+      }
+      
+      const data = await response.json();
+      
+      // Only update state if this is still the most recent request
+      if (currentRequest === requestCounter.current) {
+        setFilterOptions(data);
+        
+        // If we don't have any custom price values and it's the first load or 
+        // we're forcing a price update, set the min/max from API
+        if ((!userEditedPrice.min || shouldUpdatePrices.current) && 
+            data.priceRange && data.priceRange.min !== undefined) {
+          setMinPrice(data.priceRange.min.toString());
+        }
+        
+        if ((!userEditedPrice.max || shouldUpdatePrices.current) && 
+            data.priceRange && data.priceRange.max !== undefined) {
+          setMaxPrice(data.priceRange.max.toString());
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        console.error('Error fetching filter options:', error);
+      }
+    } finally {
+      clearTimeout(loadingTimer);
+      if (currentRequest === requestCounter.current) {
+        setIsLoading(false);
+        shouldUpdatePrices.current = false;
+      }
+    }
+  }, [categorySlug, searchInputValue, minPrice, maxPrice, selectedCategories, selectedDistricts, selectedConditions, selectedRooms, selectedDealType, userEditedPrice, isLoading]);
 
-    // Handle deal parameter - sync with global context
-    if (globalDealType === 'rent') {
-      setSelectedDealType('RENT');
-    } else {
-      setSelectedDealType('SALE');
-    }
-    
-    // Update selected filters from URL
-    setSelectedCategories(searchParams.getAll('category'));
-    setSelectedDistricts(searchParams.getAll('district'));
-    setSelectedConditions(searchParams.getAll('condition'));
-    setSelectedRooms(searchParams.getAll('rooms'));
-    
-    // After first load, mark as no longer initial
+  // Initialize from search params or context when component mounts
+  useEffect(() => {
     if (isInitialLoadRef.current) {
-    isInitialLoadRef.current = false;
+      // Get deal type from search params or use default
+      const urlDealType = searchParams?.get('deal');
+      const initialDealType = urlDealType === 'rent' ? 'RENT' : 'SALE';
+      
+      // Sync with the deal type context
+      setSelectedDealType(initialDealType);
+      setGlobalDealType(urlDealType === 'rent' ? 'rent' : 'sale');
+      
+      // Initialize search input from URL if available
+      const urlSearchInput = searchParams?.get('q') || '';
+      if (urlSearchInput) {
+        setSearchInputValue(urlSearchInput);
+      }
+      
+      // Initialize category filters from URL
+      const urlCategories = searchParams?.getAll('category') || [];
+      if (urlCategories.length > 0) {
+        // For rent, only allow apartments and commercial
+        if (initialDealType === 'RENT') {
+          const validCategories = urlCategories.filter(cat => 
+            ['apartments', 'commercial'].includes(cat)
+          );
+          setSelectedCategories(validCategories);
+        } else {
+          setSelectedCategories(urlCategories);
+        }
+      }
+      
+      // Initialize district filters from URL
+      const urlDistricts = searchParams?.getAll('district') || [];
+      if (urlDistricts.length > 0) {
+        setSelectedDistricts(urlDistricts);
+      }
+      
+      // Initialize condition filters from URL
+      const urlConditions = searchParams?.getAll('condition') || [];
+      if (urlConditions.length > 0) {
+        setSelectedConditions(urlConditions);
+      }
+      
+      // Initialize room filters from URL
+      const urlRooms = searchParams?.getAll('rooms') || [];
+      if (urlRooms.length > 0) {
+        setSelectedRooms(urlRooms);
+      }
+      
+      // Initialize price range from URL
+      const urlMinPrice = searchParams?.get('minPrice');
+      const urlMaxPrice = searchParams?.get('maxPrice');
+      
+      if (urlMinPrice) {
+        setMinPrice(urlMinPrice);
+        setUserEditedPrice(prev => ({ ...prev, min: true }));
+      }
+      
+      if (urlMaxPrice) {
+        setMaxPrice(urlMaxPrice);
+        setUserEditedPrice(prev => ({ ...prev, max: true }));
+      }
+      
+      isInitialLoadRef.current = false;
+      
+      // Fetch filter options with initial parameters
+      fetchFilterOptions();
     }
-  }, [searchParams, globalDealType]);
+  }, [searchParams, fetchFilterOptions, setGlobalDealType]);
   
   // Replace the existing filter options effect with a debounced one
   useDebouncedEffect(
@@ -202,108 +336,6 @@ export default function FilterSidebar({
     300
   );
   
-  // Fetch filtered options based on current selections
-  const fetchFilterOptions = async () => {
-    // Save current state to avoid immediate visual changes
-    const wasLoading = isLoading;
-    
-    // Only show loading state if it takes more than 100ms
-    const loadingTimer = setTimeout(() => {
-    setIsLoading(true);
-    }, 100);
-
-    // Cancel previous fetch if any
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    requestCounter.current += 1;
-    const currentRequest = requestCounter.current;
-
-    // Build query params with all current active filters
-    const params = new URLSearchParams();
-
-    // Base filters
-    if (categorySlug) {
-      params.append('category', categorySlug);
-    }
-
-    if (searchInputValue.trim()) {
-      // Use categoryQuery for category pages, q for global search
-      if (categorySlug) {
-        params.append('categoryQuery', searchInputValue);
-      } else {
-        params.append('q', searchInputValue);
-      }
-    }
-
-    // Add all selected filters
-    if (selectedCategories.length > 0) {
-      selectedCategories.forEach((c: string) => params.append('category', c));
-    }
-    if (selectedDistricts.length > 0) {
-      selectedDistricts.forEach((d: string) => params.append('district', d));
-    }
-    if (selectedConditions.length > 0) {
-      selectedConditions.forEach((c: string) => params.append('condition', c));
-    }
-    if (selectedRooms.length > 0) {
-      selectedRooms.forEach((r: string) => params.append('rooms', r));
-    }
-    if (selectedDealType) {
-      // Map internal RENT/SALE to deal=rent/sale for URL
-      if (selectedDealType === 'RENT') {
-        params.append('deal', 'rent');
-      }
-      // We don't need to explicitly add deal=sale since it's the default
-    }
-
-    // Add current price if provided
-    if (minPrice) {
-      params.append('minPrice', minPrice);
-    }
-    if (maxPrice) {
-      params.append('maxPrice', maxPrice);
-    }
-
-    // Only send applyPriceFilter if price is actually set and different from default
-    if (shouldApplyPriceFilter()) {
-      params.append('applyPriceFilter', 'true');
-    }
-
-    try {
-      const res = await fetch(`/api/filter-options?${params.toString()}`, { signal: controller.signal });
-      if (!res.ok) return;
-      const data = await res.json();
-      // Only update state if this is the latest request
-      if (currentRequest === requestCounter.current) {
-        setFilterOptions(data);
-        // Update price ranges based on available data
-        const newMinPrice = data.priceRange.min;
-        const newMaxPrice = data.priceRange.max;
-        if (shouldUpdatePrices.current || isInitialLoadRef.current) {
-          if (newMinPrice !== undefined && !userEditedPrice.min) {
-            setMinPrice(newMinPrice.toString());
-          }
-          if (newMaxPrice !== undefined && !userEditedPrice.max) {
-            setMaxPrice(newMaxPrice.toString());
-          }
-        }
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Error fetching filter options:', error);
-    } finally {
-      clearTimeout(loadingTimer);
-      if (currentRequest === requestCounter.current) {
-        setIsLoading(false);
-        shouldUpdatePrices.current = false;
-      }
-    }
-  };
-    
   // Determine if custom filters are applied
   const hasCustomFilters = useCallback(() => {
     // For category pages, search query is a filter
@@ -383,6 +415,9 @@ export default function FilterSidebar({
       // When user explicitly clicks Apply, respect their price entries
       if (minPrice) setUserEditedPrice(prev => ({ ...prev, min: true }));
       if (maxPrice) setUserEditedPrice(prev => ({ ...prev, max: true }));
+      
+      // Fetch filter options with applyPriceFilter=true
+      fetchFilterOptions();
       
       const params = new URLSearchParams();
       
@@ -650,33 +685,76 @@ export default function FilterSidebar({
     const dealTypeValue = dealType === 'RENT' ? 'rent' : 'sale';
     setGlobalDealType(dealTypeValue);
     
+    // We need to refetch filter options for the new deal type
+    // But we don't want to automatically apply price filters when changing deal type
+    // So we'll only update category options that are known to be incompatible
+    
+    // Clear all filters that may not apply to the new deal type
+    // We'll check availability after the filter options are refreshed
+    if (selectedCategories.length > 0) {
+      // For rent, only keep apartment and commercial properties
+      if (dealType === 'RENT') {
+        const validRentCategories = selectedCategories.filter(cat => 
+          ['apartments', 'commercial'].includes(cat)
+        );
+        
+        if (validRentCategories.length !== selectedCategories.length) {
+          setSelectedCategories(validRentCategories);
+        }
+      }
+    }
+    
     // If controlled mode, also update the filters
     if (isControlled) {
       // Update filters for controlled mode
       const newFilters: Record<string, any> = {};
-      if (dealType === 'RENT') {
-        newFilters.deal = 'rent'; 
-      }
       
-      // Include current category selections
-      if (selectedCategories.length > 0) {
-        newFilters.category = selectedCategories;
-      }
+      // Set deal type
+      newFilters.deal = dealTypeValue;
       
-      // Clear category selections that don't apply to the deal type
-      if (dealType === 'RENT') {
+      // Include filtered category selections
+      if (dealType === 'RENT' && selectedCategories.length > 0) {
         const validCategories = selectedCategories.filter(cat => 
           ['apartments', 'commercial'].includes(cat)
         );
-        if (validCategories.length !== selectedCategories.length) {
-          newFilters.category = validCategories;
-          setSelectedCategories(validCategories);
-        }
+        newFilters.category = validCategories;
+      } else if (selectedCategories.length > 0) {
+        newFilters.category = selectedCategories;
       }
       
+      // Include existing selections for other filters
+      if (selectedDistricts.length > 0) newFilters.district = selectedDistricts;
+      if (selectedConditions.length > 0) newFilters.condition = selectedConditions;
+      if (selectedRooms.length > 0) newFilters.rooms = selectedRooms;
+      if (minPrice) newFilters.minPrice = minPrice;
+      if (maxPrice) newFilters.maxPrice = maxPrice;
+      
       updateFilters(newFilters);
+    } else {
+      // Not in controlled mode, update the URL directly
+      const updatedParams = new URLSearchParams(searchParams?.toString() || '');
+      
+      // Update deal type parameter
+      updatedParams.set('deal', dealTypeValue);
+      
+      // Update category parameters if needed
+      updatedParams.delete('category');
+      const effectiveCategories = dealType === 'RENT'
+        ? selectedCategories.filter(cat => ['apartments', 'commercial'].includes(cat))
+        : selectedCategories;
+        
+      effectiveCategories.forEach(cat => {
+        updatedParams.append('category', cat);
+      });
+      
+      // Update URL
+      const newPathname = pathname + '?' + updatedParams.toString();
+      router.push(newPathname, { scroll: false });
     }
-  }, [selectedDealType, isControlled, selectedCategories, setGlobalDealType, updateFilters]);
+    
+    // Refresh the filter options immediately but don't apply price filters
+    fetchFilterOptions();
+  }, [selectedDealType, isControlled, selectedCategories, setGlobalDealType, updateFilters, selectedDistricts, selectedConditions, selectedRooms, fetchFilterOptions, searchParams, pathname, router, minPrice, maxPrice]);
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">

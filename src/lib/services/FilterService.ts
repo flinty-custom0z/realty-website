@@ -129,12 +129,14 @@ export class FilterService {
     // This determines what's currently available
     const fullFilter = { ...baseFilter };
     
-    // Add price range filter to full filter
-    if (minPrice) {
-      fullFilter.price = { ...(fullFilter.price || {}), gte: parseFloat(minPrice) };
-    }
-    if (maxPrice) {
-      fullFilter.price = { ...(fullFilter.price || {}), lte: parseFloat(maxPrice) };
+    // Add price range filter to full filter ONLY when explicitly requested
+    if (applyPriceFilter) {
+      if (minPrice) {
+        fullFilter.price = { ...(fullFilter.price || {}), gte: parseFloat(minPrice) };
+      }
+      if (maxPrice) {
+        fullFilter.price = { ...(fullFilter.price || {}), lte: parseFloat(maxPrice) };
+      }
     }
     
     // Add district filter to full filter
@@ -164,8 +166,10 @@ export class FilterService {
     function buildAvailableFilter(exclude: 'district' | 'condition' | 'rooms' | 'dealType') {
       const filter: any = { ...baseFilter };
       // Only include price filters if applyPriceFilter is true
-      if (applyPriceFilter && minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
-      if (applyPriceFilter && maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
+      if (applyPriceFilter) {
+        if (minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
+        if (maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
+      }
       if (exclude !== 'district' && districts.length > 0) filter.district = { in: districts };
       if (exclude !== 'condition' && conditions.length > 0) filter.condition = { in: conditions };
       if (exclude !== 'rooms' && rooms.length > 0) {
@@ -181,6 +185,10 @@ export class FilterService {
       }
       return filter;
     }
+
+    // Create filters for specific deal types (for checking availability in each context)
+    const saleFilter = { ...buildAvailableFilter('dealType'), dealType: 'SALE' };
+    const rentFilter = { ...buildAvailableFilter('dealType'), dealType: 'RENT' };
 
     // Run all queries in parallel
     const [
@@ -206,7 +214,15 @@ export class FilterService {
       // Get all categories for filters
       allCategories,
       // Get available categories for graying out
-      availableCategories
+      availableCategories,
+      // Get districts available in the current deal type
+      districtsInCurrentDealType,
+      // Get conditions available in the current deal type
+      conditionsInCurrentDealType,
+      // Get rooms available in the current deal type
+      roomsInCurrentDealType,
+      // Get categories available in the current deal type
+      categoriesInCurrentDealType
     ] = await Promise.all([
       prisma.listing.count({
         where: { ...buildAvailableFilter('dealType'), dealType: 'SALE' }
@@ -278,6 +294,30 @@ export class FilterService {
           }
         },
         select: { slug: true }
+      }) : Promise.resolve([]),
+      // New queries to get options available for the current deal type
+      dealType ? prisma.listing.groupBy({
+        by: ['district'],
+        where: { ...baseFilterMinimal, district: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
+      }) : Promise.resolve([]),
+      dealType ? prisma.listing.groupBy({
+        by: ['condition'],
+        where: { ...baseFilterMinimal, condition: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
+      }) : Promise.resolve([]),
+      dealType ? prisma.listing.groupBy({
+        by: ['rooms'],
+        where: { ...baseFilterMinimal, rooms: { not: null }, dealType: dealType === 'rent' ? 'RENT' : 'SALE' },
+      }) : Promise.resolve([]),
+      !categoryParams.length && dealType ? prisma.category.findMany({
+        where: {
+          listings: {
+            some: {
+              ...baseFilterMinimal, 
+              dealType: dealType === 'rent' ? 'RENT' : 'SALE'
+            }
+          }
+        },
+        select: { slug: true }
       }) : Promise.resolve([])
     ]);
 
@@ -287,23 +327,32 @@ export class FilterService {
     const availableRoomSet = new Set(availableRooms.map(r => r.rooms?.toString()));
     const availableCategorySet = new Set(availableCategories.map(c => c.slug));
 
+    // Create sets for deal type specific availability
+    const dealTypeDistrictSet = new Set(districtsInCurrentDealType.map(d => d.district));
+    const dealTypeConditionSet = new Set(conditionsInCurrentDealType.map(c => c.condition));
+    const dealTypeRoomSet = new Set(roomsInCurrentDealType.map(r => r.rooms?.toString()));
+    const dealTypeCategorySet = new Set(categoriesInCurrentDealType.map(c => c.slug));
+
     // Process all options and mark availability
     const processedDistricts = allDistricts.map(d => ({
       value: d.district || '',
       count: d._count.district,
-      available: hasFiltersApplied ? availableDistrictSet.has(d.district) : true
+      available: (hasFiltersApplied ? availableDistrictSet.has(d.district) : true) && 
+                (!dealType || dealTypeDistrictSet.has(d.district))
     }));
 
     const processedConditions = allConditions.map(c => ({
       value: c.condition || '',
       count: c._count.condition,
-      available: hasFiltersApplied ? availableConditionSet.has(c.condition) : true
+      available: (hasFiltersApplied ? availableConditionSet.has(c.condition) : true) && 
+                (!dealType || dealTypeConditionSet.has(c.condition))
     }));
 
     const processedRooms = allRooms.map(r => ({
       value: r.rooms?.toString() || '',
       count: r._count.rooms,
-      available: hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true
+      available: (hasFiltersApplied ? availableRoomSet.has(r.rooms?.toString()) : true) && 
+                (!dealType || dealTypeRoomSet.has(r.rooms?.toString()))
     }));
 
     // Process deal types
@@ -329,7 +378,8 @@ export class FilterService {
       slug: c.slug,
       description: c.description,
       count: c._count.listings,
-      available: hasFiltersApplied ? availableCategorySet.has(c.slug) : true
+      available: (hasFiltersApplied ? availableCategorySet.has(c.slug) : true) && 
+                (!dealType || dealTypeCategorySet.has(c.slug))
     }));
 
     return {
