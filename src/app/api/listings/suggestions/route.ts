@@ -1,36 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const q = searchParams.get('q');
-    if (!q || q.trim().length < 2) {
-      // Require at least 2 characters for suggestions
-      return NextResponse.json({ suggestions: [] });
+    const listingId = searchParams.get('listingId');
+    const categoryId = searchParams.get('categoryId');
+    const limit = Number(searchParams.get('limit') || '4');
+    
+    if (!listingId && !categoryId) {
+      throw new ApiError('Either listingId or categoryId is required', 400);
     }
-
-    // Find up to 10 listings with titles or addresses matching the query
+    
+    // If listingId provided, get similar listings from same category
+    if (listingId) {
+      const listing = await prisma.listing.findUnique({
+        where: { id: listingId },
+        select: { categoryId: true }
+      });
+      
+      if (!listing) {
+        throw new ApiError('Listing not found', 404);
+      }
+      
+      const suggestions = await prisma.listing.findMany({
+        where: {
+          categoryId: listing.categoryId,
+          id: { not: listingId },
+          status: 'active'
+        },
+        include: {
+          images: {
+            where: { isFeatured: true },
+            take: 1
+          },
+          category: true
+        },
+        take: limit,
+        orderBy: { dateAdded: 'desc' }
+      });
+      
+      return NextResponse.json(suggestions);
+    }
+    
+    // If only categoryId provided, get latest listings from that category
     const suggestions = await prisma.listing.findMany({
       where: {
-        status: 'active',
-        OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { address: { contains: q, mode: 'insensitive' } },
-        ],
+        categoryId: categoryId as string,
+        status: 'active'
       },
-      select: {
-        id: true,
-        title: true,
-        address: true,
+      include: {
+        images: {
+          where: { isFeatured: true },
+          take: 1
+        },
+        category: true
       },
-      orderBy: { dateAdded: 'desc' },
-      take: 10,
+      take: limit,
+      orderBy: { dateAdded: 'desc' }
     });
-
-    return NextResponse.json({ suggestions });
-  } catch (err) {
-    console.error('[api/listings/suggestions] error', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    return NextResponse.json(suggestions);
+  } catch (error) {
+    return handleApiError(error);
   }
 } 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { HistoryService } from '@/lib/services/HistoryService';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 // GET listing history
 async function getListingHistory(req: NextRequest, { params }: { params: { id: string } }) {
@@ -8,7 +9,7 @@ async function getListingHistory(req: NextRequest, { params }: { params: { id: s
     const { id } = params;
     
     if (!id) {
-      return NextResponse.json({ error: 'Missing ID in request' }, { status: 400 });
+      throw new ApiError('Missing ID in request', 400);
     }
     
     // Use HistoryService to get detailed timeline with processed image information
@@ -16,8 +17,7 @@ async function getListingHistory(req: NextRequest, { params }: { params: { id: s
     
     return NextResponse.json(processedHistory);
   } catch (error) {
-    console.error('Error fetching listing history:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 

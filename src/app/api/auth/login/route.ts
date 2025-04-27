@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, generateToken, getSecureCookieOptions } from '@/lib/auth';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Login API route called');
     const body = await req.json();
     const { username, password } = body;
+    
+    if (!username || !password) {
+      throw new ApiError('Username and password are required', 400);
+    }
     
     // Don't log usernames
     console.log('Authentication attempt');
 
     const user = await authenticateUser(username, password);
     if (!user) {
-      console.log('Authentication failed');
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      throw new ApiError('Invalid credentials', 401);
     }
 
     // Avoid logging user names
@@ -39,8 +42,6 @@ export async function POST(req: NextRequest) {
     
     return response;
   } catch (error) {
-    // Avoid logging full error objects
-    console.error('Login error occurred');
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

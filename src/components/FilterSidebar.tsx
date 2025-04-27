@@ -79,8 +79,9 @@ export default function FilterSidebar({
     resetFilters();
     
     // In controlled mode, we need to call the onChange prop with empty filters
+    // but preserve the deal type
     if (typeof onChange === 'function') {
-      onChange({});
+      onChange({ deal: 'sale' });
     }
   }, [resetFilters, onChange]);
 
@@ -109,7 +110,7 @@ export default function FilterSidebar({
 
       // controlled sidebars still need the final onChange()
       if (typeof onChange === 'function') {
-        onChange({ deal: type === 'RENT' ? 'rent' : undefined });
+        onChange({ deal: type === 'RENT' ? 'rent' : 'sale' });
       }
     },
     [filterStateDealTypeChange, setDealType, onChange]

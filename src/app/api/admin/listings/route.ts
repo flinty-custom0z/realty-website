@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/auth';
 import { ListingService } from '@/lib/services/ListingService';
 import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
-import { handleValidationError } from '@/lib/validators/errorHandler';
+import { handleApiError } from '@/lib/validators/errorHandler';
 import prisma from '@/lib/prisma';
 
 async function handleCreateListing(req: NextRequest) {
@@ -58,7 +58,7 @@ async function handleCreateListing(req: NextRequest) {
     });
   } catch (err) {
     // Use the validation error handler
-    return handleValidationError(err);
+    return handleApiError(err);
   }
 }
 
@@ -83,7 +83,7 @@ async function handleGetAllListings(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 }
 

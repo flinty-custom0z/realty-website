@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/auth';
 import { ListingService } from '@/lib/services/ListingService';
 import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
-import { handleValidationError } from '@/lib/validators/errorHandler';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 // GET method
 export async function GET(
@@ -14,18 +14,18 @@ export async function GET(
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json({ error: 'Missing ID in request' }, { status: 400 });
+      throw new ApiError('Missing ID in request', 400);
     }
     
     const listing = await ListingService.getListingById(id);
 
     if (!listing) {
-      return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+      throw new ApiError('Listing not found', 404);
     }
 
     return NextResponse.json(listing);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 }
 
@@ -75,7 +75,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 
     return NextResponse.json(updatedListingWithRelations);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 });
 
@@ -93,7 +93,7 @@ async function handleDeleteListing(req: NextRequest, { params }: { params: { id:
     
     return NextResponse.json({ success: true, message: 'Listing deleted successfully' });
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 }
 

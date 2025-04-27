@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FilterService } from '@/lib/services/FilterService';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,7 +10,6 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching filter options:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

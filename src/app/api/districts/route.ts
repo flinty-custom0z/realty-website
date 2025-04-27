@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,8 +23,7 @@ export async function GET(req: NextRequest) {
 
     const result = districts.map((d) => d.district).filter(Boolean);
     return NextResponse.json(result);
-  } catch (err) {
-    console.error('[api/districts] error', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error);
   }
 }

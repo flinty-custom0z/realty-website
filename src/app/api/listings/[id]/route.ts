@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '@/lib/env';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +12,10 @@ export async function GET(
   try {
     // Await the params promise to get the real value
     const { id } = await params;
+
+    if (!id) {
+      throw new ApiError('Missing listing ID', 400);
+    }
 
     // Check if user is admin (to show admin comments)
     const isAdmin = await checkIfUserIsAdmin();
@@ -25,10 +30,7 @@ export async function GET(
     });
 
     if (!listing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      );
+      throw new ApiError('Listing not found', 404);
     }
 
     // If user is not admin, strip out adminComment
@@ -40,11 +42,7 @@ export async function GET(
     // Admin sees everything
     return NextResponse.json(listing);
   } catch (error) {
-    console.error('Error fetching listing:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 

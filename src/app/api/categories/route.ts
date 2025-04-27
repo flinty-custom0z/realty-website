@@ -1,48 +1,47 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
-export async function GET() {
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  listingCount?: number;
+}
+
+export async function GET(req: NextRequest) {
   try {
-    const categories = await prisma.category.findMany({
-      include: {
-        _count: {
-          select: { 
-            listings: { 
-              where: { status: 'active' } 
-            },
-          },
+    // Get all categories with their listing counts
+    const categories = await prisma.$transaction(async (tx) => {
+      const categoriesData = await tx.category.findMany({
+        orderBy: {
+          name: 'asc',
         },
-        // Get listings for counting by deal type
-        listings: {
-          where: { 
-            status: 'active',
-          },
-          select: {
-            dealType: true,
-          }
-        }
-      },
-    });
-    
-    // Add calculated counts for each deal type
-    const categoriesWithCounts = categories.map(category => {
-      const saleCount = category.listings.filter(l => l.dealType === 'SALE').length;
-      const rentCount = category.listings.filter(l => l.dealType === 'RENT').length;
+      });
       
-      return {
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        _count: category._count,
-        saleCount,
-        rentCount,
-      };
+      // Get listing count for each category
+      const categoriesWithCount: Category[] = await Promise.all(
+        categoriesData.map(async (category) => {
+          const listingCount = await tx.listing.count({
+            where: {
+              categoryId: category.id,
+              status: 'active',
+            },
+          });
+          
+          return {
+            ...category,
+            listingCount,
+          };
+        })
+      );
+      
+      return categoriesWithCount;
     });
     
-    return NextResponse.json(categoriesWithCounts);
+    return NextResponse.json(categories);
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
+    return handleApiError(error);
   }
 }

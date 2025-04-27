@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
     const imagePath = searchParams.get('path');
     
     if (!imagePath) {
-      return NextResponse.json({ exists: false, error: 'No path provided' }, { status: 400 });
+      throw new ApiError('No path provided', 400);
     }
     
     // Remove leading slash if present
@@ -27,7 +28,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ exists: false });
     }
   } catch (error) {
-    console.error('Error checking image:', error);
-    return NextResponse.json({ exists: false, error: 'Server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }

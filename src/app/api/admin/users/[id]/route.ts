@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import * as bcrypt from 'bcrypt';
 import { parseUserUpdateData } from '@/lib/validators/userValidators';
-import { handleValidationError } from '@/lib/validators/errorHandler';
+import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 // GET: Get user by id
 export const GET = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -20,32 +20,35 @@ export const GET = withAuth(async (req: NextRequest, { params }: { params: { id:
         updatedAt: true,
       },
     });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) throw new ApiError('User not found', 404);
     return NextResponse.json(user);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 });
 
-// PUT: Update user by id
+// PUT: Update user
 export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const data = await req.json();
-    
-    // Validate input data using Zod
     const validatedData = parseUserUpdateData(data);
     
-    // Build update data object
-    const updateData: any = {};
-    if (validatedData.name) updateData.name = validatedData.name;
-    if (validatedData.username) updateData.username = validatedData.username;
-    if (validatedData.password) {
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-      updateData.password = hashedPassword;
-    }
-    if (validatedData.phone !== undefined) updateData.phone = validatedData.phone;
-    if (validatedData.photo !== undefined) updateData.photo = validatedData.photo;
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: params.id },
+    });
     
+    if (!existingUser) {
+      throw new ApiError('User not found', 404);
+    }
+    
+    // If password is being updated, hash it
+    let updateData = { ...validatedData };
+    if (validatedData.password) {
+      updateData.password = await bcrypt.hash(validatedData.password, 10);
+    }
+    
+    // Update the user
     const user = await prisma.user.update({
       where: { id: params.id },
       data: updateData,
@@ -59,9 +62,10 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         updatedAt: true,
       },
     });
+    
     return NextResponse.json(user);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 });
 
@@ -71,6 +75,6 @@ export const DELETE = withAuth(async (req: NextRequest, { params }: { params: { 
     await prisma.user.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 }); 

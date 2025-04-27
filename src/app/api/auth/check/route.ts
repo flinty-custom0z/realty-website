@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +20,6 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Auth check error:', error);
-    return NextResponse.json({ isAuthenticated: false, user: null }, { status: 500 });
+    return handleApiError(error);
   }
 }

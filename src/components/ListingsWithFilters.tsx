@@ -83,7 +83,7 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
   useEffect(() => {
     setFilters(prevFilters => ({
       ...prevFilters,
-      deal: dealType === 'rent' ? 'rent' : undefined
+      deal: dealType
     }));
   }, [dealType]);
 

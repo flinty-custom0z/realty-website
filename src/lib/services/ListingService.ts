@@ -420,4 +420,104 @@ export class ListingService {
       },
     });
   }
+
+  /**
+   * Gets filtered listings for public site with pagination
+   */
+  static async getFilteredListings(filterParams: any) {
+    const { 
+      categoryParams = [], 
+      searchQuery = null,
+      minPrice = null, 
+      maxPrice = null, 
+      districts = [], 
+      conditions = [], 
+      rooms = [],
+      dealType = null,
+      page = 1,
+      limit = 12,
+      sort = 'dateAdded',
+      order = 'desc'
+    } = filterParams;
+    
+    // Build filter for active listings
+    const filter: any = { status: 'active' };
+    
+    // Add category filter if provided
+    if (categoryParams.length > 0) {
+      const cats = await prisma.category.findMany({
+        where: { slug: { in: categoryParams } },
+        select: { id: true }
+      });
+      if (cats.length > 0) {
+        filter.categoryId = { in: cats.map(c => c.id) };
+      }
+    }
+    
+    // Add search query if provided
+    if (searchQuery) {
+      filter.OR = [
+        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { publicDescription: { contains: searchQuery, mode: 'insensitive' } }
+      ];
+    }
+    
+    // Add price range filter if provided
+    if (minPrice) {
+      filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
+    }
+    if (maxPrice) {
+      filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
+    }
+    
+    // Add district filter if provided
+    if (districts.length > 0) {
+      filter.district = { in: districts };
+    }
+    
+    // Add condition filter if provided
+    if (conditions.length > 0) {
+      filter.condition = { in: conditions };
+    }
+    
+    // Add rooms filter if provided
+    if (rooms.length > 0) {
+      filter.rooms = { in: rooms.map((r: string) => parseInt(r)).filter((r: number) => !isNaN(r)) };
+    }
+    
+    // Add deal type filter if provided
+    if (dealType === 'rent') {
+      filter.dealType = 'RENT';
+    } else if (dealType === 'sale') {
+      filter.dealType = 'SALE';
+    }
+    
+    // Count total listings with filter
+    const [listings, total] = await Promise.all([
+      prisma.listing.findMany({
+        where: filter,
+        include: {
+          category: true,
+          images: {
+            where: { isFeatured: true },
+            take: 1
+          }
+        },
+        orderBy: { [sort]: order === 'asc' ? 'asc' : 'desc' },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit)
+      }),
+      prisma.listing.count({ where: filter })
+    ]);
+    
+    return {
+      listings,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit))
+      }
+    };
+  }
 } 

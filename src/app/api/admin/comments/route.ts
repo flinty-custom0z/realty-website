@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { CommentService } from '@/lib/services/CommentService';
 import { parseCommentData } from '@/lib/validators/commentValidators';
-import { handleValidationError } from '@/lib/validators/errorHandler';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
 // Create comment (admin only)
 async function handleCreateComment(req: NextRequest, user: any) {
@@ -23,8 +23,26 @@ async function handleCreateComment(req: NextRequest, user: any) {
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
+  }
+}
+
+// Get comments for listing (admin only)
+async function handleGetComments(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const listingId = searchParams.get('listingId');
+    
+    if (!listingId) {
+      return NextResponse.json({ error: 'Listing ID is required' }, { status: 400 });
+    }
+    
+    const comments = await CommentService.getCommentsByListingId(listingId);
+    return NextResponse.json(comments);
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
 export const POST = withAuth(handleCreateComment);
+export const GET = withAuth(handleGetComments);

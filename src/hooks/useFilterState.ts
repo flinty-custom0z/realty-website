@@ -161,7 +161,7 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
         minPrice: Math.min(action.payload.priceRange.min, state.filterOptions.priceRange.max).toString(),
         maxPrice: Math.min(action.payload.priceRange.max, state.filterOptions.priceRange.max).toString(),
         searchInputValue: '',
-        selectedDealType: '',
+        selectedDealType: 'SALE',
       };
     default:
       return state;

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import * as bcrypt from 'bcrypt';
 import { parseUserCreateData } from '@/lib/validators/userValidators';
-import { handleValidationError } from '@/lib/validators/errorHandler';
+import { handleApiError } from '@/lib/validators/errorHandler';
 
 // GET: List all users (realtors)
 export const GET = withAuth(async (req: NextRequest) => {
@@ -22,7 +22,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     });
     return NextResponse.json(users);
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 });
 
@@ -58,6 +58,6 @@ export const POST = withAuth(async (req: NextRequest) => {
     });
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    return handleValidationError(error);
+    return handleApiError(error);
   }
 }); 
