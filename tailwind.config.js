@@ -52,9 +52,9 @@ module.exports = {
         
         // Accent color for call-to-actions that is consistent across themes
         'accent': {
-          400: '#F97316', // Orange for call-to-action (meets contrast requirements)
-          500: '#EA580C',
-          600: '#C2410C',
+          400: '#3B82F6', // Blue for call-to-action (meets contrast requirements)
+          500: '#2563EB',
+          600: '#1D4ED8',
         },
         
         // Status colors (shared across themes)

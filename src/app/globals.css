@@ -21,7 +21,7 @@
   --foreground: #2d3748;
   --primary: #4a5568;
   --secondary: #718096;
-  --accent: #F97316;
+  --accent: #4285F4;
   --muted: #e2e8f0;
   --card-bg: #ffffff;
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -474,7 +474,7 @@ button {
 }
 
 .admin-edit-link:hover {
-  background-color: #3b78e7;
+  background-color: #2563EB;
 }
 
 .admin-delete-btn {
@@ -560,7 +560,7 @@ button {
 }
 
 .admin-add-btn:hover {
-  background-color: #3b78e7;
+  background-color: #2563EB;
 }
 
 .admin-secondary-btn {
