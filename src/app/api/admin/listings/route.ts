@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/auth';
 import { ListingService } from '@/lib/services/ListingService';
 import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
+import { handleValidationError } from '@/lib/validators/errorHandler';
 import prisma from '@/lib/prisma';
 
 async function handleCreateListing(req: NextRequest) {
@@ -13,9 +14,10 @@ async function handleCreateListing(req: NextRequest) {
     console.log("Creating new listing for user:", user.name);
     
     // Use the form data parser to extract and validate listing data
+    // This will throw a ZodError if validation fails
     const listingData = parseListingFormData(formData);
     
-    console.log("Extracted form data:", {
+    console.log("Extracted and validated form data:", {
       title: listingData.title,
       categoryId: listingData.categoryId,
       price: listingData.price
@@ -55,11 +57,8 @@ async function handleCreateListing(req: NextRequest) {
       }
     });
   } catch (err) {
-    console.error("Error creating listing:", err);
-    return NextResponse.json({ 
-      error: 'Error creating listing', 
-      details: err instanceof Error ? err.message : String(err) 
-    }, { status: 500 });
+    // Use the validation error handler
+    return handleValidationError(err);
   }
 }
 
@@ -84,11 +83,7 @@ async function handleGetAllListings(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching listings:", error);
-    return NextResponse.json({ 
-      error: 'Error fetching listings',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return handleValidationError(error);
   }
 }
 

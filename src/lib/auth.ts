@@ -3,7 +3,15 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { JWT_SECRET } from '@/lib/env';
-import { CookieOptions } from 'next/dist/server/web/spec-extension/cookies';
+
+// Define the CookieOptions interface
+interface CookieOptions {
+  httpOnly?: boolean;
+  path?: string;
+  secure?: boolean;
+  maxAge?: number;
+  sameSite?: 'strict' | 'lax' | 'none';
+}
 
 // Helper function for consistent cookie settings
 export function getSecureCookieOptions(maxAge: number): CookieOptions {

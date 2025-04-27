@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '@/lib/prisma';
 import sharp from 'sharp';
 import { existsSync } from 'fs';
+import { validateImageFile, ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from '@/lib/validators/imageValidators';
 
 // Define thumbnail sizes to generate
 const THUMBNAIL_SIZES = [
@@ -28,10 +29,24 @@ export class ImageService {
   }
 
   /**
+   * Validates an image file before saving
+   * @throws Error if the image is invalid
+   */
+  static validateImage(file: File): void {
+    const validation = validateImageFile(file);
+    if (!validation.valid && validation.error) {
+      throw new Error(validation.error);
+    }
+  }
+
+  /**
    * Saves an image file to disk, generates thumbnails and returns the relative path
    */
   static async saveImage(file: File, subdirectory: string = ''): Promise<string> {
     try {
+      // Validate the image before processing
+      this.validateImage(file);
+      
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
@@ -105,7 +120,7 @@ export class ImageService {
       return subdirectory ? `/images/${subdirectory}/${filename}` : `/images/${filename}`;
     } catch (error) {
       console.error("Error saving image:", error);
-      throw new Error(`Failed to save image: ${error}`);
+      throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

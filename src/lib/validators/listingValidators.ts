@@ -1,51 +1,59 @@
+import { z } from 'zod';
 import { ListingData } from '../services/ListingService';
 
 /**
- * Parses and validates form data for a listing
+ * Zod schema for validating listing data
+ */
+export const listingSchema = z.object({
+  title: z.string().min(1, "Title is required").max(255),
+  publicDescription: z.string().min(1, "Description is required"),
+  adminComment: z.string().optional().nullable(),
+  categoryId: z.string().min(1, "Category is required"),
+  price: z.number().positive("Price must be positive"),
+  district: z.string().min(1, "District is required"),
+  address: z.string().min(1, "Address is required"),
+  rooms: z.number().int().nonnegative().nullable().optional(),
+  floor: z.number().int().nonnegative().nullable().optional(),
+  totalFloors: z.number().int().nonnegative().nullable().optional(),
+  houseArea: z.number().nonnegative().nullable().optional(),
+  landArea: z.number().nonnegative().nullable().optional(),
+  condition: z.string().optional().nullable(),
+  yearBuilt: z.number().int().positive().nullable().optional(),
+  noEncumbrances: z.boolean().default(false),
+  noKids: z.boolean().default(false),
+  userId: z.string().min(1, "User ID is required"),
+  status: z.enum(["active", "sold", "pending", "inactive"]).default("active"),
+});
+
+export type ValidatedListingData = z.infer<typeof listingSchema>;
+
+/**
+ * Safely parses and validates form data for a listing using Zod
+ * Throws a ZodError if validation fails
  */
 export function parseListingFormData(formData: FormData): ListingData {
-  // Extract listing data
-  const title = formData.get('title') as string;
-  const publicDescription = formData.get('publicDescription') as string;
-  const adminComment = formData.get('adminComment') as string;
-  const categoryId = formData.get('categoryId') as string;
-  const price = parseFloat(formData.get('price') as string);
-  const district = formData.get('district') as string;
-  const address = formData.get('address') as string;
-  const userId = formData.get('userId') as string;
-  const status = formData.get('status') as string || 'active';
-  
-  // Parse numeric values with fallbacks
-  const rooms = formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null;
-  const floor = formData.get('floor') ? parseInt(formData.get('floor') as string) : null;
-  const totalFloors = formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null;
-  const houseArea = formData.get('houseArea') ? parseFloat(formData.get('houseArea') as string) : null;
-  const landArea = formData.get('landArea') ? parseFloat(formData.get('landArea') as string) : null;
-  
-  const condition = formData.get('condition') as string;
-  const yearBuilt = formData.get('yearBuilt') ? parseInt(formData.get('yearBuilt') as string) : null;
-  const noEncumbrances = formData.get('noEncumbrances') === 'true';
-  const noKids = formData.get('noKids') === 'true';
-  
-  // Create listing data object
-  return {
-    title,
-    publicDescription,
-    adminComment,
-    categoryId,
-    price,
-    district,
-    address,
-    rooms,
-    floor,
-    totalFloors,
-    houseArea,
-    landArea,
-    condition,
-    yearBuilt,
-    noEncumbrances,
-    noKids,
-    userId,
-    status,
+  // Extract listing data from form
+  const rawData = {
+    title: formData.get('title'),
+    publicDescription: formData.get('publicDescription'),
+    adminComment: formData.get('adminComment') || null,
+    categoryId: formData.get('categoryId'),
+    price: formData.get('price') ? parseFloat(formData.get('price') as string) : 0,
+    district: formData.get('district'),
+    address: formData.get('address'),
+    rooms: formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null,
+    floor: formData.get('floor') ? parseInt(formData.get('floor') as string) : null,
+    totalFloors: formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null,
+    houseArea: formData.get('houseArea') ? parseFloat(formData.get('houseArea') as string) : null,
+    landArea: formData.get('landArea') ? parseFloat(formData.get('landArea') as string) : null,
+    condition: formData.get('condition') || null,
+    yearBuilt: formData.get('yearBuilt') ? parseInt(formData.get('yearBuilt') as string) : null,
+    noEncumbrances: formData.get('noEncumbrances') === 'true',
+    noKids: formData.get('noKids') === 'true',
+    userId: formData.get('userId') as string,
+    status: formData.get('status') as string || 'active',
   };
+  
+  // Validate with Zod schema and return the validated data
+  return listingSchema.parse(rawData);
 } 

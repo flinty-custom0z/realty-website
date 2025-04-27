@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/auth';
 import { ListingService } from '@/lib/services/ListingService';
 import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
+import { handleValidationError } from '@/lib/validators/errorHandler';
 
 // GET method
 export async function GET(
@@ -24,8 +25,7 @@ export async function GET(
 
     return NextResponse.json(listing);
   } catch (error) {
-    console.error('GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 }
 
@@ -36,6 +36,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const user = (req as any).user;
 
     // Use the form data parser to extract and validate listing data
+    // This will throw a ZodError if validation fails
     const listingData = parseListingFormData(formData);
 
     // Update the listing using ListingService
@@ -74,11 +75,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 
     return NextResponse.json(updatedListingWithRelations);
   } catch (error) {
-    console.error('Error updating listing:', error);
-    return NextResponse.json({ 
-      error: 'Error updating listing',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return handleValidationError(error);
   }
 });
 
@@ -96,11 +93,7 @@ async function handleDeleteListing(req: NextRequest, { params }: { params: { id:
     
     return NextResponse.json({ success: true, message: 'Listing deleted successfully' });
   } catch (error) {
-    console.error('Error deleting listing:', error);
-    return NextResponse.json({ 
-      error: 'Error deleting listing',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return handleValidationError(error);
   }
 }
 

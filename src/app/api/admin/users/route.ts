@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import * as bcrypt from 'bcrypt';
+import { parseUserCreateData } from '@/lib/validators/userValidators';
+import { handleValidationError } from '@/lib/validators/errorHandler';
 
 // GET: List all users (realtors)
 export const GET = withAuth(async (req: NextRequest) => {
@@ -20,8 +22,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     });
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 });
 
@@ -29,13 +30,22 @@ export const GET = withAuth(async (req: NextRequest) => {
 export const POST = withAuth(async (req: NextRequest) => {
   try {
     const data = await req.json();
-    const { name, username, password, phone, photo } = data;
-    if (!name || !username || !password) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Validate input data using Zod
+    const validatedData = parseUserCreateData(data);
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    
+    // Create the user
     const user = await prisma.user.create({
-      data: { name, username, password: hashedPassword, phone, photo },
+      data: { 
+        name: validatedData.name, 
+        username: validatedData.username, 
+        password: hashedPassword, 
+        phone: validatedData.phone, 
+        photo: validatedData.photo 
+      },
       select: {
         id: true,
         name: true,
@@ -48,7 +58,6 @@ export const POST = withAuth(async (req: NextRequest) => {
     });
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 }); 

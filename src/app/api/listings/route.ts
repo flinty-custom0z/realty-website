@@ -1,73 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { parsePaginationParams } from '@/lib/validators/apiValidators';
+import { handleValidationError } from '@/lib/validators/errorHandler';
+import { ListingService } from '@/lib/services/ListingService';
+import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const categorySlugs = searchParams.getAll('category'); // may be []
-
+    
+    // Validate pagination parameters
+    const { page, limit } = parsePaginationParams(searchParams);
+    
+    // Extract and validate filter parameters
+    const categorySlug = searchParams.get('category');
+    const priceMin = searchParams.get('priceMin') ? parseInt(searchParams.get('priceMin') as string) : undefined;
+    const priceMax = searchParams.get('priceMax') ? parseInt(searchParams.get('priceMax') as string) : undefined;
+    const district = searchParams.get('district');
+    const rooms = searchParams.get('rooms') ? parseInt(searchParams.get('rooms') as string) : undefined;
+    const sortBy = searchParams.get('sortBy') || 'dateAdded';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+    
+    // Build filter for active listings
     const filter: any = { status: 'active' };
-
-    if (categorySlugs.length) {
-      const cats = await prisma.category.findMany({ where: { slug: { in: categorySlugs } }, select: { id: true } });
-      if (cats.length) filter.categoryId = { in: cats.map((c) => c.id) };
+    
+    // Add category filter if provided
+    if (categorySlug) {
+      const category = await prisma.category.findUnique({ 
+        where: { slug: categorySlug },
+        select: { id: true }
+      });
+      if (category) {
+        filter.categoryId = category.id;
+      }
     }
-
-    // Deal type filter - simplified to use only 'deal' parameter
-    const deal = searchParams.get('deal');
-
-    if (deal === 'rent') {
-      filter.dealType = 'RENT';
-    } else {
-      filter.dealType = 'SALE';
+    
+    // Add price range filter if provided
+    if (priceMin !== undefined) {
+      filter.price = { ...(filter.price || {}), gte: priceMin };
     }
-
-    const q = searchParams.get('q');
-    if (q) {
-      filter.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { publicDescription: { contains: q, mode: 'insensitive' } },
-      ];
+    if (priceMax !== undefined) {
+      filter.price = { ...(filter.price || {}), lte: priceMax };
     }
-
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    if (minPrice) filter.price = { ...(filter.price || {}), gte: parseFloat(minPrice) };
-    if (maxPrice) filter.price = { ...(filter.price || {}), lte: parseFloat(maxPrice) };
-
-    const districtParams = searchParams.getAll('district');
-    if (districtParams.length) filter.district = { in: districtParams };
-
-    const conditionParams = searchParams.getAll('condition');
-    if (conditionParams.length) filter.condition = { in: conditionParams };
-
-    const roomsParams = searchParams.getAll('rooms');
-    if (roomsParams.length) filter.rooms = { in: roomsParams.map(Number).filter(Boolean) };
-
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '30');
-
-    // Sorting
-    const sortField = searchParams.get('sort') || 'dateAdded';
-    const sortOrder = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
-
-    const [total, listings] = await Promise.all([
-      prisma.listing.count({ where: filter }),
+    
+    // Add district filter if provided
+    if (district) {
+      filter.district = district;
+    }
+    
+    // Add rooms filter if provided
+    if (rooms !== undefined) {
+      filter.rooms = rooms;
+    }
+    
+    // Get listings with the filter
+    const [listings, total] = await Promise.all([
       prisma.listing.findMany({
-      where: filter,
-      include: {
-        category: true,
-          images: { where: { isFeatured: true }, take: 1 },
-      },
-        orderBy: { [sortField]: sortOrder },
-      skip: (page - 1) * limit,
-      take: limit,
+        where: filter,
+        include: {
+          category: true,
+          images: {
+            where: { isFeatured: true },
+            take: 1
+          }
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * limit,
+        take: limit
       }),
+      prisma.listing.count({ where: filter })
     ]);
-
-    return NextResponse.json({ listings, pagination: { total, pages: Math.ceil(total / limit), page, limit } });
-  } catch (err) {
-    console.error('[api/listings] error', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    return NextResponse.json({
+      listings,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page,
+        limit
+      }
+    });
+  } catch (error) {
+    return handleValidationError(error);
   }
 }

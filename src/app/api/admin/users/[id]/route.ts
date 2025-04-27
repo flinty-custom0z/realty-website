@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import * as bcrypt from 'bcrypt';
+import { parseUserUpdateData } from '@/lib/validators/userValidators';
+import { handleValidationError } from '@/lib/validators/errorHandler';
 
 // GET: Get user by id
 export const GET = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -21,8 +23,7 @@ export const GET = withAuth(async (req: NextRequest, { params }: { params: { id:
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 });
 
@@ -30,16 +31,21 @@ export const GET = withAuth(async (req: NextRequest, { params }: { params: { id:
 export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const data = await req.json();
-    const { name, username, password, phone, photo } = data;
+    
+    // Validate input data using Zod
+    const validatedData = parseUserUpdateData(data);
+    
+    // Build update data object
     const updateData: any = {};
-    if (name) updateData.name = name;
-    if (username) updateData.username = username;
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+    if (validatedData.name) updateData.name = validatedData.name;
+    if (validatedData.username) updateData.username = validatedData.username;
+    if (validatedData.password) {
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
       updateData.password = hashedPassword;
     }
-    if (phone !== undefined) updateData.phone = phone;
-    if (photo !== undefined) updateData.photo = photo;
+    if (validatedData.phone !== undefined) updateData.phone = validatedData.phone;
+    if (validatedData.photo !== undefined) updateData.photo = validatedData.photo;
+    
     const user = await prisma.user.update({
       where: { id: params.id },
       data: updateData,
@@ -55,8 +61,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     });
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Error updating user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 });
 
@@ -66,7 +71,6 @@ export const DELETE = withAuth(async (req: NextRequest, { params }: { params: { 
     await prisma.user.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleValidationError(error);
   }
 }); 
