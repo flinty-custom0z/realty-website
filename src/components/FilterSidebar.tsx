@@ -15,12 +15,22 @@ import {
 import { FilterSidebarProps } from '@/types/filters';
 import { useDealType } from '@/contexts/DealTypeContext';
 
+export interface FilterSidebarProps {
+  categorySlug?: string;
+  categories?: Category[];
+  searchQuery?: string;
+  filters?: Record<string, any>;
+  onChange?: (filters: Record<string, any>) => void;
+  filteredCount?: number;
+}
+
 export default function FilterSidebar({
   categorySlug = '',
   categories = [],
   searchQuery = '',
   filters,
   onChange,
+  filteredCount,
 }: FilterSidebarProps) {
   // Use the deal type context
   const { setDealType } = useDealType();
@@ -120,7 +130,7 @@ export default function FilterSidebar({
     <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
       {/* Header with filters count and reset button */}
       <FilterHeader
-        totalCount={state.visibleFilterOptions.totalCount}
+        totalCount={typeof filteredCount === 'number' ? filteredCount : state.visibleFilterOptions.totalCount}
         hasCustomFilters={hasCustomFilters()}
         onReset={handleResetFilters}
       />

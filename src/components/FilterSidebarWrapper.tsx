@@ -22,12 +22,14 @@ interface FilterSidebarWrapperProps {
   categorySlug: string;
   searchQuery?: string;
   categories?: Category[];
+  filteredCount?: number;
 }
 
 export default function FilterSidebarWrapper({ 
   categorySlug,
   searchQuery,
-  categories 
+  categories,
+  filteredCount
 }: FilterSidebarWrapperProps) {
   const [currentSearchQuery, setCurrentSearchQuery] = useState(searchQuery || '');
   const pathname = usePathname();
@@ -77,6 +79,7 @@ export default function FilterSidebarWrapper({
               searchQuery={currentSearchQuery}
               categories={categories}
               filters={initialFilters}
+              filteredCount={filteredCount}
             />
           </Suspense>
         );

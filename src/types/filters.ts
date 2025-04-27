@@ -92,4 +92,5 @@ export interface FilterSidebarProps {
   searchQuery?: string;
   filters?: Record<string, any>;
   onChange?: (filters: Record<string, any>) => void;
+  filteredCount?: number;
 } 

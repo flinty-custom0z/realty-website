@@ -248,6 +248,7 @@ export default async function CategoryPage({
           <FilterSidebarWrapper 
             categorySlug={slug}
             searchQuery={categorySearchQuery}
+            filteredCount={adjustedPagination.total}
           />
         </div>
         
