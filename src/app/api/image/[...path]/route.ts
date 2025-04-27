@@ -16,10 +16,30 @@ const ALLOWED_FORMATS = {
   svg: 'image/svg+xml',
 };
 
-// Path sanitization function to prevent directory traversal attacks
-function sanitizePath(imagePath: string): string {
-  // Remove any parent directory references
-  return imagePath.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+// Secure path validation to prevent directory traversal attacks
+function isPathSafe(imagePath: string): boolean {
+  // Check for path traversal attempts using parent directory references
+  if (imagePath.includes('..') || imagePath.includes('~')) {
+    return false;
+  }
+  
+  // Check for any non-standard characters that might be used in path manipulation
+  if (/[<>:"\\|?*]/.test(imagePath)) {
+    return false;
+  }
+  
+  // Only allow alphanumeric characters, dashes, underscores, periods, and forward slashes
+  if (!/^[a-zA-Z0-9-_./]+$/.test(imagePath)) {
+    return false;
+  }
+  
+  return true;
+}
+
+// Verify the resolved path is within the public images directory
+function isWithinImageDirectory(resolvedPath: string): boolean {
+  const imagesDir = path.resolve(process.cwd(), 'public', 'images');
+  return resolvedPath.startsWith(imagesDir);
 }
 
 export async function GET(
@@ -36,15 +56,28 @@ export async function GET(
     const quality = searchParams.get('quality') ? parseInt(searchParams.get('quality') as string) : 80;
     const format = searchParams.get('format') as keyof typeof ALLOWED_FORMATS || null;
     
-    // Sanitize and reconstruct the path
-    const imagePath = sanitizePath(pathSegments.join('/'));
+    // Validate each path segment for safety
+    if (!pathSegments.every(segment => isPathSafe(segment))) {
+      console.error('Possible path traversal attempt detected');
+      return NextResponse.json({ error: 'Invalid image path' }, { status: 400 });
+    }
+    
+    // Construct the image path
+    const imagePath = pathSegments.join('/');
     
     // Build the full path to the image
     const fullPath = path.join(process.cwd(), 'public', 'images', imagePath);
+    const resolvedPath = path.resolve(fullPath);
+    
+    // Secondary validation: ensure the path is within the images directory
+    if (!isWithinImageDirectory(resolvedPath)) {
+      console.error('Path traversal attempt detected: trying to access outside of images directory');
+      return NextResponse.json({ error: 'Invalid image path' }, { status: 403 });
+    }
     
     // Check if file exists first to avoid errors
-    if (!existsSync(fullPath)) {
-      console.error(`Image not found: ${fullPath}`);
+    if (!existsSync(resolvedPath)) {
+      console.error(`Image not found: ${resolvedPath}`);
       
       // Get default placeholder path
       const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder.png');
@@ -65,10 +98,10 @@ export async function GET(
     
     try {
       // Read the file
-      const fileBuffer = await fs.readFile(fullPath);
+      const fileBuffer = await fs.readFile(resolvedPath);
       
       // Determine content type based on extension
-      const ext = path.extname(fullPath).toLowerCase().substring(1);
+      const ext = path.extname(resolvedPath).toLowerCase().substring(1);
       let contentType = ALLOWED_FORMATS[ext as keyof typeof ALLOWED_FORMATS] || 'application/octet-stream';
       
       // Skip processing for SVG files
@@ -156,12 +189,12 @@ export async function GET(
         },
       });
     } catch (err) {
-      console.error(`Error processing image file: ${fullPath}`, err);
+      console.error(`Error processing image file: ${resolvedPath}`, err);
       
       // If processing fails, try to return the original as fallback
       try {
-        const originalBuffer = await fs.readFile(fullPath);
-        const ext = path.extname(fullPath).toLowerCase().substring(1);
+        const originalBuffer = await fs.readFile(resolvedPath);
+        const ext = path.extname(resolvedPath).toLowerCase().substring(1);
         const contentType = ALLOWED_FORMATS[ext as keyof typeof ALLOWED_FORMATS] || 'application/octet-stream';
         
         return new NextResponse(originalBuffer, {
