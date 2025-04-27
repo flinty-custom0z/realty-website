@@ -21,6 +21,7 @@ export interface ListingData {
   noEncumbrances?: boolean;
   noKids?: boolean;
   status?: string;
+  dealType?: 'SALE' | 'RENT';
 }
 
 export interface ImageUploadData {
