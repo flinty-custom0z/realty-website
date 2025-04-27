@@ -93,7 +93,7 @@ export default function NewListingPage() {
           }
         }
       } catch (error) {
-        logger.error('Error fetching initial data:', error);
+        logger.error('Error fetching initial data:', { error });
         setError('Ошибка при загрузке данных');
       }
     };
@@ -199,7 +199,7 @@ export default function NewListingPage() {
         router.push(`/admin/listings/${data.id}`);
       }, 1500);
     } catch (error) {
-      logger.error('Error creating listing:', error);
+      logger.error('Error creating listing:', { error });
       setError(error instanceof Error ? error.message : 'Ошибка при создании объявления');
       setIsLoading(false);
     }

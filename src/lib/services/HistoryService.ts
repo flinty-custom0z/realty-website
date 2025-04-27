@@ -179,7 +179,7 @@ export class HistoryService {
           where: { listingId }
         });
       } catch (e) {
-        logger.error('Error fetching listing images:', e);
+        logger.error('Error fetching listing images:', { e });
       }
       
       // Map of image IDs to paths
@@ -262,7 +262,7 @@ export class HistoryService {
                 }
               }
             } catch (e) {
-              logger.error('Error enhancing featured image paths:', e);
+              logger.error('Error enhancing featured image paths:', { e });
             }
           }
         }
@@ -272,7 +272,7 @@ export class HistoryService {
       
       return processedHistory;
     } catch (error) {
-      logger.error('Error in getHistoryTimeline:', error);
+      logger.error('Error in getHistoryTimeline:', { error });
       throw error;
     }
   }

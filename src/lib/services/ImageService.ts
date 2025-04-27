@@ -111,7 +111,7 @@ export class ImageService {
               .toFile(thumbnailPath);
               
           } catch (thumbError) {
-            logger.error(`Error generating thumbnail for ${filename}:`, thumbError);
+            logger.error(`Error generating thumbnail for ${filename}:`, { thumbError });
             // Continue with next thumbnail or original save
           }
         }
@@ -123,7 +123,7 @@ export class ImageService {
       // Return path relative to public directory
       return subdirectory ? `/images/${subdirectory}/${filename}` : `/images/${filename}`;
     } catch (error) {
-      logger.error("Error saving image:", error);
+      logger.error("Error saving image:", { error });
       throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -160,7 +160,7 @@ export class ImageService {
       try {
         await unlink(originalPath);
       } catch (err) {
-        logger.error(`Error deleting original image ${imagePath}:`, err);
+        logger.error(`Error deleting original image ${imagePath}:`, { err });
       }
       
       // Also try to delete all thumbnail variants
@@ -175,7 +175,7 @@ export class ImageService {
       
       return true;
     } catch (error) {
-      logger.error(`Error in deleteImage for ${imagePath}:`, error);
+      logger.error(`Error in deleteImage for ${imagePath}:`, { error });
       return false;
     }
   }
@@ -246,7 +246,7 @@ export class ImageService {
       const absolutePath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
       return existsSync(absolutePath);
     } catch (error) {
-      logger.error(`Error checking if image exists: ${imagePath}`, error);
+      logger.error(`Error checking if image exists: ${imagePath}`, { error });
       return false;
     }
   }

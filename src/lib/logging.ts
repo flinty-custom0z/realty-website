@@ -64,12 +64,12 @@ export class Logger {
           
           if (level === LogLevel.FATAL) {
             Sentry.captureMessage(message, {
-              level: Sentry.Severity.Fatal,
+              level: 'fatal',
               contexts: { additionalInfo: sentryContext },
             });
           } else {
             Sentry.captureMessage(message, {
-              level: Sentry.Severity.Error,
+              level: 'error',
               contexts: { additionalInfo: sentryContext },
             });
           }
@@ -181,7 +181,7 @@ export const systemMonitor = {
       // In production, send alert through Sentry
       if (process.env.NODE_ENV === 'production') {
         Sentry.captureMessage('CRITICAL: Database connection failed', {
-          level: Sentry.Severity.Fatal,
+          level: 'fatal',
         });
       }
       

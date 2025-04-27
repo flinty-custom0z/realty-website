@@ -293,14 +293,14 @@ export class ListingService {
       
       return uploadedImagesData;
     } catch (error) {
-      logger.error('Error creating image database records:', error);
+      logger.error('Error creating image database records:', { error });
       
       // If database operation fails, clean up the uploaded files
       for (const path of uploadedFilesPaths) {
         try {
           await ImageService.deleteImage(path);
         } catch (cleanupError) {
-          logger.error(`Failed to clean up image ${path}:`, cleanupError);
+          logger.error(`Failed to clean up image ${path}:`, { cleanupError });
         }
       }
       
@@ -370,7 +370,7 @@ export class ListingService {
           isFeatured: image.isFeatured
         });
       } catch (error) {
-        logger.error(`Error deleting image file ${image.path}:`, error);
+        logger.error(`Error deleting image file ${image.path}:`, { error });
         // Add to deleted images anyway since the DB record is gone
         deletedImages.push({
           id: image.id,

@@ -5,26 +5,43 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: "https://e7bb4ebdce19a287b2e63f81e6af7075@o4509224855470080.ingest.de.sentry.io/4509224862679120",
-
-  // Add optional integrations for additional features
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  
+  // Adjust tracing sample rate based on environment
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  
+  // Set to true for shorter stack traces
+  normalizeDepth: 10,
+  
+  // Set propagation targets for distributed tracing
+  tracePropagationTargets: ['localhost', /^\//],
+  
+  // Enable performance monitoring
   integrations: [
-    Sentry.replayIntegration(),
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration({
+      // We recommend starting with a low sample rate and adjust as needed
+      maskAllText: true,
+      blockAllMedia: true,
+    }),
   ],
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
+  
+  // Set replay sample rates
   replaysSessionSampleRate: 0.1,
-
-  // Define how likely Replay events are sampled when an error occurs.
   replaysOnErrorSampleRate: 1.0,
-
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
+  
+  // Only enable in production to reduce noise
+  enabled: process.env.NODE_ENV === 'production',
+  
+  // Filter out sensitive information
+  beforeSend(event, hint) {
+    // Don't send events in development
+    if (process.env.NODE_ENV !== 'production') {
+      return null;
+    }
+    
+    return event;
+  }
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

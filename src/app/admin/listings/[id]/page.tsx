@@ -186,7 +186,7 @@ export default function EditListingPage() {
         setCategories(categoriesData);
         setFilteredCategories(categoriesData);
       } catch (error) {
-        logger.error('Error fetching data:', error);
+        logger.error('Error fetching data:', { error });
         setError('Failed to load listing data');
       } finally {
         setIsLoading(false);
@@ -283,7 +283,7 @@ export default function EditListingPage() {
       router.push('/admin/listings');
     } catch (error) {
       setError('Error deleting listing');
-      logger.error(error);
+      logger.error('Error deleting listing', { error });
     } finally {
       setIsSaving(false);
     }
@@ -365,7 +365,7 @@ export default function EditListingPage() {
         };
       });
     } catch (error) {
-      logger.error('Error updating listing:', error);
+      logger.error('Error updating listing:', { error });
       setError(error instanceof Error ? error.message : 'Ошибка при обновлении объявления');
     } finally {
       setIsSaving(false);

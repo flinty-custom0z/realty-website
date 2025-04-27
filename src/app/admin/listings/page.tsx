@@ -83,7 +83,7 @@ export default function AdminListingsPage() {
       setListings(data.listings);
       setPagination(data.pagination);
     } catch (error) {
-      logger.error('Error fetching listings:', error);
+      logger.error('Error fetching listings:', { error });
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +106,7 @@ export default function AdminListingsPage() {
       // Refresh listings
       fetchListings();
     } catch (error) {
-      logger.error('Error deleting listing:', error);
+      logger.error('Error deleting listing:', { error });
       alert('Ошибка при удалении объявления');
     }
   };
