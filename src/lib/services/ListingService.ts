@@ -48,19 +48,29 @@ export class ListingService {
     // Generate listing code
     const listingCode = await this.generateListingCode(listingData.categoryId);
     
-    // Create listing
-    const newListing = await prisma.listing.create({
-      data: {
-        ...listingData,
-        listingCode,
-        status: listingData.status || 'active',
-      },
+    // Use transaction to ensure atomic creation of listing and history record
+    return prisma.$transaction(async (tx) => {
+      // Create listing within transaction
+      const newListing = await tx.listing.create({
+        data: {
+          ...listingData,
+          listingCode,
+          status: listingData.status || 'active',
+        },
+      });
+      
+      // Create history entry for creation within the same transaction
+      await tx.listingHistory.create({
+        data: {
+          listingId: newListing.id,
+          userId: currentUserId,
+          changes: { action: 'create', data: { ...listingData, listingCode } },
+          action: 'create'
+        }
+      });
+      
+      return newListing;
     });
-    
-    // Create history entry for creation
-    await HistoryService.recordListingCreation(newListing.id, currentUserId);
-    
-    return newListing;
   }
 
   /**
@@ -100,21 +110,42 @@ export class ListingService {
       throw new Error('Listing not found');
     }
 
-    // Update listing
-    const updatedListing = await prisma.listing.update({
-      where: { id: listingId },
-      data: listingData,
+    // Compare fields to identify what has changed
+    const changes: Record<string, { from: any, to: any }> = {};
+    Object.keys(listingData).forEach(key => {
+      if (key in originalListing && originalListing[key as keyof typeof originalListing] !== listingData[key as keyof typeof listingData]) {
+        changes[key] = {
+          from: originalListing[key as keyof typeof originalListing],
+          to: listingData[key as keyof typeof listingData]
+        };
+      }
     });
 
-    // Record changes in history
-    await HistoryService.recordFieldChanges(
-      listingId,
-      currentUserId,
-      originalListing,
-      listingData
-    );
+    // Use transaction to ensure atomic update of listing and history record
+    return prisma.$transaction(async (tx) => {
+      // Update listing
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: listingData,
+      });
 
-    return updatedListing;
+      // Only create history entry if there were actual changes
+      if (Object.keys(changes).length > 0) {
+        await tx.listingHistory.create({
+          data: {
+            listingId,
+            userId: currentUserId,
+            changes: {
+              action: 'update_fields',
+              fields: changes
+            },
+            action: 'update'
+          }
+        });
+      }
+
+      return updatedListing;
+    });
   }
 
   /**
@@ -139,25 +170,47 @@ export class ListingService {
       throw new Error('Listing not found');
     }
 
-    // Record deletion in history before actually deleting
-    await HistoryService.recordListingDeletion(listingId, currentUserId, {
-      title: listing.title,
-      category: listing.category.name,
-      price: listing.price,
-      realtorName: listing.user.name,
-      listingCode: listing.listingCode,
-      imageCount: listing.images.length
+    // First record deletion in history and delete database records in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Create history entry for deletion
+      await tx.listingHistory.create({
+        data: {
+          listingId,
+          userId: currentUserId,
+          changes: {
+            message: "Listing deleted",
+            details: {
+              title: listing.title,
+              category: listing.category.name,
+              price: listing.price,
+              realtorName: listing.user.name,
+              listingCode: listing.listingCode,
+              imageCount: listing.images.length
+            }
+          },
+          action: 'delete'
+        }
+      });
+
+      // Delete the listing (which will cascade to delete related images from the database)
+      await tx.listing.delete({
+        where: { id: listingId },
+      });
     });
 
-    // Delete the image files from disk
-    for (const image of listing.images) {
-      await ImageService.deleteImage(image.path);
-    }
-
-    // Delete the listing (which cascades to images)
-    await prisma.listing.delete({
-      where: { id: listingId },
+    // After successful database transaction, delete the images from disk
+    // Even if some image deletions fail, the database is already cleaned up
+    const imageDeletePromises = listing.images.map(async (image) => {
+      try {
+        return await ImageService.deleteImage(image.path);
+      } catch (error) {
+        console.error(`Failed to delete image file ${image.path}:`, error);
+        return false;
+      }
     });
+
+    // Wait for all image deletions to complete, but don't fail if some fail
+    await Promise.allSettled(imageDeletePromises);
 
     return true;
   }
@@ -173,43 +226,81 @@ export class ListingService {
     if (imageFiles.length === 0) return [];
     
     const uploadedImagesData: ImageUploadData[] = [];
+    const uploadedFilesPaths: string[] = [];
     
+    // First phase: Upload files to disk
     for (let i = 0; i < imageFiles.length; i++) {
       const file = imageFiles[i];
       if (file instanceof File) {
         try {
           const imagePath = await ImageService.saveImage(file);
-          
-          // Create the image record
-          const imageRecord = await ImageService.createImageRecord(
-            listingId, 
-            imagePath, 
-            i === 0 // First image is featured
-          );
-          
-          uploadedImagesData.push({
-            filename: file.name,
-            size: Math.round(file.size / 1024) + 'KB',
-            path: imagePath,
-            isFeatured: i === 0
-          });
+          uploadedFilesPaths.push(imagePath);
         } catch (error) {
-          console.error(`Error processing image ${i + 1}:`, error);
-          // Continue with other images even if one fails
+          console.error(`Error saving image ${file.name} to disk:`, error);
+          // Continue trying to save other images
         }
       }
     }
     
-    // Record image uploads in history
-    if (uploadedImagesData.length > 0) {
-      await HistoryService.recordImageUploads(
-        listingId,
-        currentUserId,
-        uploadedImagesData
-      );
+    // If no images were successfully saved to disk, return early
+    if (uploadedFilesPaths.length === 0) return [];
+
+    try {
+      // Second phase: Create DB records in a transaction
+      await prisma.$transaction(async (tx) => {
+        // Create image records in database
+        for (let i = 0; i < uploadedFilesPaths.length; i++) {
+          const path = uploadedFilesPaths[i];
+          const file = imageFiles.find(f => f instanceof File) as File;
+          const isFeatured = i === 0; // First image is featured
+          
+          // Create the image record
+          const imageRecord = await tx.image.create({
+            data: {
+              listingId,
+              path,
+              isFeatured
+            }
+          });
+          
+          uploadedImagesData.push({
+            filename: file?.name || 'unknown',
+            size: file ? Math.round(file.size / 1024) + 'KB' : 'unknown',
+            path,
+            isFeatured
+          });
+        }
+        
+        // Record image uploads in history within the transaction
+        await tx.listingHistory.create({
+          data: {
+            listingId,
+            userId: currentUserId,
+            changes: { 
+              action: 'upload_images',
+              imageCount: uploadedImagesData.length,
+              images: uploadedImagesData.map(img => ({ path: img.path, isFeatured: img.isFeatured }))
+            },
+            action: 'update'
+          }
+        });
+      });
+      
+      return uploadedImagesData;
+    } catch (error) {
+      console.error('Error creating image database records:', error);
+      
+      // If database operation fails, clean up the uploaded files
+      for (const path of uploadedFilesPaths) {
+        try {
+          await ImageService.deleteImage(path);
+        } catch (cleanupError) {
+          console.error(`Failed to clean up image ${path}:`, cleanupError);
+        }
+      }
+      
+      return [];
     }
-    
-    return uploadedImagesData;
   }
 
   /**
@@ -223,21 +314,50 @@ export class ListingService {
     if (imageIds.length === 0) return [];
     
     // Get details of images to be deleted for history
-    const imagesToDeleteDetails = await ImageService.getImagesDetails(imageIds);
+    const imagesToDelete = await prisma.image.findMany({
+      where: { 
+        id: { in: imageIds },
+        listingId // Ensure we only delete images that belong to this listing
+      }
+    });
     
-    // Filter to ensure we only delete images that belong to this listing
-    const validImagesToDelete = imagesToDeleteDetails.filter(img => true); // In a real app, verify listingId here
+    if (imagesToDelete.length === 0) return [];
     
     const deletedImages = [];
     
-    // Delete the images one by one
-    for (const image of validImagesToDelete) {
+    // First: Delete database records in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete image records from database
+      await tx.image.deleteMany({
+        where: {
+          id: { in: imagesToDelete.map(img => img.id) }
+        }
+      });
+      
+      // Record image deletions in history
+      await tx.listingHistory.create({
+        data: {
+          listingId,
+          userId: currentUserId,
+          changes: {
+            action: 'delete_images',
+            imageCount: imagesToDelete.length,
+            images: imagesToDelete.map(img => ({ 
+              id: img.id, 
+              path: img.path, 
+              isFeatured: img.isFeatured 
+            }))
+          },
+          action: 'update'
+        }
+      });
+    });
+    
+    // Then: Delete the actual image files from disk
+    for (const image of imagesToDelete) {
       try {
         // Delete the image file from disk
         await ImageService.deleteImage(image.path);
-        
-        // Delete the image record from the database
-        await ImageService.deleteImageRecord(image.id);
         
         deletedImages.push({
           id: image.id,
@@ -245,20 +365,15 @@ export class ListingService {
           isFeatured: image.isFeatured
         });
       } catch (error) {
-        console.error(`Error deleting image ${image.id}:`, error);
+        console.error(`Error deleting image file ${image.path}:`, error);
+        // Add to deleted images anyway since the DB record is gone
+        deletedImages.push({
+          id: image.id,
+          path: image.path,
+          isFeatured: image.isFeatured,
+          error: 'File deletion failed but database record was removed'
+        });
       }
-    }
-    
-    // Record image deletions in history
-    if (deletedImages.length > 0) {
-      await HistoryService.recordImageChanges(
-        listingId,
-        currentUserId,
-        [], // no added images
-        deletedImages,
-        deletedImages.some(img => img.isFeatured), // whether a featured image was deleted
-        null
-      );
     }
     
     return deletedImages;
