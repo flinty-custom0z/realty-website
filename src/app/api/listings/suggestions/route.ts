@@ -5,9 +5,31 @@ import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const q = searchParams.get('q');
     const listingId = searchParams.get('listingId');
     const categoryId = searchParams.get('categoryId');
     const limit = Number(searchParams.get('limit') || '4');
+    
+    // New: Search by query string for suggestions
+    if (q && q.trim().length >= 2) {
+      const suggestions = await prisma.listing.findMany({
+        where: {
+          status: 'active',
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { address: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        select: {
+          id: true,
+          title: true,
+          address: true
+        },
+        take: limit,
+        orderBy: { dateAdded: 'desc' }
+      });
+      return NextResponse.json({ suggestions });
+    }
     
     if (!listingId && !categoryId) {
       throw new ApiError('Either listingId or categoryId is required', 400);
