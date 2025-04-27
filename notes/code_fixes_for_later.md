@@ -64,12 +64,6 @@ Please provide clean and minimal code examples for each step.
 
 ---
 
-## Code Quality & Maintainability
-
-**Styling and Linting:** A proper ESLint config is present (`.eslintrc.json`). The code mostly adheres to it (consistent semi-colons, quotes, etc.). TypeScript is used, which catches many issues at compile time. Ensure the project’s `tsconfig.json` is strict enough (no unchecked any’s) for robust code. This foundation is good for long-term maintainability.
-
----
-
 ## Nice to, for later: 
 
 #### Remaining light coupling (nice-to-have)
