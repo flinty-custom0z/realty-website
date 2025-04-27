@@ -59,6 +59,7 @@ export default function NewListingPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<{ file: File; url: string }[]>([]);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
 
@@ -150,6 +151,7 @@ export default function NewListingPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
     
     try {
       const formDataToSend = new FormData();
@@ -184,7 +186,14 @@ export default function NewListingPage() {
       }
       
       const data = await response.json();
-      router.push(`/admin/listings/${data.id}`);
+      
+      // Show success message
+      setSuccess('Объявление успешно создано');
+      
+      // Redirect to the created listing page after a short delay
+      setTimeout(() => {
+        router.push(`/admin/listings/${data.id}`);
+      }, 1500);
     } catch (error) {
       console.error('Error creating listing:', error);
       setError(error instanceof Error ? error.message : 'Ошибка при создании объявления');
@@ -208,6 +217,12 @@ export default function NewListingPage() {
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+          {success}
         </div>
       )}
       
