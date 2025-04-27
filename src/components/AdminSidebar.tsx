@@ -8,7 +8,8 @@ import {
   ListFilter, 
   PlusCircle, 
   Users,
-  LogOut 
+  LogOut,
+  BarChart
 } from 'lucide-react';
 
 export default function AdminSidebar({ user }: { user: { name: string } }) {
@@ -29,7 +30,7 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
           <Link 
             href="/admin" 
             className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm ${
-              isActive('/admin') && !isActive('/admin/listings') && !isActive('/admin/users')
+              isActive('/admin') && !isActive('/admin/listings') && !isActive('/admin/users') && !isActive('/admin/monitoring')
                 ? 'bg-gray-100 text-gray-900 font-medium'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
@@ -72,6 +73,18 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
           >
             <Users size={18} />
             <span>Риелторы</span>
+          </Link>
+          
+          <Link 
+            href="/admin/monitoring" 
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm ${
+              isActive('/admin/monitoring')
+                ? 'bg-gray-100 text-gray-900 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <BarChart size={18} />
+            <span>Мониторинг</span>
           </Link>
         </div>
         

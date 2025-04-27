@@ -5,13 +5,18 @@ import {
   PrismaClientValidationError,
   PrismaClientUnknownRequestError
 } from '@prisma/client/runtime/library';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger for API errors
+const logger = createLogger('ApiErrorHandler');
 
 /**
  * Helper function to handle various error types in API routes
  * Returns a formatted error response with appropriate status codes
  */
 export function handleApiError(error: unknown) {
-  console.error('API error caught:', error);
+  // Log the full error for server-side debugging
+  logger.error('API error caught', { error });
   
   // Validation errors - 400 Bad Request
   if (error instanceof ZodError) {
@@ -31,6 +36,12 @@ export function handleApiError(error: unknown) {
   
   // Prisma known request errors
   if (error instanceof PrismaClientKnownRequestError) {
+    // Log database constraint errors with details
+    logger.error('Database constraint error', { 
+      code: error.code, 
+      meta: error.meta 
+    });
+    
     // Handle specific Prisma error codes
     switch (error.code) {
       case 'P2002': // Unique constraint failed
@@ -58,6 +69,8 @@ export function handleApiError(error: unknown) {
   
   // Prisma validation errors
   if (error instanceof PrismaClientValidationError) {
+    logger.error('Database validation error', { message: error.message });
+    
     return NextResponse.json(
       { error: 'Invalid data format for database operation' }, 
       { status: 400 }
@@ -66,6 +79,8 @@ export function handleApiError(error: unknown) {
   
   // Other Prisma errors
   if (error instanceof PrismaClientUnknownRequestError) {
+    logger.error('Unknown database error', { message: error.message });
+    
     return NextResponse.json(
       { error: 'Database operation failed' }, 
       { status: 500 }
@@ -74,6 +89,14 @@ export function handleApiError(error: unknown) {
   
   // Custom errors with status codes
   if (error instanceof ApiError) {
+    // For client errors (4xx), log as warnings
+    if (error.statusCode >= 400 && error.statusCode < 500) {
+      logger.warn(error.message, { statusCode: error.statusCode });
+    } else {
+      // For server errors (5xx), log as errors
+      logger.error(error.message, { statusCode: error.statusCode });
+    }
+    
     return NextResponse.json(
       { error: error.message },
       { status: error.statusCode }
@@ -84,11 +107,20 @@ export function handleApiError(error: unknown) {
   if (error instanceof Error) {
     // Check if the error message suggests a client error
     if (isClientErrorMessage(error.message)) {
+      logger.warn('Client error', { message: error.message });
+      
       return NextResponse.json(
         { error: error.message }, 
         { status: 400 }
       );
     }
+    
+    // Log server errors
+    logger.error('Server error', { 
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     
     // Server error
     return NextResponse.json(
@@ -98,6 +130,8 @@ export function handleApiError(error: unknown) {
   }
   
   // Unknown error type
+  logger.error('Unexpected error type', { error });
+  
   return NextResponse.json(
     { error: 'An unexpected error occurred' }, 
     { status: 500 }

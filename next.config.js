@@ -51,6 +51,41 @@ const nextConfig = {
       },
     };
   },
-};
   
-module.exports = nextConfig;
+  // Configure Sentry for application monitoring
+  sentry: {
+    // Hide source maps from public access
+    hideSourceMaps: true,
+    
+    // Automatically instrument your code for error tracking
+    autoInstrumentServerFunctions: true,
+    
+    // Turn off sentry logging in development
+    disableLogger: process.env.NODE_ENV !== 'production',
+  },
+};
+
+// Wrap with Sentry when in production
+if (process.env.NODE_ENV === 'production') {
+  // Only require Sentry in production to avoid dev dependencies
+  const { withSentryConfig } = require('@sentry/nextjs');
+  
+  module.exports = withSentryConfig(nextConfig, {
+    // Silence source map upload - we only want error tracking, not source map uploads
+    // This keeps costs down for smaller projects
+    silent: true,
+    
+    // Optionally configure sentry tunnel if needed for firewall situations
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+  }, {
+    // These options are for the '@sentry/webpack-plugin'
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    tunnelRoute: '/monitoring-tunnel',
+    hideSourceMaps: true,
+    disableLogger: true,
+  });
+} else {
+  module.exports = nextConfig;
+}

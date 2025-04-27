@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser, generateToken, getSecureCookieOptions } from '@/lib/auth';
 import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger for authentication
+const logger = createLogger('AuthApi');
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,19 +12,29 @@ export async function POST(req: NextRequest) {
     const { username, password } = body;
     
     if (!username || !password) {
+      logger.warn('Login attempt missing credentials');
       throw new ApiError('Username and password are required', 400);
     }
     
     // Don't log usernames
-    console.log('Authentication attempt');
+    logger.info('Authentication attempt', { 
+      ip: req.headers.get('x-forwarded-for') || 'unknown' 
+    });
 
     const user = await authenticateUser(username, password);
     if (!user) {
+      logger.warn('Failed authentication attempt', { 
+        ip: req.headers.get('x-forwarded-for') || 'unknown'
+      });
       throw new ApiError('Invalid credentials', 401);
     }
 
     // Avoid logging user names
-    console.log('Authentication successful');
+    logger.info('Authentication successful', { 
+      userId: user.id,
+      ip: req.headers.get('x-forwarded-for') || 'unknown'
+    });
+    
     const token = generateToken(user.id);
     
     // Create the response
