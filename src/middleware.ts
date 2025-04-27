@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
     
     if (!token) {
-      console.log('No token found, redirecting to admin-login');
+      console.log('Missing authentication token');
       return NextResponse.redirect(new URL('/admin-login', request.url));
     }
     
@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, encoder.encode(JWT_SECRET));
       return NextResponse.next();
     } catch (error) {
-      console.error('Invalid token:', error);
+      console.error('Token validation failed');
       // Invalid token, redirect to login
       return NextResponse.redirect(new URL('/admin-login', request.url));
     }

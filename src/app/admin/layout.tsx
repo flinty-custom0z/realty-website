@@ -18,7 +18,7 @@ async function getUserFromCookie() {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     if (!token) {
-      console.log('No token in cookie, returning null');
+      console.log('No token in cookie');
       return null;
     }
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
@@ -30,10 +30,12 @@ async function getUserFromCookie() {
       console.log('User not found for token');
       return null;
     }
-    console.log(`User found in layout: ${user.name}`);
+    // Don't log user details
+    console.log('Valid user found');
     return user;
   } catch (error) {
-    console.error('Error getting user from cookie:', error);
+    // Avoid logging full error object
+    console.error('Error validating session');
     return null;
   }
 }
@@ -47,7 +49,7 @@ export default async function AdminLayout({
   
   // If no user is found, redirect to the new login path
   if (!user) {
-    console.log('No user found in layout, redirecting to admin-login');
+    console.log('Redirecting to login page');
     redirect('/admin-login');
   }
   

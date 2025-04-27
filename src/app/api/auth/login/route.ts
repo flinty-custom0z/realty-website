@@ -7,15 +7,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { username, password } = body;
     
-    console.log(`Attempting to authenticate user: ${username}`);
+    // Don't log usernames
+    console.log('Authentication attempt');
 
     const user = await authenticateUser(username, password);
     if (!user) {
-      console.log('Authentication failed: Invalid credentials');
+      console.log('Authentication failed');
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    console.log(`User authenticated successfully: ${user.name}`);
+    // Avoid logging user names
+    console.log('Authentication successful');
     const token = generateToken(user.id);
     
     // Create the response
@@ -37,7 +39,8 @@ export async function POST(req: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error('Login error:', error);
+    // Avoid logging full error objects
+    console.error('Login error occurred');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

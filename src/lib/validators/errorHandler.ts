@@ -23,7 +23,12 @@ export function handleValidationError(error: unknown) {
   }
   
   // Handle non-validation errors
-  console.error('Unexpected error:', error);
+  if (error instanceof Error) {
+    console.error('Unexpected error occurred');
+  } else {
+    console.error('Unknown error type encountered');
+  }
+  
   return NextResponse.json(
     { 
       error: 'Internal server error',
