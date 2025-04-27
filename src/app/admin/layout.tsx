@@ -8,6 +8,10 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import AdminSidebar from '@/components/AdminSidebar';
 import { JWT_SECRET } from '@/lib/env';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('AdminLayout');
 
 // Remove the hardcoded fallback
 // const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -18,7 +22,7 @@ async function getUserFromCookie() {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     if (!token) {
-      console.log('No token in cookie');
+      logger.info('No token in cookie');
       return null;
     }
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
@@ -27,15 +31,15 @@ async function getUserFromCookie() {
       select: { id: true, name: true, username: true },
     });
     if (!user) {
-      console.log('User not found for token');
+      logger.info('User not found for token');
       return null;
     }
     // Don't log user details
-    console.log('Valid user found');
+    logger.info('Valid user found');
     return user;
   } catch (error) {
     // Avoid logging full error object
-    console.error('Error validating session');
+    logger.error('Error validating session');
     return null;
   }
 }
@@ -49,7 +53,7 @@ export default async function AdminLayout({
   
   // If no user is found, redirect to the new login path
   if (!user) {
-    console.log('Redirecting to login page');
+    logger.info('Redirecting to login page');
     redirect('/admin-login');
   }
   

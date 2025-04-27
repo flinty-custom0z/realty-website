@@ -5,19 +5,23 @@ import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
 import { handleApiError } from '@/lib/validators/errorHandler';
 import prisma from '@/lib/prisma';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('AdminListingsAPI');
 
 async function handleCreateListing(req: NextRequest) {
   try {
     const formData = await req.formData();
     const user = (req as any).user;
     
-    console.log("Creating new listing for user:", user.name);
+    logger.info("Creating new listing for user:", user.name);
     
     // Use the form data parser to extract and validate listing data
     // This will throw a ZodError if validation fails
     const listingData = await parseListingFormData(formData);
     
-    console.log("Extracted and validated form data:", {
+    logger.info("Extracted and validated form data:", {
       title: listingData.title,
       categoryId: listingData.categoryId,
       price: listingData.price,
@@ -25,14 +29,14 @@ async function handleCreateListing(req: NextRequest) {
     });
     
     // Create listing using ListingService
-    console.log("Creating listing in database");
+    logger.info("Creating listing in database");
     const newListing = await ListingService.createListing(listingData, user.id);
 
-    console.log("Listing created with ID:", newListing.id);
+    logger.info("Listing created with ID:", newListing.id);
 
     // Handle image uploads
     const images = formData.getAll('images');
-    console.log(`Processing ${images.length} images`);
+    logger.info(`Processing ${images.length} images`);
     
     if (images.length > 0) {
       // Process image uploads using ListingService
@@ -43,14 +47,14 @@ async function handleCreateListing(req: NextRequest) {
       );
     } else {
       // If no images were uploaded, use a placeholder
-      console.log("No images uploaded, using placeholder");
+      logger.info("No images uploaded, using placeholder");
       const category = await prisma.category.findUnique({ where: { id: listingData.categoryId } });
       let placeholderPath = `/images/${category?.slug || 'placeholder'}_placeholder.png`;
       
       await ImageService.createImageRecord(newListing.id, placeholderPath, true);
     }
 
-    console.log("Listing creation complete, returning response");
+    logger.info("Listing creation complete, returning response");
     return NextResponse.json(newListing, { 
       status: 201,
       headers: {

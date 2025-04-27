@@ -3,6 +3,9 @@
 
 ### NOW
 
+- Add rent/sale column in admin listings list
+
+
 ### Next
 
 - [[domain_and_hosting.md]]

@@ -1,6 +1,10 @@
 import prisma from '@/lib/prisma';
 import { ImageService } from './ImageService';
 import { HistoryService } from './HistoryService';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('ListingService');
 
 export interface ListingData {
   title: string;
@@ -205,7 +209,7 @@ export class ListingService {
       try {
         return await ImageService.deleteImage(image.path);
       } catch (error) {
-        console.error(`Failed to delete image file ${image.path}:`, error);
+        logger.error(`Failed to delete image file ${image.path}`, { error });
         return false;
       }
     });
@@ -237,7 +241,7 @@ export class ListingService {
           const imagePath = await ImageService.saveImage(file);
           uploadedFilesPaths.push(imagePath);
         } catch (error) {
-          console.error(`Error saving image ${file.name} to disk:`, error);
+          logger.error(`Error saving image ${file.name} to disk`, { error });
           // Continue trying to save other images
         }
       }
@@ -289,14 +293,14 @@ export class ListingService {
       
       return uploadedImagesData;
     } catch (error) {
-      console.error('Error creating image database records:', error);
+      logger.error('Error creating image database records:', error);
       
       // If database operation fails, clean up the uploaded files
       for (const path of uploadedFilesPaths) {
         try {
           await ImageService.deleteImage(path);
         } catch (cleanupError) {
-          console.error(`Failed to clean up image ${path}:`, cleanupError);
+          logger.error(`Failed to clean up image ${path}:`, cleanupError);
         }
       }
       
@@ -366,7 +370,7 @@ export class ListingService {
           isFeatured: image.isFeatured
         });
       } catch (error) {
-        console.error(`Error deleting image file ${image.path}:`, error);
+        logger.error(`Error deleting image file ${image.path}:`, error);
         // Add to deleted images anyway since the DB record is gone
         deletedImages.push({
           id: image.id,

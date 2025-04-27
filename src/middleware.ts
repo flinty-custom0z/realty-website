@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/env';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('Middleware');
 
 // Remove the hardcoded fallback
 // const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -28,7 +32,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
     
     if (!token) {
-      console.log('Missing authentication token');
+      logger.info('Missing authentication token');
       return NextResponse.redirect(new URL('/admin-login', request.url));
     }
     
@@ -38,7 +42,7 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, encoder.encode(JWT_SECRET));
       return NextResponse.next();
     } catch (error) {
-      console.error('Token validation failed');
+      logger.error('Token validation failed');
       // Invalid token, redirect to login
       return NextResponse.redirect(new URL('/admin-login', request.url));
     }

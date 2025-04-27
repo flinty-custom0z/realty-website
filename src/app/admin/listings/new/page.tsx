@@ -6,6 +6,7 @@ import Button from '@/components/Button';
 import ImageUpload from '@/components/ImageUpload';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { createLogger } from '@/lib/logging';
 
 interface FormData {
   title: string;
@@ -28,6 +29,9 @@ interface FormData {
   status: string;
   userId: string;
 }
+
+// Create a logger instance
+const logger = createLogger('AdminListingNewPage');
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -89,7 +93,7 @@ export default function NewListingPage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching initial data:', error);
+        logger.error('Error fetching initial data:', error);
         setError('Ошибка при загрузке данных');
       }
     };
@@ -195,7 +199,7 @@ export default function NewListingPage() {
         router.push(`/admin/listings/${data.id}`);
       }, 1500);
     } catch (error) {
-      console.error('Error creating listing:', error);
+      logger.error('Error creating listing:', error);
       setError(error instanceof Error ? error.message : 'Ошибка при создании объявления');
       setIsLoading(false);
     }

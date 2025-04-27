@@ -32,7 +32,9 @@ export function ErrorTest() {
         case 'sentry-error':
           // Direct Sentry error
           Sentry.captureException(new Error('Test Sentry error from monitoring dashboard'));
-          Sentry.captureMessage('Test Sentry message from monitoring dashboard', 'error');
+          Sentry.captureMessage('Test Sentry message from monitoring dashboard', {
+            level: 'error' as Sentry.SeverityLevel
+          });
           setResult({ success: true, message: 'Sentry error reported successfully' });
           break;
           

@@ -8,6 +8,7 @@ import TruncatedCell from '@/components/ui/TruncatedCell';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/Button';
 import { formatDate, formatPrice } from '@/lib/utils';
+import { createLogger } from '@/lib/logging';
 
 interface Listing {
   id: string;
@@ -35,6 +36,9 @@ interface PaginationData {
   page: number;
   limit: number;
 }
+
+// Create a logger instance
+const logger = createLogger('AdminListingsPage');
 
 export default function AdminListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -79,7 +83,7 @@ export default function AdminListingsPage() {
       setListings(data.listings);
       setPagination(data.pagination);
     } catch (error) {
-      console.error('Error fetching listings:', error);
+      logger.error('Error fetching listings:', error);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +106,7 @@ export default function AdminListingsPage() {
       // Refresh listings
       fetchListings();
     } catch (error) {
-      console.error('Error deleting listing:', error);
+      logger.error('Error deleting listing:', error);
       alert('Ошибка при удалении объявления');
     }
   };

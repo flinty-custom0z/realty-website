@@ -49,3 +49,5 @@ next-env.d.ts
 public/images/
 
 exports/
+# Sentry Config File
+.env.sentry-build-plugin

@@ -9,6 +9,7 @@ import ImageModal from '@/components/ImageModal';
 import { Eye, Loader2, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import Button from '@/components/Button';
+import { createLogger } from '@/lib/logging';
 
 interface ListingFormData {
   title: string;
@@ -67,6 +68,9 @@ interface ListingData extends ListingFormData {
 }
 
 import { useParams } from 'next/navigation';
+
+// Create a logger instance
+const logger = createLogger('AdminListingEditPage');
 
 export default function EditListingPage() {
   const params = useParams();
@@ -182,7 +186,7 @@ export default function EditListingPage() {
         setCategories(categoriesData);
         setFilteredCategories(categoriesData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        logger.error('Error fetching data:', error);
         setError('Failed to load listing data');
       } finally {
         setIsLoading(false);
@@ -279,7 +283,7 @@ export default function EditListingPage() {
       router.push('/admin/listings');
     } catch (error) {
       setError('Error deleting listing');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsSaving(false);
     }
@@ -361,7 +365,7 @@ export default function EditListingPage() {
         };
       });
     } catch (error) {
-      console.error('Error updating listing:', error);
+      logger.error('Error updating listing:', error);
       setError(error instanceof Error ? error.message : 'Ошибка при обновлении объявления');
     } finally {
       setIsSaving(false);

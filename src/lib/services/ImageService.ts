@@ -6,6 +6,10 @@ import prisma from '@/lib/prisma';
 import sharp from 'sharp';
 import { existsSync } from 'fs';
 import { validateImageFile, ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from '@/lib/validators/imageValidators';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('ImageService');
 
 // Define thumbnail sizes to generate
 const THUMBNAIL_SIZES = [
@@ -24,7 +28,7 @@ export class ImageService {
     } catch (error) {
       // Directory doesn't exist, create it
       await mkdir(dirPath, { recursive: true });
-      console.log(`Created directory: ${dirPath}`);
+      logger.info(`Created directory: ${dirPath}`);
     }
   }
 
@@ -61,7 +65,7 @@ export class ImageService {
       await this.ensureDirectoryExists(imagesDir);
 
       const filePath = path.join(imagesDir, filename);
-      console.log(`Saving image to: ${filePath}`);
+      logger.info(`Saving image to: ${filePath}`);
 
       // Check if format is valid for sharp
       const isProcessableFormat = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext);
@@ -107,7 +111,7 @@ export class ImageService {
               .toFile(thumbnailPath);
               
           } catch (thumbError) {
-            console.error(`Error generating thumbnail for ${filename}:`, thumbError);
+            logger.error(`Error generating thumbnail for ${filename}:`, thumbError);
             // Continue with next thumbnail or original save
           }
         }
@@ -119,7 +123,7 @@ export class ImageService {
       // Return path relative to public directory
       return subdirectory ? `/images/${subdirectory}/${filename}` : `/images/${filename}`;
     } catch (error) {
-      console.error("Error saving image:", error);
+      logger.error("Error saving image:", error);
       throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -156,7 +160,7 @@ export class ImageService {
       try {
         await unlink(originalPath);
       } catch (err) {
-        console.error(`Error deleting original image ${imagePath}:`, err);
+        logger.error(`Error deleting original image ${imagePath}:`, err);
       }
       
       // Also try to delete all thumbnail variants
@@ -171,7 +175,7 @@ export class ImageService {
       
       return true;
     } catch (error) {
-      console.error(`Error in deleteImage for ${imagePath}:`, error);
+      logger.error(`Error in deleteImage for ${imagePath}:`, error);
       return false;
     }
   }
@@ -242,7 +246,7 @@ export class ImageService {
       const absolutePath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
       return existsSync(absolutePath);
     } catch (error) {
-      console.error(`Error checking if image exists: ${imagePath}`, error);
+      logger.error(`Error checking if image exists: ${imagePath}`, error);
       return false;
     }
   }

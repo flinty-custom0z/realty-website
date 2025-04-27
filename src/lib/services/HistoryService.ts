@@ -1,4 +1,8 @@
 import prisma from '@/lib/prisma';
+import { createLogger } from '@/lib/logging';
+
+// Create a logger instance
+const logger = createLogger('HistoryService');
 
 export type HistoryAction = 'create' | 'update' | 'delete' | 'images';
 
@@ -175,7 +179,7 @@ export class HistoryService {
           where: { listingId }
         });
       } catch (e) {
-        console.log('Error fetching listing images:', e);
+        logger.error('Error fetching listing images:', e);
       }
       
       // Map of image IDs to paths
@@ -258,7 +262,7 @@ export class HistoryService {
                 }
               }
             } catch (e) {
-              console.log('Error enhancing featured image paths:', e);
+              logger.error('Error enhancing featured image paths:', e);
             }
           }
         }
@@ -268,7 +272,7 @@ export class HistoryService {
       
       return processedHistory;
     } catch (error) {
-      console.error('Error in getHistoryTimeline:', error);
+      logger.error('Error in getHistoryTimeline:', error);
       throw error;
     }
   }

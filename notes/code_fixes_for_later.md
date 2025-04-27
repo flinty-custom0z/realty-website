@@ -6,7 +6,6 @@
 
 **No API Versioning:** The API endpoints are defined under `/api/...` without a version prefix. While not critical now, any future changes to API contracts could break clients (though in this case, the client is the same Next app). **Recommendation:** If you foresee third-party API consumers or significant evolution, consider a versioning strategy (e.g., `/api/v1/...`). For internal use, this can be deferred. 
 
-
 ---
 
 ### Add Role-Based Access Control
@@ -55,6 +54,13 @@ Please provide clean and minimal code examples for each step.
 
 - Server-side, use Next.js ISR (Incremental Static Regeneration) or route handler caching for rarely-changing data (e.g., categories list). For instance, category pages could be statically regenerated every X minutes since categories change rarely. Currently `dynamic = 'force-dynamic'` is set (disabling caching), probably to always show fresh listings. In the future, if needed, a strategy could be to cache pages for a short time or use stale-while-revalidate to handle heavy load.
 - Client-side, the SWR usage will cache API results in memory. Just ensure not to re-fetch unnecessarily. (It appears SWR is used in `ListingsWithFilters.tsx`, but since SSR already provides initial listings, make sure to coordinate to avoid double fetching on page load).
+
+---
+
+## Reliability & Error Handling
+
+- **Concurrency and Race Conditions:** With two admin users, concurrent edits could happen. The code doesn’t lock records during editing. For example, if two admins edited the same listing simultaneously, last save wins and earlier changes might be lost without notice. This is a complex case to handle (optimistic locking via record version, etc., could be added if needed). Given the small team, it may not be a priority. Just be aware of it for the future if userbase grows.
+- **Fault Recovery:** If the server crashes or restarts, the stateless nature (JWT for session, DB for data) means users can continue after refresh. Ensure to run the app in a managed way (e.g., using PM2 or as a service) so it auto-restarts on crash. Also verify that unhandled promise rejections are caught – currently most awaits are in try/catch, which is good.
 
 ---
 
