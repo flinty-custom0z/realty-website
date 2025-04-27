@@ -8,32 +8,8 @@ interface ListingInteractiveClientProps {
   listingId: string;
 }
 
-// Main component for admin action buttons
-export default function ListingInteractiveClient({ listingId }: ListingInteractiveClientProps) {
-  const router = useRouter();
-
-  return (
-    <div className="flex space-x-3">
-      <Button 
-        variant="primary" 
-        className="shadow-sm"
-        onClick={() => router.push(`/admin/listings/${listingId}`)}
-      >
-        Редактировать
-      </Button>
-      <Button 
-        variant="secondary"
-        className="shadow-sm"
-        onClick={() => router.push(`/admin/listings/${listingId}/history`)}
-      >
-        История
-      </Button>
-    </div>
-  );
-}
-
 // Danger zone component
-function DangerZone({ listingId }: ListingInteractiveClientProps) {
+export function DangerZone({ listingId }: ListingInteractiveClientProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -78,6 +54,30 @@ function DangerZone({ listingId }: ListingInteractiveClientProps) {
         {isDeleting ? 'Удаление...' : 'Удалить объявление'}
       </Button>
     </section>
+  );
+}
+
+// Main component for admin action buttons
+export default function ListingInteractiveClient({ listingId }: ListingInteractiveClientProps) {
+  const router = useRouter();
+
+  return (
+    <div className="flex space-x-3">
+      <Button 
+        variant="primary" 
+        className="shadow-sm"
+        onClick={() => router.push(`/admin/listings/${listingId}`)}
+      >
+        Редактировать
+      </Button>
+      <Button 
+        variant="secondary"
+        className="shadow-sm"
+        onClick={() => router.push(`/admin/listings/${listingId}/history`)}
+      >
+        История
+      </Button>
+    </div>
   );
 }
 

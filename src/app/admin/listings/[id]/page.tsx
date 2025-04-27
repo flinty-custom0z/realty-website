@@ -34,6 +34,7 @@ interface ListingFormData {
 interface Category {
   id: string;
   name: string;
+  slug: string;
 }
 
 interface ImageData {
@@ -73,6 +74,7 @@ export default function EditListingPage() {
   const router = useRouter();
   const [listing, setListing] = useState<ListingData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -133,6 +135,7 @@ export default function EditListingPage() {
         const usersRes = await fetch('/api/admin/users');
         const usersData = usersRes.ok ? await usersRes.json() : [];
         setUsers(usersData);
+        
         // Fetch listing
         const listingRes = await fetch(`/api/admin/listings/${params.id}`);
         if (!listingRes.ok) {
@@ -177,6 +180,7 @@ export default function EditListingPage() {
         }
         const categoriesData = await categoriesRes.json();
         setCategories(categoriesData);
+        setFilteredCategories(categoriesData);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load listing data');
@@ -187,6 +191,27 @@ export default function EditListingPage() {
     
     fetchData();
   }, [params?.id]);
+  
+  // Filter categories based on deal type
+  useEffect(() => {
+    if (categories.length === 0) return;
+    
+    // For rent, only allow apartments and commercial
+    if (formData.dealType === 'RENT') {
+      const allowedSlugs = ['apartments', 'commercial'];
+      const filtered = categories.filter(category => allowedSlugs.includes(category.slug));
+      setFilteredCategories(filtered);
+      
+      // If current category is not in allowed list, update to first allowed category
+      const currentCategorySlug = categories.find(c => c.id === formData.categoryId)?.slug;
+      if (currentCategorySlug && !allowedSlugs.includes(currentCategorySlug) && filtered.length > 0) {
+        setFormData(prev => ({ ...prev, categoryId: filtered[0].id }));
+      }
+    } else {
+      // For sale, show all categories
+      setFilteredCategories(categories);
+    }
+  }, [formData.dealType, categories, formData.categoryId]);
   
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -440,26 +465,6 @@ export default function EditListingPage() {
             </div>
             
             <div>
-              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
-                Категория *
-              </label>
-              <select
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
-                required
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
               <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
                 Тип сделки *
               </label>
@@ -468,11 +473,35 @@ export default function EditListingPage() {
                 name="dealType"
                 value={formData.dealType}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
                 required
               >
                 <option value="SALE">Продажа</option>
                 <option value="RENT">Аренда</option>
+              </select>
+              {formData.dealType === 'RENT' && (
+                <p className="text-xs text-gray-500 mt-1">Для аренды доступны только категории: Квартиры, Коммерция</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
+                Категория *
+              </label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                required
+              >
+                {filteredCategories.length === 0 && <option value="">Загрузка категорий...</option>}
+                {filteredCategories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
             

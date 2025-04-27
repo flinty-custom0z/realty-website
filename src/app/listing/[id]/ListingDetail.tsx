@@ -20,6 +20,9 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
     return a.isFeatured ? -1 : 1;
   });
 
+  // Import DangerZone dynamically in case ListingInteractiveClient doesn't have it properly attached
+  const DangerZone = ListingInteractiveClient.DangerZone;
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* top bar */}
@@ -104,9 +107,9 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
           )}
           
           {/* Delete button section - only visible to admins */}
-          {isAdmin && (
+          {isAdmin && DangerZone && (
             <div id="admin-danger-zone">
-              <ListingInteractiveClient.DangerZone listingId={listing.id} />
+              <DangerZone listingId={listing.id} />
             </div>
           )}
         </div>

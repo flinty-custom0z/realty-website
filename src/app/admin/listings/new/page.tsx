@@ -53,7 +53,8 @@ export default function NewListingPage() {
     userId: '',
   });
 
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; phone?: string }[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<{ file: File; url: string }[]>([]);
@@ -73,6 +74,7 @@ export default function NewListingPage() {
         if (categoriesRes.ok) {
           const categoriesData = await categoriesRes.json();
           setCategories(categoriesData);
+          setFilteredCategories(categoriesData);
           if (categoriesData.length > 0) {
             setFormData(prev => ({ ...prev, categoryId: categoriesData[0].id }));
           }
@@ -93,6 +95,27 @@ export default function NewListingPage() {
 
     fetchData();
   }, []);
+
+  // Filter categories based on deal type
+  useEffect(() => {
+    if (categories.length === 0) return;
+
+    // For rent, only allow apartments and commercial
+    if (formData.dealType === 'RENT') {
+      const allowedSlugs = ['apartments', 'commercial'];
+      const filtered = categories.filter(category => allowedSlugs.includes(category.slug));
+      setFilteredCategories(filtered);
+      
+      // If current category is not in allowed list, update to first allowed category
+      const currentCategorySlug = categories.find(c => c.id === formData.categoryId)?.slug;
+      if (currentCategorySlug && !allowedSlugs.includes(currentCategorySlug) && filtered.length > 0) {
+        setFormData(prev => ({ ...prev, categoryId: filtered[0].id }));
+      }
+    } else {
+      // For sale, show all categories
+      setFilteredCategories(categories);
+    }
+  }, [formData.dealType, categories, formData.categoryId]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -211,27 +234,6 @@ export default function NewListingPage() {
             </div>
             
             <div>
-              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
-                Категория *
-              </label>
-              <select
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
-                required
-              >
-                {categories.length === 0 && <option value="">Загрузка категорий...</option>}
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
               <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
                 Тип сделки *
               </label>
@@ -245,6 +247,30 @@ export default function NewListingPage() {
               >
                 <option value="SALE">Продажа</option>
                 <option value="RENT">Аренда</option>
+              </select>
+              {formData.dealType === 'RENT' && (
+                <p className="text-xs text-gray-500 mt-1">Для аренды доступны только категории: Квартиры, Коммерция</p>
+              )}
+            </div>
+            
+            <div>
+              <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
+                Категория *
+              </label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                value={formData.categoryId}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                required
+              >
+                {filteredCategories.length === 0 && <option value="">Загрузка категорий...</option>}
+                {filteredCategories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
             

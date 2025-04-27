@@ -15,12 +15,13 @@ async function handleCreateListing(req: NextRequest) {
     
     // Use the form data parser to extract and validate listing data
     // This will throw a ZodError if validation fails
-    const listingData = parseListingFormData(formData);
+    const listingData = await parseListingFormData(formData);
     
     console.log("Extracted and validated form data:", {
       title: listingData.title,
       categoryId: listingData.categoryId,
-      price: listingData.price
+      price: listingData.price,
+      dealType: listingData.dealType
     });
     
     // Create listing using ListingService

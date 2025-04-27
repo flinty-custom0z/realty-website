@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ListingData } from '../services/ListingService';
+import { prisma } from '@/lib/prisma';
 
 /**
  * Zod schema for validating listing data
@@ -23,6 +24,22 @@ export const listingSchema = z.object({
   noKids: z.boolean().default(false),
   userId: z.string().min(1, "User ID is required"),
   status: z.enum(["active", "sold", "pending", "inactive"]).default("active"),
+  dealType: z.enum(["SALE", "RENT"]).default("SALE"),
+}).refine(async (data) => {
+  // If deal type is RENT, validate that category is either apartments or commercial
+  if (data.dealType === "RENT") {
+    const category = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+      select: { slug: true }
+    });
+    
+    // Only allow apartments and commercial for rent
+    return category && ['apartments', 'commercial'].includes(category.slug);
+  }
+  return true;
+}, {
+  message: "For rental listings, category must be either apartments or commercial",
+  path: ["categoryId"]
 });
 
 export type ValidatedListingData = z.infer<typeof listingSchema>;
@@ -31,7 +48,7 @@ export type ValidatedListingData = z.infer<typeof listingSchema>;
  * Safely parses and validates form data for a listing using Zod
  * Throws a ZodError if validation fails
  */
-export function parseListingFormData(formData: FormData): ListingData {
+export function parseListingFormData(formData: FormData): Promise<ListingData> {
   // Extract listing data from form
   const rawData = {
     title: formData.get('title'),
@@ -52,8 +69,9 @@ export function parseListingFormData(formData: FormData): ListingData {
     noKids: formData.get('noKids') === 'true',
     userId: formData.get('userId') as string,
     status: formData.get('status') as string || 'active',
+    dealType: (formData.get('dealType') as string) || 'SALE',
   };
   
   // Validate with Zod schema and return the validated data
-  return listingSchema.parse(rawData);
+  return listingSchema.parseAsync(rawData);
 } 

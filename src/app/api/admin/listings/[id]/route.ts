@@ -37,7 +37,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 
     // Use the form data parser to extract and validate listing data
     // This will throw a ZodError if validation fails
-    const listingData = parseListingFormData(formData);
+    const listingData = await parseListingFormData(formData);
 
     // Update the listing using ListingService
     const updatedListing = await ListingService.updateListing(
