@@ -22,8 +22,7 @@ async function main() {
 
   // Seed admin users
   const admins = [
-    { name: 'Валерий Ж.', username: 'valeriy', password: 'admin1password' },
-    { name: 'Радион А.', username: 'radion', password: 'admin2password' },
+    { name: 'Валерий Г.', username: 'valeriy', password: 'cimqex-nyvtoH-2xyswo' },
   ];
 
   for (const admin of admins) {
@@ -35,7 +34,7 @@ async function main() {
         name: admin.name,
         username: admin.username,
         password: hashedPassword,
-        phone: '+7938515439',
+        phone: '+79624399399',
       },
     });
   }
