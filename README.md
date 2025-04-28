@@ -10,6 +10,12 @@ First, set up your environment variables:
    openssl rand -base64 32
    ```
 3. Add this value to your `.env` file as `JWT_SECRET`
+4. For image storage with Vercel Blob:
+   - Get your `VERCEL_BLOB_READ_WRITE_TOKEN` from Dashboard → Storage → Settings
+   - Add this token to your `.env` file:
+   ```
+   VERCEL_BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+   ```
 
 The application will not start without a properly configured JWT_SECRET.
 
@@ -45,3 +51,40 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Monitoring & Resource Limits
+
+The application includes built-in monitoring to help stay under free tier limits of various services.
+
+### Free Tier Limits
+
+| Limit                   | Free quota                  | How to stay safe                                            |
+| ----------------------- | --------------------------- | ----------------------------------------------------------- |
+| Edge Function execution | 100 GB-hours / mo           | Most real-estate traffic OK.                                |
+| Build hours             | 1 h / mo                    | Don't trigger builds on every commit; use a develop branch. |
+| Blob storage egress     | 100 GB / mo                 | Web-optimise images (already done).                         |
+| Neon Postgres           | 3 GB data, 500 MB/mo egress | Archive old listing history or pay $0.25/GB overage.        |
+
+### Setting Up Monitoring
+
+The application has integrated monitoring in two ways:
+
+1. **Sentry Error Tracking**: Already configured for error reporting and performance monitoring.
+
+2. **UptimeRobot Monitoring**: 
+   - Create a free account at [UptimeRobot](https://uptimerobot.com/)
+   - Add a new monitor with type "HTTP(s)"
+   - Use your site URL + `/api/system/health` as the endpoint (e.g., `https://your-site.com/api/system/health`)
+   - Set check interval to 5 minutes
+   - Save the monitor
+
+### Admin Monitoring Dashboard
+
+The application provides a monitoring dashboard for administrators at `/admin/monitoring`. This dashboard displays:
+
+- System health status
+- Resource usage against free tier limits
+- Real-time memory and performance metrics
+- Error testing tools
+
+All alerts and warnings are automatically reported to Sentry when resource usage approaches limits.

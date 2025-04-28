@@ -15,15 +15,6 @@ import {
 import { FilterSidebarProps } from '@/types/filters';
 import { useDealType } from '@/contexts/DealTypeContext';
 
-export interface FilterSidebarProps {
-  categorySlug?: string;
-  categories?: Category[];
-  searchQuery?: string;
-  filters?: Record<string, any>;
-  onChange?: (filters: Record<string, any>) => void;
-  filteredCount?: number;
-}
-
 export default function FilterSidebar({
   categorySlug = '',
   categories = [],

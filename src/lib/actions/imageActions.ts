@@ -11,11 +11,22 @@ export async function getImageVariantPath(originalPath: string, size: string): P
 
 /**
  * Server action to check if an image exists
+ * For Vercel Blob URLs, we assume the image exists if the URL is valid
  */
-export async function checkImageExists(imagePath: string): Promise<boolean> {
+export async function checkImageExists(imageUrl: string): Promise<boolean> {
   try {
-    // Call to a function you might want to add to ImageService
-    return await ImageService.checkImageExists(imagePath);
+    if (!imageUrl) return false;
+    
+    // For Vercel Blob URLs, we can attempt to validate by checking if the URL is valid
+    try {
+      const url = new URL(imageUrl);
+      // Verify it's a Vercel Blob URL (typically contains .vercel.blob in the domain)
+      // or adjust based on your actual blob URL pattern
+      return url.hostname.includes('.vercel.blob') || url.hostname.includes('vercel-blob.com');
+    } catch {
+      // If not a valid URL, return false
+      return false;
+    }
   } catch (error) {
     console.error('Error checking image existence:', error);
     return false;

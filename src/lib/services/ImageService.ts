@@ -1,12 +1,10 @@
 import 'server-only';
-import { writeFile, mkdir, access, unlink } from 'fs/promises';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '@/lib/prisma';
 import sharp from 'sharp';
-import { existsSync } from 'fs';
-import { validateImageFile, ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from '@/lib/validators/imageValidators';
+import { validateImageFile } from '@/lib/validators/imageValidators';
 import { createLogger } from '@/lib/logging';
+import { put, del } from '@vercel/blob';
 
 // Create a logger instance
 const logger = createLogger('ImageService');
@@ -20,19 +18,6 @@ const THUMBNAIL_SIZES = [
 
 export class ImageService {
   /**
-   * Ensures that a directory exists, creating it if it doesn't
-   */
-  static async ensureDirectoryExists(dirPath: string): Promise<void> {
-    try {
-      await access(dirPath);
-    } catch (error) {
-      // Directory doesn't exist, create it
-      await mkdir(dirPath, { recursive: true });
-      logger.info(`Created directory: ${dirPath}`);
-    }
-  }
-
-  /**
    * Validates an image file before saving
    * @throws Error if the image is invalid
    */
@@ -44,7 +29,7 @@ export class ImageService {
   }
 
   /**
-   * Saves an image file to disk, generates thumbnails and returns the relative path
+   * Saves an image file to Vercel Blob storage and returns the URL
    */
   static async saveImage(file: File, subdirectory: string = ''): Promise<string> {
     try {
@@ -58,44 +43,28 @@ export class ImageService {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const uuid = uuidv4();
       const filename = `${uuid}.${ext}`;
-
-      // Ensure images directory exists
-      const baseDir = path.join(process.cwd(), 'public', 'images');
-      const imagesDir = subdirectory ? path.join(baseDir, subdirectory) : baseDir;
-      await this.ensureDirectoryExists(imagesDir);
-
-      const filePath = path.join(imagesDir, filename);
-      logger.info(`Saving image to: ${filePath}`);
-
-      // Check if format is valid for sharp
+      
+      // Include subdirectory in filename for Vercel Blob if provided
+      const blobFilename = subdirectory ? `${subdirectory}/${filename}` : filename;
+      
+      // Upload to Vercel Blob
+      const { url } = await put(blobFilename, buffer, { access: 'public' });
+      
+      logger.info(`Saved image to Vercel Blob: ${url}`);
+      
+      // For processable formats, generate and upload thumbnails
       const isProcessableFormat = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext);
       
       if (isProcessableFormat) {
-        // Process original image - compress it before saving
         const sharpInstance = sharp(buffer);
         
-        // Apply basic optimization based on format
-        let optimizedBuffer: Buffer;
-        
-        if (ext === 'png') {
-          optimizedBuffer = await sharpInstance.png({ quality: 90 }).toBuffer();
-        } else if (ext === 'jpg' || ext === 'jpeg') {
-          optimizedBuffer = await sharpInstance.jpeg({ quality: 85 }).toBuffer();
-        } else if (ext === 'webp') {
-          optimizedBuffer = await sharpInstance.webp({ quality: 85 }).toBuffer();
-        } else {
-          // For other formats, use the original buffer
-          optimizedBuffer = buffer;
-        }
-        
-        // Save the optimized original
-        await writeFile(filePath, optimizedBuffer);
-        
-        // Generate and save thumbnails
+        // Generate and upload thumbnails
         for (const size of THUMBNAIL_SIZES) {
           try {
-            const thumbnailFilename = `${uuid}-${size.suffix}.webp`; // Always save thumbnails as WebP for better compression
-            const thumbnailPath = path.join(imagesDir, thumbnailFilename);
+            const thumbnailFilename = `${uuid}-${size.suffix}.webp`; // Always save thumbnails as WebP
+            const blobThumbnailFilename = subdirectory 
+              ? `${subdirectory}/${thumbnailFilename}` 
+              : thumbnailFilename;
             
             const resizeOptions: sharp.ResizeOptions = {
               width: size.width,
@@ -104,24 +73,22 @@ export class ImageService {
               withoutEnlargement: true,
             };
             
-            await sharpInstance
+            const thumbnailBuffer = await sharpInstance
               .clone()
               .resize(resizeOptions)
               .webp({ quality: 80 })
-              .toFile(thumbnailPath);
+              .toBuffer();
               
+            await put(blobThumbnailFilename, thumbnailBuffer, { access: 'public' });
           } catch (thumbError) {
             logger.error(`Error generating thumbnail for ${filename}:`, { thumbError });
-            // Continue with next thumbnail or original save
+            // Continue with next thumbnail
           }
         }
-      } else {
-        // For unsupported formats (like SVG), just save the original
-        await writeFile(filePath, buffer);
       }
       
-      // Return path relative to public directory
-      return subdirectory ? `/images/${subdirectory}/${filename}` : `/images/${filename}`;
+      // Return the URL from Vercel Blob
+      return url;
     } catch (error) {
       logger.error("Error saving image:", { error });
       throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
@@ -131,51 +98,75 @@ export class ImageService {
   /**
    * Gets path for a specific size variant of an image
    */
-  static getImageVariantPath(originalPath: string, size: string): string {
-    if (!originalPath) return '';
+  static getImageVariantPath(originalUrl: string, size: string): string {
+    if (!originalUrl) return '';
     
-    const directory = path.dirname(originalPath);
-    const filename = path.basename(originalPath);
-    const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-    
-    return `${directory}/${filenameWithoutExt}-${size}.webp`;
+    // Parse the URL to extract components
+    try {
+      const url = new URL(originalUrl);
+      const pathname = url.pathname;
+      const lastDotIndex = pathname.lastIndexOf('.');
+      
+      if (lastDotIndex === -1) return originalUrl;
+      
+      const filenameWithoutExt = pathname.substring(0, lastDotIndex);
+      const origin = url.origin;
+      
+      // Construct the variant URL
+      return `${origin}${filenameWithoutExt}-${size}.webp`;
+    } catch (error) {
+      logger.error(`Error generating variant path for ${originalUrl}:`, { error });
+      return originalUrl;
+    }
   }
 
   /**
-   * Deletes an image file and its variants from disk
+   * Deletes an image file and its variants from Vercel Blob
    */
-  static async deleteImage(imagePath: string): Promise<boolean> {
+  static async deleteImage(imageUrl: string): Promise<boolean> {
     try {
-      if (!imagePath) return false;
+      if (!imageUrl) return false;
       
-      // Convert relative path to absolute path
-      const originalPath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
-      
-      // Get directory and filename info
-      const directory = path.dirname(originalPath);
-      const filename = path.basename(originalPath);
-      const filenameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-      
-      // Try to delete the original file
+      // Delete the original image
       try {
-        await unlink(originalPath);
-      } catch (err) {
-        logger.error(`Error deleting original image ${imagePath}:`, { err });
-      }
-      
-      // Also try to delete all thumbnail variants
-      for (const size of THUMBNAIL_SIZES) {
+        await del(imageUrl);
+        logger.info(`Successfully deleted image from Vercel Blob: ${imageUrl}`);
+        
+        // Try to delete thumbnail variants
         try {
-          const thumbnailPath = path.join(directory, `${filenameWithoutExt}-${size.suffix}.webp`);
-          await unlink(thumbnailPath);
-        } catch (err) {
-          // Ignore errors for thumbnail deletion
+          // Parse the URL to extract components for thumbnail variants
+          const url = new URL(imageUrl);
+          const pathname = url.pathname;
+          const lastDotIndex = pathname.lastIndexOf('.');
+          
+          if (lastDotIndex !== -1) {
+            const filenameWithoutExt = pathname.substring(0, lastDotIndex);
+            const origin = url.origin;
+            
+            // Delete each thumbnail variant
+            for (const size of THUMBNAIL_SIZES) {
+              const thumbnailUrl = `${origin}${filenameWithoutExt}-${size.suffix}.webp`;
+              try {
+                await del(thumbnailUrl);
+              } catch (err) {
+                // Log but don't fail if thumbnail deletion fails
+                logger.warn(`Failed to delete thumbnail: ${thumbnailUrl}`, { err });
+              }
+            }
+          }
+        } catch (variantError) {
+          // Log but don't fail if thumbnail deletion fails
+          logger.warn(`Error deleting image variants for ${imageUrl}:`, { variantError });
         }
+        
+        return true;
+      } catch (delError) {
+        logger.error(`Failed to delete image from Vercel Blob: ${imageUrl}`, { delError });
+        return false;
       }
       
-      return true;
     } catch (error) {
-      logger.error(`Error in deleteImage for ${imagePath}:`, { error });
+      logger.error(`Error in deleteImage for ${imageUrl}:`, { error });
       return false;
     }
   }
@@ -233,21 +224,5 @@ export class ImageService {
         isFeatured: true
       }
     });
-  }
-
-  /**
-   * Checks if an image file exists
-   */
-  static async checkImageExists(imagePath: string): Promise<boolean> {
-    if (!imagePath) return false;
-    
-    try {
-      // Convert relative path to absolute path
-      const absolutePath = path.join(process.cwd(), 'public', imagePath.replace(/^\//, ''));
-      return existsSync(absolutePath);
-    } catch (error) {
-      logger.error(`Error checking if image exists: ${imagePath}`, { error });
-      return false;
-    }
   }
 } 

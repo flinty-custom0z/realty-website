@@ -4,6 +4,7 @@ import { SystemStatus } from '@/components/monitoring/SystemStatus';
 import { HealthMetrics } from '@/components/monitoring/HealthMetrics';
 import { LogViewer } from '@/components/monitoring/LogViewer';
 import { ErrorTest } from '@/components/monitoring/ErrorTest';
+import { ResourceLimits } from '@/components/monitoring/ResourceLimits';
 
 export default function MonitoringDashboardPage() {
   return (
@@ -17,11 +18,19 @@ export default function MonitoringDashboardPage() {
           </Suspense>
         </div>
         
+        <h2 className="text-xl font-semibold mb-4">Resource Monitoring</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Suspense fallback={<div className="p-4 border rounded">Loading metrics...</div>}>
             <HealthMetrics />
           </Suspense>
           
+          <Suspense fallback={<div className="p-4 border rounded">Loading resource limits...</div>}>
+            <ResourceLimits />
+          </Suspense>
+        </div>
+        
+        <h2 className="text-xl font-semibold mb-4">Logs & Diagnostics</h2>
+        <div className="grid grid-cols-1 mb-6">
           <Suspense fallback={<div className="p-4 border rounded">Loading log viewer...</div>}>
             <LogViewer />
           </Suspense>
