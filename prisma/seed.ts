@@ -12,6 +12,7 @@ async function main() {
     { name: 'Коммерция', slug: 'commercial' },
   ];
 
+  console.log('Seeding categories...');
   for (const category of categories) {
     await prisma.category.upsert({
       where: { slug: category.slug },
@@ -19,22 +20,28 @@ async function main() {
       create: category,
     });
   }
+  console.log('Categories seeded successfully!');
 
   // Seed admin users
   const admins = [
     { name: 'Валерий Г.', username: 'valeriy', password: 'cimqex-nyvtoH-2xyswo' },
   ];
 
+  console.log('Seeding admin users...');
   for (const admin of admins) {
+    // Hash password securely
     const hashedPassword = await bcrypt.hash(admin.password, 10);
     await prisma.user.upsert({
       where: { username: admin.username },
-      update: {},
+      update: {
+        name: admin.name,
+        // Don't update password on existing users unless explicitly needed
+      },
       create: {
         name: admin.name,
         username: admin.username,
-        password: hashedPassword,
-        phone: '+79624399399',
+        password: hashedPassword, 
+        phone: '+79624123123',
       },
     });
   }
@@ -44,7 +51,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Error during seeding:', { error: e });
     process.exit(1);
   })
   .finally(async () => {
