@@ -282,7 +282,25 @@ export class ListingService {
         const newFeatured = await tx.image.findFirst({
           where: { listingId, isFeatured: true }
         });
-        const featuredChanged = previousFeatured?.id !== newFeatured?.id;
+        
+        // More accurate featured image change detection
+        let featuredChanged = false;
+        
+        // Case 1: One exists but the other doesn't
+        if ((!previousFeatured && newFeatured) || (previousFeatured && !newFeatured)) {
+          featuredChanged = true;
+        } 
+        // Case 2: Both exist but with different IDs or paths
+        else if (previousFeatured && newFeatured) {
+          // First try ID comparison
+          if (previousFeatured.id !== newFeatured.id) {
+            featuredChanged = true;
+          } 
+          // Fallback to path comparison if IDs match but paths don't
+          else if (previousFeatured.path !== newFeatured.path) {
+            featuredChanged = true;
+          }
+        }
 
         // Record image uploads in history within the transaction
         await tx.listingHistory.create({
@@ -441,6 +459,12 @@ export class ListingService {
         isFeatured: true
       }
     });
+    
+    // Check if this is actually a change or the same image
+    if (currentFeaturedImage?.id === featuredImageId) {
+      // No change needed, it's already the featured image
+      return true;
+    }
     
     // Store the previous featured image path for history
     const previousFeaturedPath = currentFeaturedImage?.path || null;
