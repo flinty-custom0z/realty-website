@@ -67,7 +67,6 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         }
         
         const data = await response.json();
-        
         // Process the data to ensure all entries are properly formatted
         const processedData = data.map((entry: HistoryEntry) => {
           // Handle image upload entries specifically
@@ -94,9 +93,20 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
             // Process deleted images to ensure paths are correct
             if (imgChanges.deleted && Array.isArray(imgChanges.deleted)) {
               imgChanges.deleted = imgChanges.deleted.map((img: any) => {
+                // Ensure path exists and is properly formatted
+                if (!img.path) {
+                  return img;
+                }
+                
                 if (img.path && !img.path.startsWith('/') && !img.path.startsWith('http')) {
                   return { ...img, path: `/${img.path}` };
                 }
+                
+                if (img.path && img.path.startsWith('https://')) {
+                  // External Vercel Blob URLs should be used directly
+                  return img;
+                }
+                
                 return img;
               });
             }

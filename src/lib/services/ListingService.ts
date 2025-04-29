@@ -251,6 +251,11 @@ export class ListingService {
     if (uploadedFilesPaths.length === 0) return [];
 
     try {
+      // Get the current featured image before upload
+      const previousFeatured = await prisma.image.findFirst({
+        where: { listingId, isFeatured: true }
+      });
+
       // Second phase: Create DB records in a transaction
       await prisma.$transaction(async (tx) => {
         // Create image records in database
@@ -258,16 +263,13 @@ export class ListingService {
           const path = uploadedFilesPaths[i];
           const file = imageFiles.find(f => f instanceof File) as File;
           const isFeatured = i === 0; // First image is featured
-          
-          // Create the image record
-          const imageRecord = await tx.image.create({
+          await tx.image.create({
             data: {
               listingId,
               path,
               isFeatured
             }
           });
-          
           uploadedImagesData.push({
             filename: file?.name || 'unknown',
             size: file ? Math.round(file.size / 1024) + 'KB' : 'unknown',
@@ -275,18 +277,40 @@ export class ListingService {
             isFeatured
           });
         }
-        
+
+        // Get the new featured image after upload
+        const newFeatured = await tx.image.findFirst({
+          where: { listingId, isFeatured: true }
+        });
+        const featuredChanged = previousFeatured?.id !== newFeatured?.id;
+
         // Record image uploads in history within the transaction
         await tx.listingHistory.create({
           data: {
             listingId,
             userId: currentUserId,
-            changes: { 
-              action: 'upload_images',
-              imageCount: uploadedImagesData.length,
-              images: uploadedImagesData.map(img => ({ path: img.path, isFeatured: img.isFeatured }))
+            changes: {
+              added: uploadedImagesData.map(img => {
+                let imagePath = img.path;
+                if (imagePath && !imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+                  imagePath = `/${imagePath}`;
+                }
+                return {
+                  filename: img.filename,
+                  size: img.size,
+                  path: imagePath
+                };
+              }),
+              ...(featuredChanged && newFeatured && previousFeatured ? {
+                featuredChanged: {
+                  previous: previousFeatured.id,
+                  new: newFeatured.id,
+                  previousPath: previousFeatured.path,
+                  newPath: newFeatured.path
+                }
+              } : {})
             },
-            action: 'update'
+            action: 'images'
           }
         });
       });
@@ -345,15 +369,21 @@ export class ListingService {
           listingId,
           userId: currentUserId,
           changes: {
-            action: 'delete_images',
-            imageCount: imagesToDelete.length,
-            images: imagesToDelete.map(img => ({ 
-              id: img.id, 
-              path: img.path, 
-              isFeatured: img.isFeatured 
-            }))
+            deleted: imagesToDelete.map(img => {
+              // Ensure path is properly formatted for frontend display
+              let imagePath = img.path;
+              if (imagePath && !imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+                imagePath = `/${imagePath}`;
+              }
+              
+              return {
+                id: img.id,
+                path: imagePath,
+                isFeatured: img.isFeatured
+              };
+            })
           },
-          action: 'update'
+          action: 'images'
         }
       });
     });

@@ -67,12 +67,16 @@ export default function ClientImage({
         } else {
           // For non-standard image paths or older uploads, use the dynamic API with params
           const maxWidth = sizeVariant === 'thumb' ? 200 : sizeVariant === 'medium' ? 600 : 1200;
-          setImgSrc(`/api/image/${imagePath}?width=${maxWidth}&quality=${quality}`);
+          const apiPath = `/api/image/${imagePath}?width=${maxWidth}&quality=${quality}`;
+          setImgSrc(apiPath);
         }
       } else {
         // Use original image through the API
-        setImgSrc(`/api/image/${imagePath}`);
+        const apiPath = `/api/image/${imagePath}`;
+        setImgSrc(apiPath);
       }
+    } else if (src.startsWith('http')) {
+      setImgSrc(src);
     } else {
       setImgSrc(src);
     }
@@ -82,8 +86,6 @@ export default function ClientImage({
   }, [src, sizeVariant, quality]);
   
   const handleError = () => {
-    console.log(`Image error loading: ${imgSrc}`);
-    
     // If fallback also starts with /images/, convert it
     if (fallbackSrc.startsWith('/images/')) {
       const fallbackPath = fallbackSrc.substring(8);

@@ -6,7 +6,9 @@ import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 // GET listing history
 async function getListingHistory(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params;
+    // Await params to ensure they are properly resolved
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     
     if (!id) {
       throw new ApiError('Missing ID in request', 400);
