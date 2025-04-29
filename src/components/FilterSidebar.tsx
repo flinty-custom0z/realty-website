@@ -118,7 +118,7 @@ export default function FilterSidebar({
   );
   
   return (
-    <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5">
+    <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-5 min-h-[800px]">
       {/* Header with filters count and reset button */}
       <FilterHeader
         totalCount={typeof filteredCount === 'number' ? filteredCount : state.visibleFilterOptions.totalCount}
@@ -129,10 +129,10 @@ export default function FilterSidebar({
       {/* Search within a category */}
       {categorySlug && (
         <CategorySearch
-              value={state.searchInputValue}
+          value={state.searchInputValue}
           onChange={(value) => dispatch({ type: 'SET_SEARCH_INPUT', payload: value })}
           onSearch={handleCategorySearch}
-            />
+        />
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -145,60 +145,70 @@ export default function FilterSidebar({
         
         {/* Deal Type Selector */}
         <DealTypeFilter 
-              current={state.selectedDealType === 'RENT' ? 'rent' : 'sale'} 
+          current={state.selectedDealType === 'RENT' ? 'rent' : 'sale'} 
           onChange={handleLocalDealTypeChange}
-            />
+        />
         
         {/* Category selection (only on general search page) */}
         {!categorySlug && categories.length > 0 && (
-          <CategoryFilter
-            categories={categories}
-            selected={state.selectedCategories}
-            onChange={(category) => dispatch({ type: 'TOGGLE_CATEGORY', payload: category })}
-            getCategoryAvailability={getCategoryAvailability}
-          />
+          <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+            <CategoryFilter
+              categories={categories}
+              selected={state.selectedCategories}
+              onChange={(category) => dispatch({ type: 'TOGGLE_CATEGORY', payload: category })}
+              getCategoryAvailability={getCategoryAvailability}
+            />
+          </div>
         )}
         
-        {/* Price Range */}
-        <PriceRangeFilter
-                min={state.visibleFilterOptions.priceRange.min}
-                max={state.visibleFilterOptions.priceRange.max}
-          currentMin={state.minPrice ? parseInt(state.minPrice) : null}
-          currentMax={state.maxPrice ? parseInt(state.maxPrice) : null}
-          onChange={(min, max) => {
-                  dispatch({
-                    type: 'SET_PRICE_RANGE',
-              payload: { min: min.toString(), max: max.toString() }
-                  });
-                }}
-          onInputChange={handlePriceChange}
-          isLoading={state.isLoading}
-        />
+        {/* Price Range - use opacity to handle loading state without layout shifts */}
+        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+          <PriceRangeFilter
+            min={state.visibleFilterOptions.priceRange.min}
+            max={state.visibleFilterOptions.priceRange.max}
+            currentMin={state.minPrice ? parseInt(state.minPrice) : null}
+            currentMax={state.maxPrice ? parseInt(state.maxPrice) : null}
+            onChange={(min, max) => {
+              dispatch({
+                type: 'SET_PRICE_RANGE',
+                payload: { min: min.toString(), max: max.toString() }
+              });
+            }}
+            onInputChange={handlePriceChange}
+            isLoading={state.isLoading}
+          />
+        </div>
         
-        {/* Available Districts */}
-        <MultiSelectFilter
-          title="Районы"
-          options={state.visibleFilterOptions.districts}
-          selected={state.selectedDistricts}
-          onChange={(district) => dispatch({ type: 'TOGGLE_DISTRICT', payload: district })}
-          maxHeight="12rem"
-        />
+        {/* Available Districts - use opacity to handle loading state without layout shifts */}
+        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+          <MultiSelectFilter
+            title="Районы"
+            options={state.visibleFilterOptions.districts}
+            selected={state.selectedDistricts}
+            onChange={(district) => dispatch({ type: 'TOGGLE_DISTRICT', payload: district })}
+            maxHeight="12rem"
+          />
+        </div>
         
-        {/* Available Conditions */}
-        <MultiSelectFilter
-          title="Состояние"
-          options={state.visibleFilterOptions.conditions}
-          selected={state.selectedConditions}
-          onChange={(condition) => dispatch({ type: 'TOGGLE_CONDITION', payload: condition })}
-        />
+        {/* Available Conditions - use opacity to handle loading state without layout shifts */}
+        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+          <MultiSelectFilter
+            title="Состояние"
+            options={state.visibleFilterOptions.conditions}
+            selected={state.selectedConditions}
+            onChange={(condition) => dispatch({ type: 'TOGGLE_CONDITION', payload: condition })}
+          />
+        </div>
         
-        {/* Available Rooms */}
-        <MultiSelectFilter
-          title="Комнаты"
-          options={state.visibleFilterOptions.rooms}
-          selected={state.selectedRooms}
-          onChange={(rooms) => dispatch({ type: 'TOGGLE_ROOM', payload: rooms })}
-        />
+        {/* Available Rooms - use opacity to handle loading state without layout shifts */}
+        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+          <MultiSelectFilter
+            title="Комнаты"
+            options={state.visibleFilterOptions.rooms}
+            selected={state.selectedRooms}
+            onChange={(rooms) => dispatch({ type: 'TOGGLE_ROOM', payload: rooms })}
+          />
+        </div>
         
         {/* Apply Filters Button */}
         <ApplyFiltersButton

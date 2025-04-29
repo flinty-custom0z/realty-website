@@ -78,8 +78,9 @@ export function PriceRangeFilter({
         </div>
       </div>
       
-      {!isLoading && min !== undefined && max !== undefined && (
-        <div className="px-1 py-2">
+      {/* Always render the slider container with a fixed height to prevent layout shifts */}
+      <div className="px-1 py-2 h-[60px]">
+        {(!isLoading || isLoading) && min !== undefined && max !== undefined && (
           <Range
             step={10000}
             min={effectiveMin}
@@ -144,12 +145,12 @@ export function PriceRangeFilter({
               );
             }}
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{effectiveMin.toLocaleString()} ₽</span>
-            <span>{effectiveMax.toLocaleString()} ₽</span>
-          </div>
+        )}
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>{effectiveMin.toLocaleString()} ₽</span>
+          <span>{effectiveMax.toLocaleString()} ₽</span>
         </div>
-      )}
+      </div>
     </div>
   );
 } 

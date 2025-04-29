@@ -244,18 +244,20 @@ export function useFilterState({
     // Update request counter
     const currentRequest = ++requestCounter.current;
     
-    // Set loading state handling
-    if (applyPriceFilter || !isInitialized.current) {
-      // Immediately set loading for explicit user actions or initial load
+    // Set loading state handling - only set loading for initial load
+    // For all other cases, use opacity transitions in the UI instead of loading state
+    if (!isInitialized.current) {
+      // Only set loading on initial load
       dispatch({ type: 'SET_LOADING', payload: true });
-    } else {
-      // For automatic updates, use a brief delay to prevent UI flicker
+    } else if (applyPriceFilter) {
+      // For user-initiated filter changes, use a longer delay to prevent flickering
       loadingTimerRef.current = setTimeout(() => {
         if (currentRequest === requestCounter.current) {
           dispatch({ type: 'SET_LOADING', payload: true });
         }
-      }, 150);
+      }, 300); // Increased from 150ms to 300ms
     }
+    // For automatic updates, don't set loading state at all - handled by CSS transitions
     
     try {
       // Build filter params
@@ -325,8 +327,12 @@ export function useFilterState({
         // Update visible options
         dispatch({ type: 'UPDATE_VISIBLE_OPTIONS' });
         
-        // Turn off loading state
-        dispatch({ type: 'SET_LOADING', payload: false });
+        // Turn off loading state with a slight delay to allow CSS transitions to complete
+        setTimeout(() => {
+          if (currentRequest === requestCounter.current) {
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        }, 100);
         
         // Mark as initialized after first successful fetch
         isInitialized.current = true;
