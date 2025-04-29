@@ -38,7 +38,7 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-bold">Панель управления</h1>
         <Link 
           href="/admin/listings/new" 
-          className="inline-flex items-center justify-center px-4 py-2 bg-[#4285F4] text-white rounded-[8px] text-sm font-medium hover:bg-[#3b78e7] transition-all duration-200 shadow-sm"
+            className="inline-flex items-center justify-center px-4 py-2 bg-[#11535F] text-white rounded-[8px] text-sm font-medium hover:bg-[#0D454F] transition-all duration-200 shadow-sm"
         >
           <Plus size={16} className="mr-2" />
           Добавить объявление
@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-6">
           <h2 className="text-lg font-medium text-gray-700 mb-2">Всего объявлений</h2>
-          <p className="text-3xl font-bold text-[#4285F4]">{stats.totalListings}</p>
+          <p className="text-3xl font-bold text-[#11535F]">{stats.totalListings}</p>
           <div className="mt-2 text-sm text-gray-500">
             <ListFilter size={16} className="inline-block mr-1" />
             <span>Все объявления на сайте</span>

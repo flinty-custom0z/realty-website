@@ -211,7 +211,7 @@ export default function AdminListingsPage() {
                       <td className="title-cell" data-label="Название">
                         <Link 
                           href={`/listing/${listing.id}`}
-                          className="hover:text-blue-600 transition-colors duration-200 cursor-pointer"
+                          className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
                           target="_blank"
                         >
                           <TruncatedCell text={listing.title} maxWidth={220} />

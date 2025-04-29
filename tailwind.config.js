@@ -9,31 +9,45 @@ module.exports = {
         // Primary colors for sale theme (blue)
         // Using a blue that meets WCAG contrast requirements with white text
         'sale-primary': {
-          50: '#EFF6FF',  // Lightest blue background
-          100: '#DBEAFE', // Very light blue background  
-          200: '#BFDBFE', // Light blue background
-          300: '#93C5FD', // Medium-light blue
-          400: '#60A5FA', // Medium blue
-          500: '#3B82F6', // Primary blue (meets 4.5:1 contrast with white text)
-          600: '#2563EB', // Primary blue hover state (meets 7:1 contrast with white text)
-          700: '#1D4ED8', // Darker blue 
-          800: '#1E40AF', // Very dark blue
-          900: '#1E3A8A', // Darkest blue
+          50: '#E5ECEE',  // Lightest color
+          100: '#C7D7DC', // Very light color  
+          200: '#A3BDC4', // Light color
+          300: '#7FA3AC', // Medium-light color
+          400: '#5B8994', // Medium color
+          500: '#11535F', // Primary color (meets 4.5:1 contrast with white text)
+          600: '#0D454F', // Primary hover state (meets 7:1 contrast with white text)
+          700: '#0A373F', // Darker color 
+          800: '#07292F', // Very dark color
+          900: '#041B1F', // Darkest color
         },
         
-        // Primary colors for rent theme (green)
-        // Using a green that meets WCAG contrast requirements with white text
+        // Primary colors for rent theme (teal instead of pure green)
+        // Using a teal that meets WCAG contrast requirements with white text
         'rent-primary': {
-          50: '#ECFDF5',  // Lightest green background
-          100: '#D1FAE5', // Very light green background
-          200: '#A7F3D0', // Light green background 
-          300: '#6EE7B7', // Medium-light green
-          400: '#34D399', // Medium green
-          500: '#10B981', // Primary green (meets 4.5:1 contrast with white text)
-          600: '#059669', // Primary green hover state (meets 7:1 contrast with white text)
-          700: '#047857', // Darker green
-          800: '#065F46', // Very dark green
-          900: '#064E3B', // Darkest green
+          50: '#F0FDFA',  // Lightest teal background
+          100: '#CCFBF1', // Very light teal background
+          200: '#99F6E4', // Light teal background 
+          300: '#5EEAD4', // Medium-light teal
+          400: '#2DD4BF', // Medium teal
+          500: '#14B8A6', // Primary teal (meets 4.5:1 contrast with white text)
+          600: '#0D9488', // Primary teal hover state (meets 7:1 contrast with white text)
+          700: '#0F766E', // Darker teal
+          800: '#115E59', // Very dark teal
+          900: '#134E4A', // Darkest teal
+        },
+        
+        // Add teal colors for the logo and theme elements
+        'teal': {
+          50: '#F0FDFA',
+          100: '#CCFBF1',
+          200: '#99F6E4',
+          300: '#5EEAD4',
+          400: '#2DD4BF',
+          500: '#14B8A6', // Main teal color for logo
+          600: '#0D9488',
+          700: '#0F766E',
+          800: '#115E59',
+          900: '#134E4A',
         },
         
         // Shared neutral colors for consistency across themes
@@ -52,9 +66,9 @@ module.exports = {
         
         // Accent color for call-to-actions that is consistent across themes
         'accent': {
-          400: '#3B82F6', // Blue for call-to-action (meets contrast requirements)
-          500: '#2563EB',
-          600: '#1D4ED8',
+          400: '#11535F', // Updated to match the sales accent color
+          500: '#0D454F',
+          600: '#0A373F',
         },
         
         // Status colors (shared across themes)
@@ -62,7 +76,7 @@ module.exports = {
           'success': '#10B981', // Green
           'warning': '#F59E0B', // Amber
           'error': '#EF4444',   // Red
-          'info': '#3B82F6',    // Blue
+          'info': '#11535F',    // Updated to match the sales accent color
         }
       },
       

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import ClientImage from '@/components/ClientImage';
 import { Loader2, Eye, X, Upload } from 'lucide-react';
 import Button from './Button';
@@ -28,22 +28,69 @@ export default function ImageUpload({
 }: ImageUploadProps) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
-    const newFiles = Array.from(e.target.files);
+    let errorCount = 0;
+    const validImages: File[] = [];
+    const validImagePreviews: ImagePreview[] = [];
     
-    // Create preview URLs and IDs
-    const newPreviews = newFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-    }));
+    // Allowed image types
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    // Max file size (5MB)
+    const maxFileSize = 5 * 1024 * 1024;
     
-    setPreviews((prev) => [...prev, ...newPreviews]);
-    onImagesSelected(newFiles);
+    Array.from(e.target.files).forEach(file => {
+      // Validate file type and size
+      if (!allowedTypes.includes(file.type)) {
+        console.error(`Invalid file type: ${file.type} for ${file.name}`);
+        errorCount++;
+        return;
+      }
+      
+      if (file.size > maxFileSize) {
+        console.error(`File too large: ${file.name} (${Math.round(file.size / 1024)}KB)`);
+        errorCount++;
+        return;
+      }
+      
+      // Add valid file to array
+      validImages.push(file);
+      
+      // Create preview for valid file
+      validImagePreviews.push({
+        file,
+        url: URL.createObjectURL(file),
+        id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      });
+    });
+    
+    // Show error message if any files were invalid
+    if (errorCount > 0) {
+      setErrorMessage(
+        `${errorCount} ${errorCount === 1 ? 'файл был отклонен' : 'файлов было отклонено'}. Разрешены только изображения JPG, PNG или WebP до 5MB.`
+      );
+    }
+    
+    // Only process valid files
+    if (validImages.length > 0) {
+      setPreviews((prev) => [...prev, ...validImagePreviews]);
+      onImagesSelected(validImages);
+    }
     
     // Reset input to allow selecting the same files again
     if (fileInputRef.current) {
@@ -82,17 +129,52 @@ export default function ImageUpload({
     setIsDragging(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const newFiles = Array.from(e.dataTransfer.files);
+      let errorCount = 0;
+      const validImages: File[] = [];
+      const validImagePreviews: ImagePreview[] = [];
       
-      // Create preview URLs and IDs
-      const newPreviews = newFiles.map((file) => ({
-        file,
-        url: URL.createObjectURL(file),
-        id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-      }));
+      // Allowed image types
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      // Max file size (5MB)
+      const maxFileSize = 5 * 1024 * 1024;
       
-      setPreviews((prev) => [...prev, ...newPreviews]);
-      onImagesSelected(newFiles);
+      Array.from(e.dataTransfer.files).forEach(file => {
+        // Validate file type and size
+        if (!allowedTypes.includes(file.type)) {
+          console.error(`Invalid file type: ${file.type} for ${file.name}`);
+          errorCount++;
+          return;
+        }
+        
+        if (file.size > maxFileSize) {
+          console.error(`File too large: ${file.name} (${Math.round(file.size / 1024)}KB)`);
+          errorCount++;
+          return;
+        }
+        
+        // Add valid file to array
+        validImages.push(file);
+        
+        // Create preview for valid file
+        validImagePreviews.push({
+          file,
+          url: URL.createObjectURL(file),
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        });
+      });
+      
+      // Show error message if any files were invalid
+      if (errorCount > 0) {
+        setErrorMessage(
+          `${errorCount} ${errorCount === 1 ? 'файл был отклонен' : 'файлов было отклонено'}. Разрешены только изображения JPG, PNG или WebP до 5MB.`
+        );
+      }
+      
+      // Only process valid files
+      if (validImages.length > 0) {
+        setPreviews((prev) => [...prev, ...validImagePreviews]);
+        onImagesSelected(validImages);
+      }
     }
   };
 
@@ -100,7 +182,7 @@ export default function ImageUpload({
     <div className="space-y-4">
       <div 
         className={`file-upload-area ${
-          isDragging ? 'border-[#4285F4] bg-blue-50' : ''
+          isDragging ? 'border-[#11535F] bg-blue-50' : ''
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -117,7 +199,7 @@ export default function ImageUpload({
           id="file-upload"
         />
         <div className="flex flex-col items-center space-y-2">
-          <Upload size={32} className={`${isDragging ? 'text-[#4285F4]' : 'text-gray-400'}`} />
+          <Upload size={32} className={`${isDragging ? 'text-[#11535F]' : 'text-gray-400'}`} />
           <p className="text-sm text-gray-500">Перетащите файлы сюда или</p>
           <button 
             onClick={() => fileInputRef.current?.click()}
@@ -126,8 +208,15 @@ export default function ImageUpload({
           >
             Выбрать файлы
           </button>
+          <p className="text-xs text-gray-500 mt-2">Поддерживаются JPG, PNG и WebP до 5 МБ</p>
         </div>
       </div>
+      
+      {errorMessage && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md">
+          <p className="text-sm">{errorMessage}</p>
+        </div>
+      )}
       
       {previews.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -145,7 +234,7 @@ export default function ImageUpload({
                     showLoadingIndicator={true}
                   />
                   {index === 0 && (
-                    <div className="absolute top-2 left-2 bg-[#4285F4] text-white text-xs py-1 px-2 rounded-md z-10">
+                    <div className="absolute top-2 left-2 bg-[#11535F] text-white text-xs py-1 px-2 rounded-md z-10">
                       Главное фото
                     </div>
                   )}
@@ -170,7 +259,7 @@ export default function ImageUpload({
                     <button
                       type="button"
                       onClick={() => previewModalHandler(preview.url)}
-                      className="bg-white text-[#4285F4] rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                      className="bg-white text-[#11535F] rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                       aria-label="Preview image"
                     >
                       <Eye size={16} />

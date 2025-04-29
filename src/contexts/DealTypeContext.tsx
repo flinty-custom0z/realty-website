@@ -26,21 +26,43 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
   // Theme transition ref for smooth color changes
   const themeTransitionTimer = useRef<NodeJS.Timeout | null>(null);
   
+  // Load user preference on first client-side render
+  useEffect(() => {
+    const storedPreference = localStorage.getItem('preferred-deal-type');
+    if (storedPreference === 'rent' || storedPreference === 'sale') {
+      // Initialize with user's stored preference
+      // This will be overridden by URL params if they exist
+      setDealTypeState(storedPreference as DealType);
+      
+      // Set CSS class for theme
+      document.body.classList.remove('deal-type-sale-theme', 'deal-type-rent-theme');
+      document.body.classList.add(`deal-type-${storedPreference}-theme`);
+    }
+  }, []);
+  
   // Sync state with URL on first load and URL changes
   useEffect(() => {
     const dealParam = searchParams?.get('deal');
     if (dealParam === 'rent') {
       setDealTypeState('rent');
+      localStorage.setItem('preferred-deal-type', 'rent');
       
       // Set CSS class for theme
       document.body.classList.remove('deal-type-sale-theme');
       document.body.classList.add('deal-type-rent-theme');
+      
+      // Add data attribute for accessibility testing tools
+      document.body.setAttribute('data-theme', 'rent');
     } else {
       setDealTypeState('sale');
+      localStorage.setItem('preferred-deal-type', 'sale');
       
       // Set CSS class for theme
       document.body.classList.remove('deal-type-rent-theme');
       document.body.classList.add('deal-type-sale-theme');
+      
+      // Add data attribute for accessibility testing tools
+      document.body.setAttribute('data-theme', 'sale');
     }
   }, [searchParams]);
   
@@ -58,12 +80,20 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
       // Update theme immediately for better UX
       document.body.classList.remove('deal-type-rent-theme');
       document.body.classList.add('deal-type-sale-theme');
+      document.body.setAttribute('data-theme', 'sale');
+      
+      // Save user preference
+      localStorage.setItem('preferred-deal-type', 'sale');
     } else {
       params.set('deal', 'rent');
       
       // Update theme immediately for better UX
       document.body.classList.remove('deal-type-sale-theme');
       document.body.classList.add('deal-type-rent-theme');
+      document.body.setAttribute('data-theme', 'rent');
+      
+      // Save user preference
+      localStorage.setItem('preferred-deal-type', 'rent');
     }
     
     // 2. remove filters that belong only to the *previous* deal type

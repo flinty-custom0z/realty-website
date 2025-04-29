@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { useDealType } from '@/contexts/DealTypeContext';
 import DealTypeToggle from '@/components/DealTypeToggle';
+import Logo from '@/components/Logo';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,10 +69,7 @@ export default function ResponsiveNav() {
       
       <div className="container mx-auto px-6">
         <div className="flex justify-between items-center py-6">
-          <Link href="/" className="text-2xl font-medium text-gray-800 flex flex-col">
-            <span className="text-gray-800">ВТОРИЧНЫЙ ВЫБОР</span>
-            <span className="text-xs text-gray-500 tracking-wide">краснодарская недвижимость</span>
-          </Link>
+          <Logo />
           
           <div className="flex items-center space-x-4">
             {/* Deal type toggle in navbar - only visible on desktop */}

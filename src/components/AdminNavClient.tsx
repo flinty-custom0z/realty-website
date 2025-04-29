@@ -60,7 +60,7 @@ export default function AdminNavClient() {
         <div className="flex items-center space-x-3">
           <Link 
             href="/admin" 
-            className="text-[#4285F4] hover:text-[#3b78e7] text-sm flex items-center transition-colors duration-200"
+            className="text-[#11535F] hover:text-[#0D454F] text-sm flex items-center transition-colors duration-200"
           >
             <User size={16} className="mr-1" /> 
             <span>{user.name}</span>

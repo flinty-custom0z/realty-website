@@ -27,7 +27,7 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
     <div className="container mx-auto px-4 py-8">
       {/* top bar */}
       <div className="flex justify-between items-center mb-4">
-        <Link href="/" className="text-[#4285F4] hover:underline transition-all duration-200 flex items-center">
+        <Link href="/" className="text-[#11535F] hover:underline transition-all duration-200 flex items-center">
           <ArrowLeft size={16} className="mr-1" />
           На главную
         </Link>

@@ -321,14 +321,28 @@ export default function EditListingPage() {
       
       // Add new images with individual upload tracking
       if (imageFiles.length > 0) {
-        // Create a tracking object with all images set to uploading
-        const imageUploadStatus: Record<string, boolean> = {};
-        imageFiles.forEach((file, index) => {
-          const imageId = `${file.name}-${index}`;
-          imageUploadStatus[imageId] = true;
-          formDataToSend.append('newImages', file);
-        });
-        setUploadingImages(imageUploadStatus);
+        try {
+          // Create a tracking object with all images set to uploading
+          const imageUploadStatus: Record<string, boolean> = {};
+          imageFiles.forEach((file, index) => {
+            try {
+              const imageId = `${file.name}-${index}`;
+              imageUploadStatus[imageId] = true;
+              
+              // Validate file before adding to form data
+              if (file.type && ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+                formDataToSend.append('newImages', file);
+              } else {
+                logger.warn(`Skipping invalid file type: ${file.type} for ${file.name}`);
+              }
+            } catch (fileError) {
+              logger.error(`Error adding file to form data: ${file.name}`, { fileError });
+            }
+          });
+          setUploadingImages(imageUploadStatus);
+        } catch (error) {
+          logger.error('Error preparing image uploads:', { error });
+        }
       }
       
       const response = await fetch(`/api/admin/listings/${params.id}`, {
@@ -463,7 +477,7 @@ export default function EditListingPage() {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               />
             </div>
@@ -477,7 +491,7 @@ export default function EditListingPage() {
                 name="dealType"
                 value={formData.dealType}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 <option value="SALE">Продажа</option>
@@ -497,7 +511,7 @@ export default function EditListingPage() {
                 name="categoryId"
                 value={formData.categoryId}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 {filteredCategories.length === 0 && <option value="">Загрузка категорий...</option>}
@@ -551,7 +565,7 @@ export default function EditListingPage() {
                 name="district"
                 value={formData.district}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -565,7 +579,7 @@ export default function EditListingPage() {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -580,7 +594,7 @@ export default function EditListingPage() {
                 min="0"
                 value={formData.rooms}
                 onChange={handleChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             

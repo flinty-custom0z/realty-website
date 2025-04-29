@@ -56,12 +56,23 @@ export default function RootLayout({
           </DealTypeThemeWrapper>
         </DealTypeProvider>
         <script dangerouslySetInnerHTML={{ __html: `
-          const header = document.getElementById('site-header');
-          window.addEventListener('scroll', () => {
-            if (window.scrollY > 100) {
-              header.classList.add('sticky');
-            } else {
-              header.classList.remove('sticky');
+          // Wait for DOM content to fully load to avoid hydration mismatches
+          document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('site-header');
+            if (header) {
+              // Apply initial state based on current scroll position
+              if (window.scrollY > 100) {
+                header.classList.add('sticky');
+              }
+              
+              // Set up scroll event listener
+              window.addEventListener('scroll', () => {
+                if (window.scrollY > 100) {
+                  header.classList.add('sticky');
+                } else {
+                  header.classList.remove('sticky');
+                }
+              });
             }
           });
         `}} />

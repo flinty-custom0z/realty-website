@@ -21,7 +21,7 @@
   --foreground: #2d3748;
   --primary: #4a5568;
   --secondary: #718096;
-  --accent: #4285F4;
+  --accent: #11535F;
   --muted: #e2e8f0;
   --card-bg: #ffffff;
   --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -33,27 +33,37 @@
   --btn-radius: 8px;
   --btn-primary-padding: 12px;
   --btn-secondary-padding: 16px;
+  
+  /* Common logo colors that don't change between themes */
+  --logo-primary: #2B6C77;
+  --logo-secondary: #14B8A6;
 }
 
 /* Deal type color themes with improved accessibility */
 .deal-type-sale-theme {
   /* Blue for confidence in sales - meets 4.5:1 contrast with white text */
-  --deal-accent-color: #3B82F6; 
-  --deal-accent-hover: #2563EB;
-  --deal-accent-light: rgba(59, 130, 246, 0.1);
-  --deal-accent-border: rgba(59, 130, 246, 0.2);
-  --deal-accent-focus: rgba(59, 130, 246, 0.25);
+  --deal-accent-color: #11535F; 
+  --deal-accent-hover: #0D454F;
+  --deal-accent-light: rgba(17, 83, 95, 0.1);
+  --deal-accent-border: rgba(17, 83, 95, 0.2);
+  --deal-accent-focus: rgba(17, 83, 95, 0.25);
   --deal-icon-filter: hue-rotate(0deg);
+  
+  /* Logo stays mostly the same but with subtle shift */
+  --logo-accent: #11535F;
 }
 
 .deal-type-rent-theme {
-  /* Green for flexibility in rentals - meets 4.5:1 contrast with white text */
-  --deal-accent-color: #10B981; 
-  --deal-accent-hover: #059669;
-  --deal-accent-light: rgba(16, 185, 129, 0.1);
-  --deal-accent-border: rgba(16, 185, 129, 0.2);
-  --deal-accent-focus: rgba(16, 185, 129, 0.25);
-  --deal-icon-filter: hue-rotate(85deg);
+  /* Teal color that works with the logo for rentals - meets 4.5:1 contrast with white text */
+  --deal-accent-color: #14B8A6; 
+  --deal-accent-hover: #0D9488;
+  --deal-accent-light: rgba(20, 184, 166, 0.1);
+  --deal-accent-border: rgba(20, 184, 166, 0.2);
+  --deal-accent-focus: rgba(20, 184, 166, 0.25);
+  --deal-icon-filter: hue-rotate(60deg);
+  
+  /* Logo stays mostly the same but with subtle shift */
+  --logo-accent: #0D9488;
 }
 
 /* Add animation for deal type transition */
@@ -275,7 +285,7 @@ input, select, textarea, button {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+  box-shadow: 0 0 0 3px rgba(17, 83, 95, 0.1);
 }
 
 button {
@@ -369,8 +379,8 @@ button {
 
 .file-upload-dropzone:hover,
 .file-upload-dropzone.dragging {
-  border-color: #4285F4;
-  background-color: rgba(66, 133, 244, 0.05);
+  border-color: var(--accent);
+  background-color: rgba(17, 83, 95, 0.05);
 }
 
 .file-thumbnail {
@@ -390,7 +400,7 @@ button {
   position: absolute;
   top: 8px;
   left: 8px;
-  background-color: #4285F4;
+  background-color: var(--accent);
   color: white;
   font-size: 12px;
   font-weight: 500;
@@ -474,7 +484,7 @@ button {
 }
 
 .admin-edit-link:hover {
-  background-color: #2563EB;
+  background-color: #0D454F;
 }
 
 .admin-delete-btn {
@@ -560,7 +570,7 @@ button {
 }
 
 .admin-add-btn:hover {
-  background-color: #2563EB;
+  background-color: #0D454F;
 }
 
 .admin-secondary-btn {
@@ -780,7 +790,7 @@ button {
 }
 
 .custom-checkbox input[type="checkbox"]:focus + .checkbox-icon {
-  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+  box-shadow: 0 0 0 3px rgba(17, 83, 95, 0.1);
 }
 
 .custom-checkbox input[type="checkbox"] + .checkbox-icon + span {
@@ -797,8 +807,8 @@ button {
 }
 
 .file-upload-area:hover {
-  background-color: rgba(66, 133, 244, 0.05);
-  border-color: #4285F4;
+  background-color: rgba(17, 83, 95, 0.05);
+  border-color: var(--accent);
 }
 
 /* Realtor profile representations */
@@ -839,7 +849,7 @@ button {
 }
 
 .pagination-btn-active {
-  background-color: #4285F4;
+  background-color: var(--accent);
   color: white;
 }
 
@@ -898,8 +908,8 @@ button {
 }
 
 .filter-controls select:focus {
-  border-color: #4285F4;
-  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(17, 83, 95, 0.2);
 }
 
 .filter-group {
@@ -980,7 +990,7 @@ button {
 
 /* Accessibility focus styles for all focusable elements */
 :focus-visible {
-  outline: 2px solid var(--deal-accent-color);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

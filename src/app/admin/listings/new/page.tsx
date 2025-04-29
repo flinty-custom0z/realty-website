@@ -211,7 +211,7 @@ export default function NewListingPage() {
         <h1 className="text-2xl font-bold">Новое объявление</h1>
         <Link 
           href="/admin/listings" 
-          className="inline-flex items-center text-[#4285F4] hover:underline transition-all duration-200"
+          className="inline-flex items-center text-[#11535F] hover:underline transition-all duration-200"
         >
           <ArrowLeft size={16} className="mr-2" />
           Назад к списку
@@ -247,7 +247,7 @@ export default function NewListingPage() {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               />
             </div>
@@ -261,7 +261,7 @@ export default function NewListingPage() {
                 name="dealType"
                 value={formData.dealType}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 <option value="SALE">Продажа</option>
@@ -281,7 +281,7 @@ export default function NewListingPage() {
                 name="categoryId"
                 value={formData.categoryId}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 {filteredCategories.length === 0 && <option value="">Загрузка категорий...</option>}
@@ -303,7 +303,7 @@ export default function NewListingPage() {
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               />
             </div>
@@ -317,7 +317,7 @@ export default function NewListingPage() {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 <option value="active">Активно</option>
@@ -335,7 +335,7 @@ export default function NewListingPage() {
                 name="district"
                 value={formData.district}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -349,7 +349,7 @@ export default function NewListingPage() {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -364,7 +364,7 @@ export default function NewListingPage() {
                 min="0"
                 value={formData.rooms}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -380,7 +380,7 @@ export default function NewListingPage() {
                   min="0"
                   value={formData.floor}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                  className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 />
               </div>
               <div>
@@ -394,7 +394,7 @@ export default function NewListingPage() {
                   min="0"
                   value={formData.totalFloors}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                  className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 />
               </div>
             </div>
@@ -411,7 +411,7 @@ export default function NewListingPage() {
                 step="0.1"
                 value={formData.houseArea}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -427,7 +427,7 @@ export default function NewListingPage() {
                 step="0.1"
                 value={formData.landArea}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -440,7 +440,7 @@ export default function NewListingPage() {
                 name="condition"
                 value={formData.condition}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               >
                 <option value="">Выберите состояние</option>
                 <option value="Черновая">Черновая</option>
@@ -465,7 +465,7 @@ export default function NewListingPage() {
                 max="2030"
                 value={formData.yearBuilt}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
               />
             </div>
             
@@ -504,7 +504,7 @@ export default function NewListingPage() {
                 name="userId"
                 value={formData.userId}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
                 {users.length === 0 && <option value="">Загрузка риелторов...</option>}
@@ -533,7 +533,7 @@ export default function NewListingPage() {
               value={formData.publicDescription}
               onChange={handleChange}
               rows={6}
-              className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+              className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
             />
 
             <label htmlFor="adminComment" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
@@ -545,7 +545,7 @@ export default function NewListingPage() {
               value={formData.adminComment}
               onChange={handleChange}
               rows={6}
-              className="w-full p-2 border rounded-md focus:border-[#4285F4] focus:ring focus:ring-blue-100 transition-all duration-200"
+              className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
             />
           </div>
         </div>

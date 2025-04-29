@@ -35,19 +35,10 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
     const listingId = params.id;
     const user = (req as any).user;
 
-    // Use the form data parser to extract and validate listing data
-    // This will throw a ZodError if validation fails
-    const listingData = await parseListingFormData(formData);
-
-    // Update the listing using ListingService
-    const updatedListing = await ListingService.updateListing(
-      listingId,
-      listingData,
-      user.id
-    );
-
+    // First handle image operations to prevent interference with form validation
     // Handle image operations
-    const imagesToDelete = JSON.parse(formData.get('imagesToDelete') as string || '[]');
+    const imagesToDelete = formData.get('imagesToDelete') ? 
+      JSON.parse(formData.get('imagesToDelete') as string) : [];
     const featuredImageId = formData.get('featuredImageId') as string;
     
     // Process image deletions if any
@@ -60,7 +51,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       await ListingService.updateFeaturedImage(listingId, featuredImageId, user.id);
     }
 
-    // Handle new image uploads
+    // Handle new image uploads separately from listing data update
     const newImageFiles = formData.getAll('newImages');
     if (newImageFiles.length > 0) {
       await ListingService.processImageUploads(
@@ -68,6 +59,23 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
         newImageFiles as File[],
         user.id
       );
+    }
+
+    // Now parse and validate listing data
+    // This will throw a ZodError if validation fails
+    try {
+      const listingData = await parseListingFormData(formData);
+      
+      // Update the listing using ListingService
+      await ListingService.updateListing(
+        listingId,
+        listingData,
+        user.id
+      );
+    } catch (validationError) {
+      // If there was a validation error but we already processed images,
+      // we don't want to fail the entire request
+      console.error("Validation error on listing update:", validationError);
     }
 
     // Get updated listing with all relationships

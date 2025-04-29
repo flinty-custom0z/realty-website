@@ -5,10 +5,12 @@
 
 - Add rent/sale column in admin listings list
 
+- Add roles (Me - admin, other users - agents)
+
+- Change logo
 
 ### Next
 
-- [[domain_and_hosting.md]]
 - Контактная форма (чат/мейл?)
 - Поиск с ИИ
 

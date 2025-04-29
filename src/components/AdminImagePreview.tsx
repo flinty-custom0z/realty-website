@@ -40,7 +40,7 @@ export default function AdminImagePreview({
       <div
         className={`
           relative group border-2 rounded-lg overflow-hidden aspect-square transition-all duration-200
-          ${isSelected ? 'border-[#4285F4] shadow-md' : 'border-gray-200'}
+          ${isSelected ? 'border-[#11535F] shadow-md' : 'border-gray-200'}
           ${isMarkedForDeletion ? 'opacity-50' : 'hover:shadow-md'}
         `}
         onClick={() => !isMarkedForDeletion && onSetFeatured(image.id)}
@@ -55,7 +55,7 @@ export default function AdminImagePreview({
           />
 
           {isSelected && (
-            <div className="absolute top-2 left-2 bg-[#4285F4] text-white text-xs py-1 px-2 rounded-md z-10 flex items-center">
+            <div className="absolute top-2 left-2 bg-[#11535F] text-white text-xs py-1 px-2 rounded-md z-10 flex items-center">
               <Star size={12} className="mr-1" />
               Главное фото
             </div>
@@ -78,7 +78,7 @@ export default function AdminImagePreview({
           <button
             type="button"
             onClick={openModal}
-            className="bg-white text-[#4285F4] hover:bg-blue-50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+            className="bg-white text-[#11535F] hover:bg-blue-50 rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
             aria-label="Preview image"
           >
             <Eye size={14} />

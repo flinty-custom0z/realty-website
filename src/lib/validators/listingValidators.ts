@@ -49,28 +49,44 @@ export type ValidatedListingData = z.infer<typeof listingSchema>;
  * Throws a ZodError if validation fails
  */
 export function parseListingFormData(formData: FormData): Promise<ListingData> {
+  // Fields to exclude from validation (image-related fields)
+  const excludedFields = ['newImages', 'imagesToDelete', 'featuredImageId'];
+  
   // Extract listing data from form
   const rawData = {
-    title: formData.get('title'),
-    publicDescription: formData.get('publicDescription'),
-    adminComment: formData.get('adminComment') || null,
-    categoryId: formData.get('categoryId'),
+    title: formData.get('title')?.toString() || "",
+    publicDescription: formData.get('publicDescription')?.toString() || "",
+    adminComment: formData.get('adminComment')?.toString() || null,
+    categoryId: formData.get('categoryId')?.toString() || "",
     price: formData.get('price') ? parseFloat(formData.get('price') as string) : 0,
-    district: formData.get('district'),
-    address: formData.get('address'),
-    rooms: formData.get('rooms') ? parseInt(formData.get('rooms') as string) : null,
-    floor: formData.get('floor') ? parseInt(formData.get('floor') as string) : null,
-    totalFloors: formData.get('totalFloors') ? parseInt(formData.get('totalFloors') as string) : null,
-    houseArea: formData.get('houseArea') ? parseFloat(formData.get('houseArea') as string) : null,
-    landArea: formData.get('landArea') ? parseFloat(formData.get('landArea') as string) : null,
-    condition: formData.get('condition') || null,
-    yearBuilt: formData.get('yearBuilt') ? parseInt(formData.get('yearBuilt') as string) : null,
+    district: formData.get('district')?.toString() || "",
+    address: formData.get('address')?.toString() || "",
+    rooms: parseNumberOrNull(formData.get('rooms')?.toString()),
+    floor: parseNumberOrNull(formData.get('floor')?.toString()),
+    totalFloors: parseNumberOrNull(formData.get('totalFloors')?.toString()),
+    houseArea: parseFloatOrNull(formData.get('houseArea')?.toString()),
+    landArea: parseFloatOrNull(formData.get('landArea')?.toString()),
+    condition: formData.get('condition')?.toString() || null,
+    yearBuilt: parseNumberOrNull(formData.get('yearBuilt')?.toString()),
     noEncumbrances: formData.get('noEncumbrances') === 'true',
     noKids: formData.get('noKids') === 'true',
-    userId: formData.get('userId') as string,
-    status: formData.get('status') as string || 'active',
-    dealType: (formData.get('dealType') as string) || 'SALE',
+    userId: formData.get('userId')?.toString() || "",
+    status: formData.get('status')?.toString() || 'active',
+    dealType: (formData.get('dealType')?.toString() as 'SALE' | 'RENT') || 'SALE',
   };
+  
+  // Helper functions for parsing numbers
+  function parseNumberOrNull(value: string | undefined): number | null {
+    if (!value || value.trim() === '') return null;
+    const num = parseInt(value, 10);
+    return isNaN(num) ? null : num;
+  }
+  
+  function parseFloatOrNull(value: string | undefined): number | null {
+    if (!value || value.trim() === '') return null;
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num;
+  }
   
   // Validate with Zod schema and return the validated data
   return listingSchema.parseAsync(rawData);

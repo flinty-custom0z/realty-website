@@ -2,13 +2,13 @@
 
 ## Domain
 
-- OporaDom.ru
+- OporaDom.ru <- decided to use it for now
 - ОпораДом.рф
 
 ## Hosting
 
 - VPS
 - Free hosting
-  - Vercel?
+  - Vercel w/ Neon <- decided to use it for now
   - Cloudflare?
 
