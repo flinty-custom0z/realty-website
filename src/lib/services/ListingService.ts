@@ -494,12 +494,14 @@ export class ListingService {
     limit?: number;
     categorySlug?: string | null;
     status?: string | null;
+    dealType?: string | null;
   }) {
     const { 
       page = 1, 
       limit = 50, 
       categorySlug = null, 
-      status = null 
+      status = null,
+      dealType = null
     } = params;
     
     // Build filter
@@ -516,6 +518,10 @@ export class ListingService {
     
     if (status) {
       filter.status = status;
+    }
+    
+    if (dealType) {
+      filter.dealType = dealType.toUpperCase();
     }
 
     const [listings, total] = await Promise.all([

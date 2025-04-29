@@ -77,13 +77,15 @@ async function handleGetAllListings(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const categoryFilter = searchParams.get('category');
     const statusFilter = searchParams.get('status');
+    const dealTypeFilter = searchParams.get('dealType');
 
     // Use ListingService to get filtered listings
     const result = await ListingService.getAllListings({
       page,
       limit,
       categorySlug: categoryFilter,
-      status: statusFilter
+      status: statusFilter,
+      dealType: dealTypeFilter
     });
 
     return NextResponse.json(result);
