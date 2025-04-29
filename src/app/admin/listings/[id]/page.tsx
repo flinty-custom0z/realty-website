@@ -94,6 +94,9 @@ export default function EditListingPage() {
   // Add state for tracking individual image upload status
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
   
+  // Add a resetKey to force ImageUpload component to reset
+  const [resetKey, setResetKey] = useState(0);
+  
   // Form data
   const [formData, setFormData] = useState<ListingFormData & { userId?: string }>({
     title: '',
@@ -195,6 +198,26 @@ export default function EditListingPage() {
     
     fetchData();
   }, [params?.id]);
+  
+  // Reset image previews when listing is updated
+  useEffect(() => {
+    // Clear local image previews when listing is updated 
+    // This ensures uploaded images don't continue showing in the pending uploads area
+    if (listing) {
+      // Clean up any existing object URLs to prevent memory leaks
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+      
+      // Completely reset the image upload states
+      setImagePreviews([]);
+      setImageFiles([]);
+      setUploadingImages({});
+      
+      // Also ensure the file input is cleared
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [listing?.images]);
   
   // Filter categories based on deal type
   useEffect(() => {
@@ -355,15 +378,19 @@ export default function EditListingPage() {
         throw new Error(errorData.error || 'Failed to update listing');
       }
       
-      // Clear image uploads
+      // Reset the image upload tracking  
+      setUploadingImages({});
+      
+      // Clean up any object URLs to prevent memory leaks
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+      
+      // Clear temporary image states
       setImageFiles([]);
       setImagePreviews([]);
       setImagesToDelete([]);
       
-      // Reset the file input so selected file names are cleared
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      // Force ImageUpload component to reset
+      setResetKey(prev => prev + 1);
       
       // Show success message
       setSuccess('Объявление успешно обновлено');
@@ -805,6 +832,7 @@ export default function EditListingPage() {
                   isUploading={isSaving}
                   uploadingImages={uploadingImages}
                   previewModalHandler={openPreviewModal}
+                  resetKey={resetKey}
                 />
               </div>
             </div>

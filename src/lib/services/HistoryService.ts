@@ -96,7 +96,8 @@ export class HistoryService {
     added: any[] = [],
     deleted: any[] = [],
     featuredChanged: boolean = false,
-    newFeaturedPath: string | null = null
+    newFeaturedPath: string | null = null,
+    previousFeaturedPath: string | null = null
   ) {
     const imageChanges: Record<string, any> = {};
     
@@ -109,7 +110,13 @@ export class HistoryService {
     }
     
     if (featuredChanged && newFeaturedPath) {
-      imageChanges.featuredImage = newFeaturedPath;
+      // Store featured changes in the format expected by the UI component
+      imageChanges.featuredChanged = {
+        new: 'unknown', // We may not have the ID, just the path
+        newPath: newFeaturedPath,
+        previous: 'unknown',
+        previousPath: previousFeaturedPath
+      };
     }
     
     // Only create history entry if there are actual changes
@@ -235,7 +242,22 @@ export class HistoryService {
             });
           }
           
-          // Process featured image changes
+          // Process featured image changes from featuredImage field (v1 format)
+          if (entry.changes.featuredImage && !entry.changes.featuredChanged) {
+            // This is the old format where only the new featured image path is stored
+            // We need to transform it to the format expected by the UI
+            const featuredImagePath = entry.changes.featuredImage;
+            
+            // Convert to the format expected by the component
+            entry.changes.featuredChanged = {
+              new: 'unknown', // We don't have the ID, but this shouldn't matter
+              newPath: featuredImagePath,
+              previous: 'unknown',
+              previousPath: null // We don't have this information from the old format
+            };
+          }
+          
+          // Process featured image changes (v2 format)
           if (entry.changes.featuredChanged) {
             const { previous, new: newId } = entry.changes.featuredChanged;
             

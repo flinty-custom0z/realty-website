@@ -66,6 +66,7 @@ export default function NewListingPage() {
   const [success, setSuccess] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
+  const [resetKey, setResetKey] = useState(0);
 
   // Fetch categories and users when the component mounts
   useEffect(() => {
@@ -193,6 +194,17 @@ export default function NewListingPage() {
       
       // Show success message
       setSuccess('Объявление успешно создано');
+      
+      // Reset the image upload tracking
+      setUploadingImages({});
+      
+      // Clear image previews and perform proper cleanup
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+      setImagePreviews([]);
+      setImageFiles([]);
+      
+      // Force ImageUpload component to reset
+      setResetKey(prev => prev + 1);
       
       // Redirect to the created listing page after a short delay
       setTimeout(() => {
@@ -560,6 +572,7 @@ export default function NewListingPage() {
             onImageRemoved={removeImage}
             isUploading={isLoading}
             uploadingImages={uploadingImages}
+            resetKey={resetKey}
           />
         </div>
         

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { Home, Building2, MapPin, Store, ListFilter, Plus } from 'lucide-react';
+import { Home, Building2, MapPin, Store, ListFilter, PlusCircle } from 'lucide-react';
 
 async function getDashboardStats() {
   const [
@@ -40,7 +40,7 @@ export default async function AdminDashboard() {
           href="/admin/listings/new" 
             className="inline-flex items-center justify-center px-4 py-2 bg-[#11535F] text-white rounded-[8px] text-sm font-medium hover:bg-[#0D454F] transition-all duration-200 shadow-sm"
         >
-          <Plus size={16} className="mr-2" />
+          <PlusCircle size={16} className="mr-2" />
           Добавить объявление
         </Link>
       </div>

@@ -404,6 +404,17 @@ export class ListingService {
       return false;
     }
     
+    // Get current featured image before updating
+    const currentFeaturedImage = await prisma.image.findFirst({
+      where: {
+        listingId,
+        isFeatured: true
+      }
+    });
+    
+    // Store the previous featured image path for history
+    const previousFeaturedPath = currentFeaturedImage?.path || null;
+    
     // Update the featured image
     await ImageService.updateFeaturedImage(listingId, featuredImageId);
     
@@ -414,7 +425,8 @@ export class ListingService {
       [], // no added images
       [], // no deleted images
       true, // featured image changed
-      image.path // new featured image path
+      image.path, // new featured image path
+      previousFeaturedPath // previous featured image path
     );
     
     return true;

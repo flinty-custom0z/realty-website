@@ -4,6 +4,7 @@ import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import ClientImage from '@/components/ClientImage';
 import { Loader2, Eye, X, Upload } from 'lucide-react';
 import Button from './Button';
+import React from 'react';
 
 interface ImagePreview {
   file: File;
@@ -17,6 +18,7 @@ interface ImageUploadProps {
   isUploading: boolean;
   uploadingImages?: Record<string, boolean>;
   previewModalHandler?: (url: string) => void;
+  resetKey?: number;
 }
 
 export default function ImageUpload({
@@ -24,12 +26,16 @@ export default function ImageUpload({
   onImageRemoved,
   isUploading,
   uploadingImages = {},
-  previewModalHandler
+  previewModalHandler,
+  resetKey = 0
 }: ImageUploadProps) {
   const [previews, setPreviews] = useState<ImagePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Create a ref to track previous uploading state
+  const wasUploadingRef = useRef(isUploading);
 
   // Clear error message after 5 seconds
   useEffect(() => {
@@ -41,6 +47,42 @@ export default function ImageUpload({
       return () => clearTimeout(timer);
     }
   }, [errorMessage]);
+
+  // Clear previews when uploads complete
+  useEffect(() => {
+    // Check if we just finished uploading (isUploading changed from true to false)
+    if (wasUploadingRef.current && !isUploading && Object.keys(uploadingImages).length === 0) {
+      // Clear all previews
+      previews.forEach(preview => {
+        URL.revokeObjectURL(preview.url);
+      });
+      setPreviews([]);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+    
+    // Update ref with current value for next render
+    wasUploadingRef.current = isUploading;
+  }, [isUploading, uploadingImages]);
+  
+  // Handle explicit reset via resetKey prop
+  useEffect(() => {
+    if (resetKey > 0) {
+      // Clean up all existing previews
+      previews.forEach(preview => {
+        URL.revokeObjectURL(preview.url);
+      });
+      setPreviews([]);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [resetKey]);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;

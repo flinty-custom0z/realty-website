@@ -67,7 +67,58 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
         }
         
         const data = await response.json();
-        setHistory(data);
+        
+        // Process the data to ensure all entries are properly formatted
+        const processedData = data.map((entry: HistoryEntry) => {
+          // Handle image upload entries specifically
+          if (entry.action === 'images' && typeof entry.changes === 'object') {
+            const imgChanges = entry.changes as any;
+            
+            // Process added images
+            if (imgChanges.added && Array.isArray(imgChanges.added)) {
+              imgChanges.added = imgChanges.added.map((img: any) => {
+                // Ensure path exists and starts with /
+                if (img.path && !img.path.startsWith('/') && !img.path.startsWith('http')) {
+                  img.path = `/${img.path}`;
+                }
+                
+                // If still no path but we have filename, try to construct one
+                if (!img.path && img.filename) {
+                  img.path = `/images/listing/${listingId}/${img.filename}`;
+                }
+                
+                return img;
+              });
+            }
+            
+            // Process deleted images to ensure paths are correct
+            if (imgChanges.deleted && Array.isArray(imgChanges.deleted)) {
+              imgChanges.deleted = imgChanges.deleted.map((img: any) => {
+                if (img.path && !img.path.startsWith('/') && !img.path.startsWith('http')) {
+                  return { ...img, path: `/${img.path}` };
+                }
+                return img;
+              });
+            }
+            
+            // Ensure featuredChanged has proper paths
+            if (imgChanges.featuredChanged) {
+              const fc = imgChanges.featuredChanged;
+              
+              if (fc.newPath && !fc.newPath.startsWith('/') && !fc.newPath.startsWith('http')) {
+                fc.newPath = `/${fc.newPath}`;
+              }
+              
+              if (fc.previousPath && !fc.previousPath.startsWith('/') && !fc.previousPath.startsWith('http')) {
+                fc.previousPath = `/${fc.previousPath}`;
+              }
+            }
+          }
+          
+          return entry;
+        });
+        
+        setHistory(processedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить историю');
       } finally {
@@ -128,11 +179,8 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                        
-                      </div>
                       <div
-                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
+                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
                         aria-label="Просмотр фото"
                       >
                         <Eye size={16} className="text-white" />
@@ -175,11 +223,8 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 history-badge-deleted text-center">
-                    
-                  </div>
                   <div
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
@@ -208,11 +253,8 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
-                    
-                  </div>
                   <div
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
@@ -232,11 +274,8 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                    
-                  </div>
                   <div
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity pointer-events-none"
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity"
                     aria-label="Просмотр фото"
                   >
                     <Eye size={16} className="text-white" />
@@ -252,9 +291,6 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                       <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
                         Удалено
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 history-badge-previous text-center">
-                        
-                      </div>
                     </div>
                     
                     <span className="text-gray-500">→</span>
@@ -266,9 +302,6 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 history-badge-new text-center">
-                        
-                      </div>
                       <button
                         type="button"
                         onClick={() => changes.featuredChanged?.newPath && openImageModal(changes.featuredChanged.newPath)}
