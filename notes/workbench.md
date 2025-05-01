@@ -3,11 +3,8 @@
 
 ### NOW
 
-- Add rent/sale column in admin listings list
-
+- improve mobile version
 - Add roles (Me - admin, other users - agents)
-
-- Change logo
 
 ### Next
 
@@ -20,3 +17,5 @@
 - SEO
 
 - Заполнение договоров
+
+

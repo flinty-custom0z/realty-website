@@ -51,6 +51,7 @@
   
   /* Logo stays mostly the same but with subtle shift */
   --logo-accent: #11535F;
+  --deal-accent-color-rgb: 17, 83, 95;
 }
 
 .deal-type-rent-theme {
@@ -64,6 +65,7 @@
   
   /* Logo stays mostly the same but with subtle shift */
   --logo-accent: #0D9488;
+  --deal-accent-color-rgb: 20, 184, 166;
 }
 
 /* Add animation for deal type transition */
@@ -255,15 +257,32 @@ header {
   transition: var(--transition-standard);
 }
 
-header.sticky {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+/* Only apply sticky behavior on desktop */
+@media (min-width: 768px) {
+  header.sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* On mobile, header is never sticky */
+@media (max-width: 767px) {
+  header.sticky {
+    position: relative;
+  }
+}
+
+/* Mobile menu button styles - simplified */
+.mobile-menu-button {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  background-color: white;
+  border: 1px solid rgba(var(--deal-accent-color-rgb), 0.15);
 }
 
 /* Listing card styles */

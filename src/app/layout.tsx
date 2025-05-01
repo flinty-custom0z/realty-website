@@ -62,14 +62,34 @@ export default function RootLayout({
             if (header) {
               // Apply initial state based on current scroll position
               if (window.scrollY > 100) {
-                header.classList.add('sticky');
+                // Only add sticky class on desktop
+                if (window.innerWidth >= 768) {
+                  header.classList.add('sticky');
+                }
               }
               
               // Set up scroll event listener
               window.addEventListener('scroll', () => {
-                if (window.scrollY > 100) {
-                  header.classList.add('sticky');
+                // Only handle sticky behavior on desktop (md breakpoint = 768px)
+                if (window.innerWidth >= 768) {
+                  if (window.scrollY > 100) {
+                    header.classList.add('sticky');
+                  } else {
+                    header.classList.remove('sticky');
+                  }
+                }
+              });
+              
+              // Update on resize
+              window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) {
+                  if (window.scrollY > 100) {
+                    header.classList.add('sticky');
+                  } else {
+                    header.classList.remove('sticky');
+                  }
                 } else {
+                  // Always remove sticky class on mobile
                   header.classList.remove('sticky');
                 }
               });

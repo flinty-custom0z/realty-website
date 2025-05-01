@@ -10,7 +10,6 @@ import Logo from '@/components/Logo';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { dealType, setDealType } = useDealType();
   
@@ -34,16 +33,6 @@ export default function ResponsiveNav() {
     };
   }, [isMenuOpen]);
   
-  // Track scrolling for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  
   // Function to create category URL with current deal type
   const getCategoryUrl = (categorySlug: string) => {
     return dealType === 'rent' 
@@ -58,15 +47,7 @@ export default function ResponsiveNav() {
   
   return (
     <div className="w-full">
-      {isScrolled && (
-        <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-md py-2 px-4 flex justify-center">
-          <DealTypeToggle 
-            current={dealType} 
-            onChange={setDealType}
-          />
-        </div>
-      )}
-      
+      {/* Desktop sticky header - hidden on mobile */}
       <div className="container mx-auto px-6">
         <div className="flex justify-between items-center py-6">
           <Logo />
@@ -133,7 +114,7 @@ export default function ResponsiveNav() {
               )}
             </nav>
             
-            {/* Mobile menu button */}
+            {/* Mobile menu button - only visible on desktop */}
             <button
               id="menu-button"
               className="md:hidden p-2 text-gray-600 focus:outline-none"
@@ -154,11 +135,21 @@ export default function ResponsiveNav() {
       {/* Mobile Navigation Menu */}
       <div
         id="mobile-menu"
-        className={`md:hidden bg-white shadow-lg transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 invisible'
+        className={`md:hidden bg-white shadow-lg transition-all duration-300 ease-in-out fixed inset-0 z-50 ${
+          isMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
         } overflow-hidden`}
       >
-        <nav className="flex flex-col py-4 px-6 space-y-4">
+        <div className="flex justify-end p-4">
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            className="p-2 text-gray-600 focus:outline-none"
+            aria-label="Close menu"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <nav className="flex flex-col py-4 px-6 space-y-4 mt-12">
           {/* Mobile deal type toggle */}
           <div className="py-2">
             <DealTypeToggle 
@@ -218,6 +209,17 @@ export default function ResponsiveNav() {
             </Link>
           )}
         </nav>
+      </div>
+      
+      {/* Mobile floating menu button */}
+      <div className="md:hidden fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="mobile-menu-button rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white focus:outline-none hover:opacity-90 transition-opacity"
+          aria-label="Open menu"
+        >
+          <Menu className="h-6 w-6 deal-accent-text" />
+        </button>
       </div>
     </div>
   );
