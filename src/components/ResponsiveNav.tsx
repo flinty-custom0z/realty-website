@@ -113,21 +113,6 @@ export default function ResponsiveNav() {
                 </Link>
               )}
             </nav>
-            
-            {/* Mobile menu button - only visible on desktop */}
-            <button
-              id="menu-button"
-              className="md:hidden p-2 text-gray-600 focus:outline-none"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-expanded={isMenuOpen}
-            >
-              <span className="sr-only">Открыть меню</span>
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -214,6 +199,7 @@ export default function ResponsiveNav() {
       {/* Mobile floating menu button */}
       <div className="md:hidden fixed bottom-6 right-6 z-40">
         <button
+          id="menu-button"
           onClick={() => setIsMenuOpen(true)}
           className="mobile-menu-button rounded-full w-14 h-14 flex items-center justify-center shadow-md bg-white focus:outline-none hover:opacity-90 transition-opacity"
           aria-label="Open menu"
