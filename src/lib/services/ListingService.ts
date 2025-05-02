@@ -23,7 +23,7 @@ export interface ListingData {
   condition?: string | null;
   yearBuilt?: number | null;
   noEncumbrances?: boolean;
-  noKids?: boolean;
+  noShares?: boolean;
   status?: string;
   dealType?: 'SALE' | 'RENT';
 }
@@ -104,7 +104,7 @@ export class ListingService {
         condition: true,
         yearBuilt: true,
         noEncumbrances: true,
-        noKids: true,
+        noShares: true,
         price: true,
         status: true,
         userId: true,

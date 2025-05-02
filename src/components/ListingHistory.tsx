@@ -156,7 +156,7 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
       condition: 'Состояние',
       yearBuilt: 'Год постройки',
       noEncumbrances: 'Без обременений',
-      noKids: 'Без детей',
+      noShares: 'Без долей',
       price: 'Цена',
       status: 'Статус',
       userId: 'Риелтор'
