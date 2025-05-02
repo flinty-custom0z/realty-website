@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Grid, List } from 'lucide-react';
 import ClientImage from '@/components/ClientImage';
 import TruncatedCell from '@/components/ui/TruncatedCell';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -10,6 +10,7 @@ import Button from '@/components/Button';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { createLogger } from '@/lib/logging';
 import AdminNavMenuClient from '@/components/AdminNavMenuClient';
+import ListingCardCompact from '@/components/admin/ListingCardCompact';
 
 interface Listing {
   id: string;
@@ -57,6 +58,7 @@ export default function AdminListingsPage() {
   const [groupBy, setGroupBy] = useState<'none' | 'dealType' | 'category'>('none');
   const [sortField, setSortField] = useState<'dateAdded' | 'price' | 'title'>('dateAdded');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Default to grid view
   
   // Sort listings based on current sort field and order
   const sortedListings = useMemo(() => {
@@ -186,6 +188,145 @@ export default function AdminListingsPage() {
     }
   };
   
+  // Render grid view of listings
+  const renderGridView = (listingsToRender: Listing[]) => {
+    return (
+      <div className="admin-listings-grid">
+        {listingsToRender.map((listing) => (
+          <ListingCardCompact
+            key={listing.id}
+            id={listing.id}
+            title={listing.title}
+            price={listing.price}
+            listingCode={listing.listingCode}
+            status={listing.status}
+            category={listing.category}
+            district={listing.district}
+            address={listing.address}
+            dealType={listing.dealType}
+            dateAdded={listing.dateAdded}
+            images={listing.images}
+            onDelete={handleDeleteListing}
+          />
+        ))}
+      </div>
+    );
+  };
+  
+  // Render list (table) view of listings
+  const renderListView = (listingsToRender: Listing[]) => {
+    return (
+      <div className="overflow-x-auto admin-table-container">
+        <table className="admin-table w-full admin-table-mobile">
+          <thead>
+            <tr>
+              <th className="w-16">Фото</th>
+              <th 
+                className="cursor-pointer hover:bg-gray-50"
+                onClick={() => handleSortToggle('title')}
+              >
+                Название {renderSortIndicator('title')}
+              </th>
+              <th>Категория</th>
+              <th>Код</th>
+              <th>Район</th>
+              <th>Адрес</th>
+              <th 
+                className="text-right cursor-pointer hover:bg-gray-50"
+                onClick={() => handleSortToggle('price')}
+              >
+                Цена {renderSortIndicator('price')}
+              </th>
+              <th>Тип</th>
+              <th>Статус</th>
+              <th 
+                className="cursor-pointer hover:bg-gray-50"
+                onClick={() => handleSortToggle('dateAdded')}
+              >
+                Дата {renderSortIndicator('dateAdded')}
+              </th>
+              <th className="text-right">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {listingsToRender.map((listing) => (
+              <tr key={listing.id}>
+                <td className="image-cell" data-label="Фото">
+                  <div className="relative w-12 h-12 bg-gray-50 rounded overflow-hidden border border-gray-100">
+                    {listing.images && listing.images[0] ? (
+                      <ClientImage
+                        src={listing.images[0].path}
+                        alt={listing.title}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                        fallbackSrc="/images/placeholder.png"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                        Нет фото
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="title-cell" data-label="Название">
+                  <Link 
+                    href={`/listing/${listing.id}`}
+                    className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
+                    target="_blank"
+                  >
+                    <TruncatedCell text={listing.title} maxWidth={220} />
+                  </Link>
+                </td>
+                <td data-label="Категория">{listing.category.name}</td>
+                <td data-label="Код">{listing.listingCode}</td>
+                <td data-label="Район">{listing.district}</td>
+                <td data-label="Адрес">
+                  <TruncatedCell text={listing.address} maxWidth={180} />
+                </td>
+                <td className="text-right font-medium" data-label="Цена">{formatPrice(listing.price)}</td>
+                <td data-label="Тип">
+                  <span className={`px-2 py-1 rounded-full text-xs ${listing.dealType === 'SALE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                    {listing.dealType === 'SALE' ? 'Продажа' : 'Аренда'}
+                  </span>
+                </td>
+                <td className="status-cell" data-label="Статус">
+                  <StatusBadge status={listing.status} />
+                </td>
+                <td data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
+                <td className="actions-cell" data-label="Действия">
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<Edit2 size={14} />}
+                      onClick={() => window.location.href = `/admin/listings/${listing.id}`}
+                    >
+                      Ред.
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={<Trash2 size={14} />}
+                      onClick={() => handleDeleteListing(listing.id)}
+                    >
+                      Удал.
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+  
+  // Toggle view mode between grid and list
+  const toggleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+  };
+  
   return (
     <div>
       <AdminNavMenuClient />
@@ -273,6 +414,24 @@ export default function AdminListingsPage() {
         </div>
       </div>
       
+      {/* View mode toggle */}
+      <div className="admin-listings-view-toggle">
+        <button 
+          className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+          onClick={() => toggleViewMode('grid')}
+        >
+          <Grid size={16} className="mr-2" />
+          Плитка
+        </button>
+        <button 
+          className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+          onClick={() => toggleViewMode('list')}
+        >
+          <List size={16} className="mr-2" />
+          Список
+        </button>
+      </div>
+      
       <div className="bg-white rounded-lg shadow">
         {isLoading ? (
           <div className="p-8 text-center">
@@ -280,232 +439,40 @@ export default function AdminListingsPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto admin-table-container">
-              {groupBy === 'none' ? (
-                <table className="admin-table w-full admin-table-mobile">
-                  <thead>
-                    <tr>
-                      <th className="w-16">Фото</th>
-                      <th 
-                        className="cursor-pointer hover:bg-gray-50"
-                        onClick={() => handleSortToggle('title')}
-                      >
-                        Название {renderSortIndicator('title')}
-                      </th>
-                      <th>Категория</th>
-                      <th>Код</th>
-                      <th>Район</th>
-                      <th>Адрес</th>
-                      <th 
-                        className="text-right cursor-pointer hover:bg-gray-50"
-                        onClick={() => handleSortToggle('price')}
-                      >
-                        Цена {renderSortIndicator('price')}
-                      </th>
-                      <th>Тип</th>
-                      <th>Статус</th>
-                      <th 
-                        className="cursor-pointer hover:bg-gray-50"
-                        onClick={() => handleSortToggle('dateAdded')}
-                      >
-                        Дата {renderSortIndicator('dateAdded')}
-                      </th>
-                      <th className="text-right">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedListings.map((listing) => (
-                      <tr key={listing.id}>
-                        <td className="image-cell" data-label="Фото">
-                          <div className="relative w-12 h-12 bg-gray-50 rounded overflow-hidden border border-gray-100">
-                            {listing.images && listing.images[0] ? (
-                              <ClientImage
-                                src={listing.images[0].path}
-                                alt={listing.title}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                                fallbackSrc="/images/placeholder.png"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                                Нет фото
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="title-cell" data-label="Название">
-                          <Link 
-                            href={`/listing/${listing.id}`}
-                            className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
-                            target="_blank"
-                          >
-                            <TruncatedCell text={listing.title} maxWidth={220} />
-                          </Link>
-                        </td>
-                        <td data-label="Категория">{listing.category.name}</td>
-                        <td data-label="Код">{listing.listingCode}</td>
-                        <td data-label="Район">{listing.district}</td>
-                        <td data-label="Адрес">
-                          <TruncatedCell text={listing.address} maxWidth={180} />
-                        </td>
-                        <td className="text-right font-medium" data-label="Цена">{formatPrice(listing.price)}</td>
-                        <td data-label="Тип">
-                          <span className={`px-2 py-1 rounded-full text-xs ${listing.dealType === 'SALE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {listing.dealType === 'SALE' ? 'Продажа' : 'Аренда'}
-                          </span>
-                        </td>
-                        <td className="status-cell" data-label="Статус">
-                          <StatusBadge status={listing.status} />
-                        </td>
-                        <td data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
-                        <td className="actions-cell" data-label="Действия">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<Edit2 size={14} />}
-                              onClick={() => window.location.href = `/admin/listings/${listing.id}`}
-                            >
-                              Ред.
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              icon={<Trash2 size={14} />}
-                              onClick={() => handleDeleteListing(listing.id)}
-                            >
-                              Удал.
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="grouped-listings">
-                  {Object.entries(groupedListings).map(([groupName, groupItems]) => (
-                    <div key={groupName} className="mb-8 border rounded-lg shadow-sm overflow-hidden">
-                      <h3 className="text-xl font-medium py-3 px-4 bg-gray-100 border-b flex justify-between items-center">
-                        <span>
-                          {groupName}
-                          <span className="ml-2 text-sm font-normal text-gray-600">
-                            ({groupItems.length} {groupItems.length === 1 ? 'объявление' : groupItems.length < 5 ? 'объявления' : 'объявлений'})
-                          </span>
+            {groupBy === 'none' ? (
+              <div className="p-6">
+                {viewMode === 'grid' ? 
+                  renderGridView(sortedListings) : 
+                  renderListView(sortedListings)
+                }
+              </div>
+            ) : (
+              <div className="grouped-listings">
+                {Object.entries(groupedListings).map(([groupName, groupItems]) => (
+                  <div key={groupName} className="mb-8 border rounded-lg shadow-sm overflow-hidden">
+                    <h3 className="text-xl font-medium py-3 px-4 bg-gray-100 border-b flex justify-between items-center">
+                      <span>
+                        {groupName}
+                        <span className="ml-2 text-sm font-normal text-gray-600">
+                          ({groupItems.length} {groupItems.length === 1 ? 'объявление' : groupItems.length < 5 ? 'объявления' : 'объявлений'})
                         </span>
-                        {groupBy === 'dealType' && (
-                          <span className={`px-3 py-1 rounded-full text-sm ${groupName === 'Продажа' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {groupName}
-                          </span>
-                        )}
-                      </h3>
-                      <table className="admin-table w-full admin-table-mobile">
-                        <thead>
-                          <tr>
-                            <th className="w-16">Фото</th>
-                            <th 
-                              className="cursor-pointer hover:bg-gray-50"
-                              onClick={() => handleSortToggle('title')}
-                            >
-                              Название {renderSortIndicator('title')}
-                            </th>
-                            <th>Категория</th>
-                            <th>Код</th>
-                            <th>Район</th>
-                            <th>Адрес</th>
-                            <th 
-                              className="text-right cursor-pointer hover:bg-gray-50"
-                              onClick={() => handleSortToggle('price')}
-                            >
-                              Цена {renderSortIndicator('price')}
-                            </th>
-                            <th>Тип</th>
-                            <th>Статус</th>
-                            <th 
-                              className="cursor-pointer hover:bg-gray-50"
-                              onClick={() => handleSortToggle('dateAdded')}
-                            >
-                              Дата {renderSortIndicator('dateAdded')}
-                            </th>
-                            <th className="text-right">Действия</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {groupItems.map((listing) => (
-                            <tr key={listing.id}>
-                              <td className="image-cell" data-label="Фото">
-                                <div className="relative w-12 h-12 bg-gray-50 rounded overflow-hidden border border-gray-100">
-                                  {listing.images && listing.images[0] ? (
-                                    <ClientImage
-                                      src={listing.images[0].path}
-                                      alt={listing.title}
-                                      fill
-                                      sizes="48px"
-                                      className="object-cover"
-                                      fallbackSrc="/images/placeholder.png"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                                      Нет фото
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="title-cell" data-label="Название">
-                                <Link 
-                                  href={`/listing/${listing.id}`}
-                                  className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
-                                  target="_blank"
-                                >
-                                  <TruncatedCell text={listing.title} maxWidth={220} />
-                                </Link>
-                              </td>
-                              <td data-label="Категория">{listing.category.name}</td>
-                              <td data-label="Код">{listing.listingCode}</td>
-                              <td data-label="Район">{listing.district}</td>
-                              <td data-label="Адрес">
-                                <TruncatedCell text={listing.address} maxWidth={180} />
-                              </td>
-                              <td className="text-right font-medium" data-label="Цена">{formatPrice(listing.price)}</td>
-                              <td data-label="Тип">
-                                <span className={`px-2 py-1 rounded-full text-xs ${listing.dealType === 'SALE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                                  {listing.dealType === 'SALE' ? 'Продажа' : 'Аренда'}
-                                </span>
-                              </td>
-                              <td className="status-cell" data-label="Статус">
-                                <StatusBadge status={listing.status} />
-                              </td>
-                              <td data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
-                              <td className="actions-cell" data-label="Действия">
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    variant="primary"
-                                    size="sm"
-                                    icon={<Edit2 size={14} />}
-                                    onClick={() => window.location.href = `/admin/listings/${listing.id}`}
-                                  >
-                                    Ред.
-                                  </Button>
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    icon={<Trash2 size={14} />}
-                                    onClick={() => handleDeleteListing(listing.id)}
-                                  >
-                                    Удал.
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      </span>
+                      {groupBy === 'dealType' && (
+                        <span className={`px-3 py-1 rounded-full text-sm ${groupName === 'Продажа' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {groupName}
+                        </span>
+                      )}
+                    </h3>
+                    <div className="p-6">
+                      {viewMode === 'grid' ? 
+                        renderGridView(groupItems) : 
+                        renderListView(groupItems)
+                      }
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
             
             {sortedListings.length === 0 && (
               <div className="p-8 text-center text-gray-500">

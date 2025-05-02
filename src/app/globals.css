@@ -1050,3 +1050,52 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
+
+/* Admin Listing Grid View */
+.admin-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .admin-listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-listings-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.admin-listings-view-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background-color: white;
+  color: #4a5568;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-toggle-btn.active {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  font-weight: 500;
+}
+
+.view-toggle-btn:hover:not(.active) {
+  background-color: #f9fafb;
+}
