@@ -6,8 +6,6 @@
 - improve mobile version
 - Add roles (Me - admin, other users - agents)
 
-- Click on header to sort in admin panel
-
 
 ### Next
 

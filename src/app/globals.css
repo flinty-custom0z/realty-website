@@ -709,6 +709,7 @@ button {
 /* Table & List Styling */
 .admin-table {
   width: 100%;
+  min-width: 0;
   border-collapse: separate;
   border-spacing: 0;
   margin-bottom: 1.5rem;
@@ -1058,6 +1059,12 @@ button {
   gap: 16px;
 }
 
+@media (min-width: 640px) {
+  .admin-listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (min-width: 768px) {
   .admin-listings-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1070,32 +1077,29 @@ button {
   }
 }
 
-.admin-listings-view-toggle {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+/* Fix for horizontal scrollbar in desktop view */
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: visible;
 }
 
-.view-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background-color: white;
-  color: #4a5568;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+@media (max-width: 1023px) {
+  .admin-table-wrapper {
+    overflow-x: auto;
+  }
 }
 
-.view-toggle-btn.active {
-  background-color: #f7fafc;
-  border-color: #cbd5e0;
-  font-weight: 500;
+.admin-table-wrapper table {
+  width: 100%;
+  table-layout: auto;
 }
 
-.view-toggle-btn:hover:not(.active) {
-  background-color: #f9fafb;
+/* Remove the admin-table-container overflow which causes scrollbar to appear */
+.admin-table-container {
+  width: 100%;
+}
+
+/* Center pagination buttons */
+.flex.justify-center .pagination-btn {
+  margin-bottom: 8px;
 }

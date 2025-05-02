@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { PlusCircle, Edit2, Trash2, Grid, List } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import ClientImage from '@/components/ClientImage';
 import TruncatedCell from '@/components/ui/TruncatedCell';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -58,7 +58,6 @@ export default function AdminListingsPage() {
   const [groupBy, setGroupBy] = useState<'none' | 'dealType' | 'category'>('none');
   const [sortField, setSortField] = useState<'dateAdded' | 'price' | 'title'>('dateAdded');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Default to grid view
   
   // Sort listings based on current sort field and order
   const sortedListings = useMemo(() => {
@@ -216,8 +215,8 @@ export default function AdminListingsPage() {
   // Render list (table) view of listings
   const renderListView = (listingsToRender: Listing[]) => {
     return (
-      <div className="overflow-x-auto admin-table-container">
-        <table className="admin-table w-full admin-table-mobile">
+      <div className="admin-table-wrapper">
+        <table className="admin-table w-full">
           <thead>
             <tr>
               <th className="w-16">Фото</th>
@@ -322,11 +321,6 @@ export default function AdminListingsPage() {
     );
   };
   
-  // Toggle view mode between grid and list
-  const toggleViewMode = (mode: 'grid' | 'list') => {
-    setViewMode(mode);
-  };
-  
   return (
     <div>
       <AdminNavMenuClient />
@@ -414,24 +408,6 @@ export default function AdminListingsPage() {
         </div>
       </div>
       
-      {/* View mode toggle */}
-      <div className="admin-listings-view-toggle">
-        <button 
-          className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-          onClick={() => toggleViewMode('grid')}
-        >
-          <Grid size={16} className="mr-2" />
-          Плитка
-        </button>
-        <button 
-          className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
-          onClick={() => toggleViewMode('list')}
-        >
-          <List size={16} className="mr-2" />
-          Список
-        </button>
-      </div>
-      
       <div className="bg-white rounded-lg shadow">
         {isLoading ? (
           <div className="p-8 text-center">
@@ -441,10 +417,13 @@ export default function AdminListingsPage() {
           <>
             {groupBy === 'none' ? (
               <div className="p-6">
-                {viewMode === 'grid' ? 
-                  renderGridView(sortedListings) : 
-                  renderListView(sortedListings)
-                }
+                {/* Desktop shows table, mobile shows grid */}
+                <div className="hidden md:block">
+                  {renderListView(sortedListings)}
+                </div>
+                <div className="md:hidden">
+                  {renderGridView(sortedListings)}
+                </div>
               </div>
             ) : (
               <div className="grouped-listings">
@@ -464,10 +443,13 @@ export default function AdminListingsPage() {
                       )}
                     </h3>
                     <div className="p-6">
-                      {viewMode === 'grid' ? 
-                        renderGridView(groupItems) : 
-                        renderListView(groupItems)
-                      }
+                      {/* Desktop shows table, mobile shows grid */}
+                      <div className="hidden md:block">
+                        {renderListView(groupItems)}
+                      </div>
+                      <div className="md:hidden">
+                        {renderGridView(groupItems)}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -483,7 +465,7 @@ export default function AdminListingsPage() {
             {/* Pagination */}
             {pagination.pages > 1 && (
               <div className="flex justify-center pt-4 pb-8">
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap justify-center space-x-2">
                   {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
