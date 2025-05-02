@@ -19,11 +19,16 @@ interface FormData {
   floor: string;
   totalFloors: string;
   houseArea: string;
+  kitchenArea: string;
   landArea: string;
   condition: string;
   yearBuilt: string;
+  buildingType: string;
+  balconyType: string;
+  bathroomType: string;
+  windowsView: string;
   noEncumbrances: boolean;
-  noKids: boolean;
+  noShares: boolean;
   price: string;
   dealType: 'SALE' | 'RENT';
   status: string;
@@ -46,11 +51,16 @@ export default function NewListingPage() {
     floor: '',
     totalFloors: '',
     houseArea: '',
+    kitchenArea: '',
     landArea: '',
     condition: '',
     yearBuilt: '',
+    buildingType: '',
+    balconyType: '',
+    bathroomType: '',
+    windowsView: '',
     noEncumbrances: false,
-    noKids: false,
+    noShares: false,
     price: '',
     dealType: 'SALE',
     status: 'active',
@@ -428,6 +438,22 @@ export default function NewListingPage() {
             </div>
             
             <div>
+              <label htmlFor="kitchenArea" className="block text-sm font-medium text-gray-700 mb-1">
+                Площадь кухни (м²)
+              </label>
+              <input
+                type="number"
+                id="kitchenArea"
+                name="kitchenArea"
+                min="0"
+                step="0.1"
+                value={formData.kitchenArea}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+              />
+            </div>
+            
+            <div>
               <label htmlFor="landArea" className="block text-sm font-medium text-gray-700 mb-1">
                 Площадь участка (сот.)
               </label>
@@ -481,6 +507,80 @@ export default function NewListingPage() {
               />
             </div>
             
+            <div>
+              <label htmlFor="buildingType" className="block text-sm font-medium text-gray-700 mb-1">
+                Тип дома
+              </label>
+              <select
+                id="buildingType"
+                name="buildingType"
+                value={formData.buildingType}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+              >
+                <option value="">Выберите тип дома</option>
+                <option value="BRICK">Кирпичный</option>
+                <option value="PANEL">Панельный</option>
+                <option value="MONOLITH">Монолитный</option>
+                <option value="OTHER">Другой</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="balconyType" className="block text-sm font-medium text-gray-700 mb-1">
+                Балкон/Лоджия
+              </label>
+              <select
+                id="balconyType"
+                name="balconyType"
+                value={formData.balconyType}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+              >
+                <option value="">Выберите тип</option>
+                <option value="BALCONY">Балкон</option>
+                <option value="LOGGIA">Лоджия</option>
+                <option value="BOTH">Балкон и лоджия</option>
+                <option value="NONE">Отсутствует</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="bathroomType" className="block text-sm font-medium text-gray-700 mb-1">
+                Санузел
+              </label>
+              <select
+                id="bathroomType"
+                name="bathroomType"
+                value={formData.bathroomType}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+              >
+                <option value="">Выберите тип</option>
+                <option value="COMBINED">Совмещенный</option>
+                <option value="SEPARATE">Раздельный</option>
+                <option value="MULTIPLE">Несколько санузлов</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="windowsView" className="block text-sm font-medium text-gray-700 mb-1">
+                Окна
+              </label>
+              <select
+                id="windowsView"
+                name="windowsView"
+                value={formData.windowsView}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+              >
+                <option value="">Выберите вид из окон</option>
+                <option value="COURTYARD">Во двор</option>
+                <option value="STREET">На улицу</option>
+                <option value="BOTH">Во двор и на улицу</option>
+              </select>
+            </div>
+            
             <div className="flex items-center space-x-4">
               <label className="custom-checkbox">
                 <input
@@ -497,13 +597,13 @@ export default function NewListingPage() {
               <label className="custom-checkbox">
                 <input
                   type="checkbox"
-                  id="noKids"
-                  name="noKids"
-                  checked={formData.noKids}
+                  id="noShares"
+                  name="noShares"
+                  checked={formData.noShares}
                   onChange={handleChange}
                 />
                 <span className="checkbox-icon"></span>
-                <span className="text-sm text-gray-700">Без детей</span>
+                <span className="text-sm text-gray-700">Без долей</span>
               </label>
             </div>
             

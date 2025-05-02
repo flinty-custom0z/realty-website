@@ -16,6 +16,32 @@ enum DealType {
   RENT
 }
 
+enum BuildingType {
+  BRICK
+  PANEL
+  MONOLITH
+  OTHER
+}
+
+enum BalconyType {
+  BALCONY
+  LOGGIA
+  BOTH
+  NONE
+}
+
+enum BathroomType {
+  COMBINED
+  SEPARATE
+  MULTIPLE
+}
+
+enum WindowsView {
+  COURTYARD
+  STREET
+  BOTH
+}
+
 // Models
 model User {
   id        String    @id @default(cuid())
@@ -51,13 +77,18 @@ model Listing {
   address         String?
   rooms           Int?
   houseArea       Float?
+  kitchenArea     Float?
   landArea        Float?
   floor           Int?
   totalFloors     Int?
   condition       String?
   yearBuilt       Int?
+  buildingType    BuildingType?
+  balconyType     BalconyType?
+  bathroomType    BathroomType?
+  windowsView     WindowsView?
   noEncumbrances  Boolean?  @default(false)
-  noKids          Boolean?  @default(false)
+  noShares        Boolean?  @default(false)
   price           Float
   currency        String    @default("₽")
   dealType        DealType  @default(SALE)

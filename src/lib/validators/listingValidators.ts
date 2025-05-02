@@ -17,11 +17,16 @@ export const listingSchema = z.object({
   floor: z.number().int().nonnegative().nullable().optional(),
   totalFloors: z.number().int().nonnegative().nullable().optional(),
   houseArea: z.number().nonnegative().nullable().optional(),
+  kitchenArea: z.number().nonnegative().nullable().optional(),
   landArea: z.number().nonnegative().nullable().optional(),
   condition: z.string().optional().nullable(),
   yearBuilt: z.number().int().positive().nullable().optional(),
+  buildingType: z.enum(["BRICK", "PANEL", "MONOLITH", "OTHER"]).nullable().optional(),
+  balconyType: z.enum(["BALCONY", "LOGGIA", "BOTH", "NONE"]).nullable().optional(),
+  bathroomType: z.enum(["COMBINED", "SEPARATE", "MULTIPLE"]).nullable().optional(),
+  windowsView: z.enum(["COURTYARD", "STREET", "BOTH"]).nullable().optional(),
   noEncumbrances: z.boolean().default(false),
-  noKids: z.boolean().default(false),
+  noShares: z.boolean().default(false),
   userId: z.string().min(1, "User ID is required"),
   status: z.enum(["active", "sold", "pending", "inactive"]).default("active"),
   dealType: z.enum(["SALE", "RENT"]).default("SALE"),
@@ -65,11 +70,16 @@ export function parseListingFormData(formData: FormData): Promise<ListingData> {
     floor: parseNumberOrNull(formData.get('floor')?.toString()),
     totalFloors: parseNumberOrNull(formData.get('totalFloors')?.toString()),
     houseArea: parseFloatOrNull(formData.get('houseArea')?.toString()),
+    kitchenArea: parseFloatOrNull(formData.get('kitchenArea')?.toString()),
     landArea: parseFloatOrNull(formData.get('landArea')?.toString()),
     condition: formData.get('condition')?.toString() || null,
     yearBuilt: parseNumberOrNull(formData.get('yearBuilt')?.toString()),
+    buildingType: validateEnumOrNull(formData.get('buildingType')?.toString(), ["BRICK", "PANEL", "MONOLITH", "OTHER"]),
+    balconyType: validateEnumOrNull(formData.get('balconyType')?.toString(), ["BALCONY", "LOGGIA", "BOTH", "NONE"]),
+    bathroomType: validateEnumOrNull(formData.get('bathroomType')?.toString(), ["COMBINED", "SEPARATE", "MULTIPLE"]),
+    windowsView: validateEnumOrNull(formData.get('windowsView')?.toString(), ["COURTYARD", "STREET", "BOTH"]),
     noEncumbrances: formData.get('noEncumbrances') === 'true',
-    noKids: formData.get('noKids') === 'true',
+    noShares: formData.get('noShares') === 'true',
     userId: formData.get('userId')?.toString() || "",
     status: formData.get('status')?.toString() || 'active',
     dealType: (formData.get('dealType')?.toString() as 'SALE' | 'RENT') || 'SALE',
@@ -86,6 +96,11 @@ export function parseListingFormData(formData: FormData): Promise<ListingData> {
     if (!value || value.trim() === '') return null;
     const num = parseFloat(value);
     return isNaN(num) ? null : num;
+  }
+  
+  function validateEnumOrNull<T extends string>(value: string | undefined, allowedValues: T[]): T | null {
+    if (!value || value.trim() === '') return null;
+    return allowedValues.includes(value as T) ? value as T : null;
   }
   
   // Validate with Zod schema and return the validated data
