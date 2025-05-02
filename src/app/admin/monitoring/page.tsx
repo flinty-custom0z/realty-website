@@ -8,6 +8,7 @@ import { HealthMetrics } from '@/components/monitoring/HealthMetrics';
 import { LogViewer } from '@/components/monitoring/LogViewer';
 import { ErrorTest } from '@/components/monitoring/ErrorTest';
 import { ResourceLimits } from '@/components/monitoring/ResourceLimits';
+import AdminNavMenu from '@/components/AdminNavMenu';
 
 async function getUserFromCookie() {
   try {
@@ -36,6 +37,8 @@ export default async function MonitoringDashboardPage() {
   
   return (
     <div>
+      <AdminNavMenu userName={user.name} />
+      
       <div className="p-6 bg-white rounded-lg shadow-sm">
         <h1 className="text-2xl font-bold mb-6">System Monitoring</h1>
         

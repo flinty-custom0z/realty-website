@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import ClientImage from '@/components/ClientImage';
+import AdminNavMenuClient from '@/components/AdminNavMenuClient';
 
 interface User {
   id: string;
@@ -136,6 +137,8 @@ export default function AdminUsersPage() {
 
   return (
     <div>
+      <AdminNavMenuClient />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Риелторы</h1>
         <button className="admin-add-btn" onClick={openAdd}>

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { Home, Building2, MapPin, Store, ListFilter, PlusCircle } from 'lucide-react';
 import { JWT_SECRET } from '@/lib/env';
+import AdminNavMenu from '@/components/AdminNavMenu';
 
 async function getUserFromCookie() {
   try {
@@ -62,6 +63,8 @@ export default async function AdminDashboard() {
   
   return (
     <div>
+      <AdminNavMenu userName={user.name} />
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Панель управления</h1>
         <Link 

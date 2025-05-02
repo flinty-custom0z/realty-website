@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronRight, ArrowLeft, LayoutDashboard, ListFilter, Users, BarChart, LogOut } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useDealType } from '@/contexts/DealTypeContext';
 import DealTypeToggle from '@/components/DealTypeToggle';
 import Logo from '@/components/Logo';
@@ -11,15 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const pathname = usePathname() || '';
   const { dealType, setDealType } = useDealType();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   // Close menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
-    setActiveSubmenu(null);
   }, [pathname]);
 
   // Close menu when clicking outside
@@ -28,7 +26,6 @@ export default function ResponsiveNav() {
       const target = event.target as HTMLElement;
       if (isMenuOpen && !target.closest('#mobile-menu') && !target.closest('#menu-button')) {
         setIsMenuOpen(false);
-        setActiveSubmenu(null);
       }
     };
 
@@ -48,20 +45,6 @@ export default function ResponsiveNav() {
   // For rent, only show apartments and commercial
   const shouldShowForRent = (categorySlug: string) => {
     return dealType !== 'rent' || ['apartments', 'commercial'].includes(categorySlug);
-  };
-
-  // Handle opening and closing submenus
-  const toggleSubmenu = (submenu: string) => {
-    if (activeSubmenu === submenu) {
-      setActiveSubmenu(null);
-    } else {
-      setActiveSubmenu(submenu);
-    }
-  };
-
-  // Check if a path is active
-  const isActive = (path: string) => {
-    return pathname === path || pathname?.startsWith(`${path}/`);
   };
   
   return (
@@ -165,11 +148,7 @@ export default function ResponsiveNav() {
         
         <div className="relative h-[calc(100%-80px)] overflow-hidden">
           {/* Main Mobile Menu */}
-          <nav 
-            className={`mobile-menu-nav flex flex-col py-4 px-6 space-y-4 absolute inset-0 transition-transform duration-300 ${
-              activeSubmenu ? 'translate-x-[-100%]' : 'translate-x-0'
-            }`}
-          >
+          <nav className="mobile-menu-nav flex flex-col py-4 px-6 space-y-4 absolute inset-0">
             {/* Mobile deal type toggle */}
             <div className="py-2">
               <DealTypeToggle 
@@ -229,104 +208,18 @@ export default function ResponsiveNav() {
               </Link>
             )}
             
-            {/* Admin panel submenu trigger - only visible when authenticated */}
+            {/* Admin panel link - only visible when authenticated */}
             {isAuthenticated && !isLoading && (
-              <button
-                onClick={() => toggleSubmenu('admin')}
-                className={`flex items-center justify-between w-full py-2 text-gray-600 hover:text-gray-900 transition-colors text-left ${
+              <Link
+                href="/admin"
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
                   pathname.startsWith('/admin') ? 'text-gray-900 font-medium' : ''
                 }`}
               >
-                <span>Админ панель</span>
-                <ChevronRight className="h-5 w-5" />
-              </button>
+                Админ панель
+              </Link>
             )}
           </nav>
-
-          {/* Admin Submenu */}
-          {isAuthenticated && !isLoading && (
-            <div 
-              className={`absolute inset-0 flex flex-col py-4 px-6 transition-transform duration-300 ${
-                activeSubmenu === 'admin' ? 'translate-x-0' : 'translate-x-[100%]'
-              }`}
-            >
-              <button 
-                onClick={() => setActiveSubmenu(null)}
-                className="flex items-center py-2 mb-4 text-gray-600"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                <span>Назад</span>
-              </button>
-              
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Админ панель</h2>
-                {user && <p className="text-sm text-gray-500 mt-1">Привет, {user.name}</p>}
-              </div>
-              
-              <Link 
-                href="/admin" 
-                className={`flex items-center py-3 rounded-md ${
-                  isActive('/admin') && !isActive('/admin/listings') && !isActive('/admin/users') && !isActive('/admin/monitoring')
-                    ? 'text-gray-900 font-medium' 
-                    : 'text-gray-600'
-                }`}
-                onClick={() => setActiveSubmenu(null)}
-              >
-                <LayoutDashboard className="h-5 w-5 mr-3 text-gray-500" />
-                <span>Главная</span>
-              </Link>
-              
-              <Link 
-                href="/admin/listings" 
-                className={`flex items-center py-3 rounded-md ${
-                  isActive('/admin/listings')
-                    ? 'text-gray-900 font-medium' 
-                    : 'text-gray-600'
-                }`}
-                onClick={() => setActiveSubmenu(null)}
-              >
-                <ListFilter className="h-5 w-5 mr-3 text-gray-500" />
-                <span>Объявления</span>
-              </Link>
-              
-              <Link 
-                href="/admin/users" 
-                className={`flex items-center py-3 rounded-md ${
-                  isActive('/admin/users')
-                    ? 'text-gray-900 font-medium' 
-                    : 'text-gray-600'
-                }`}
-                onClick={() => setActiveSubmenu(null)}
-              >
-                <Users className="h-5 w-5 mr-3 text-gray-500" />
-                <span>Пользователи</span>
-              </Link>
-              
-              <Link 
-                href="/admin/monitoring" 
-                className={`flex items-center py-3 rounded-md ${
-                  isActive('/admin/monitoring')
-                    ? 'text-gray-900 font-medium' 
-                    : 'text-gray-600'
-                }`}
-                onClick={() => setActiveSubmenu(null)}
-              >
-                <BarChart className="h-5 w-5 mr-3 text-gray-500" />
-                <span>Мониторинг</span>
-              </Link>
-              
-              <div className="pt-4 mt-6 border-t border-gray-100">
-                <Link 
-                  href="/admin/logout" 
-                  className="flex items-center py-3 rounded-md text-gray-600"
-                  onClick={() => setActiveSubmenu(null)}
-                >
-                  <LogOut className="h-5 w-5 mr-3 text-gray-500" />
-                  <span>Выйти</span>
-                </Link>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       

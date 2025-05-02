@@ -9,6 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/Button';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { createLogger } from '@/lib/logging';
+import AdminNavMenuClient from '@/components/AdminNavMenuClient';
 
 interface Listing {
   id: string;
@@ -187,13 +188,14 @@ export default function AdminListingsPage() {
   
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <AdminNavMenuClient />
+      
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Управление объявлениями</h1>
         <Button
           variant="primary"
           icon={<PlusCircle size={16} />}
           onClick={() => window.location.href = '/admin/listings/new'}
-          className="w-full sm:w-auto"
         >
           Добавить объявление
         </Button>
@@ -202,7 +204,7 @@ export default function AdminListingsPage() {
       <div className="filter-controls mb-6">
         <h2 className="text-lg font-medium mb-4">Фильтры</h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-wrap gap-6">
           <div className="filter-group">
             <label htmlFor="categoryFilter" className="block text-sm text-gray-700 mb-2">
               Категория
@@ -211,7 +213,7 @@ export default function AdminListingsPage() {
               id="categoryFilter"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Все категории</option>
               <option value="apartments">Квартиры</option>
@@ -229,7 +231,7 @@ export default function AdminListingsPage() {
               id="statusFilter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Все статусы</option>
               <option value="active">Активные</option>
@@ -245,7 +247,7 @@ export default function AdminListingsPage() {
               id="dealTypeFilter"
               value={dealTypeFilter}
               onChange={(e) => setDealTypeFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Все типы сделок</option>
               <option value="sale">Продажа</option>
@@ -261,7 +263,7 @@ export default function AdminListingsPage() {
               id="groupByFilter"
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as 'none' | 'dealType' | 'category')}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
+              className="w-full sm:w-48 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
             >
               <option value="none">Без группировки</option>
               <option value="dealType">По типу сделки</option>
