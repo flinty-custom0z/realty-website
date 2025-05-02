@@ -9,6 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import Button from '@/components/Button';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { createLogger } from '@/lib/logging';
+import AdminNavMenuClient from '@/components/AdminNavMenuClient';
 
 interface Listing {
   id: string;
@@ -187,6 +188,8 @@ export default function AdminListingsPage() {
   
   return (
     <div>
+      <AdminNavMenuClient />
+      
       <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Управление объявлениями</h1>
         <Button

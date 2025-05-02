@@ -3,10 +3,8 @@ export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
-import AdminSidebar from '@/components/AdminSidebar';
 import { JWT_SECRET } from '@/lib/env';
 import { createLogger } from '@/lib/logging';
 
@@ -37,7 +35,7 @@ async function getUserFromCookie() {
     // Don't log user details
     logger.info('Valid user found');
     return user;
-  } catch (error) {
+  } catch {
     // Avoid logging full error object
     logger.error('Error validating session');
     return null;
@@ -58,10 +56,8 @@ export default async function AdminLayout({
   }
   
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar user={user} />
-
-      <main className="flex-1 p-6 bg-white">
+    <div className="min-h-screen bg-gray-100">
+      <main className="container mx-auto py-8 px-4 sm:px-6">
         {children}
       </main>
     </div>

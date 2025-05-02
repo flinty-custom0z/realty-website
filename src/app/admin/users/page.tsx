@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
 import ClientImage from '@/components/ClientImage';
-import Button from '@/components/Button';
+import AdminNavMenuClient from '@/components/AdminNavMenuClient';
 
 interface User {
   id: string;
@@ -37,7 +36,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
       setUsers(data);
-    } catch (err) {
+    } catch {
       setError("Ошибка загрузки списка риелторов");
     } finally {
       setIsLoading(false);
@@ -50,7 +49,7 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Ошибка удаления");
       fetchUsers();
-    } catch (err) {
+    } catch {
       alert("Ошибка при удалении риелтора");
     }
   };
@@ -129,7 +128,7 @@ export default function AdminUsersPage() {
       }
       closeForm();
       fetchUsers();
-    } catch (err) {
+    } catch {
       setFormError('Ошибка сети');
     } finally {
       setFormLoading(false);
@@ -138,6 +137,8 @@ export default function AdminUsersPage() {
 
   return (
     <div>
+      <AdminNavMenuClient />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Риелторы</h1>
         <button className="admin-add-btn" onClick={openAdd}>

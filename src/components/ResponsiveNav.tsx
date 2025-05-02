@@ -7,11 +7,13 @@ import { Menu, X } from 'lucide-react';
 import { useDealType } from '@/contexts/DealTypeContext';
 import DealTypeToggle from '@/components/DealTypeToggle';
 import Logo from '@/components/Logo';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const { dealType, setDealType } = useDealType();
+  const { isAuthenticated, isLoading } = useAuth();
   
   // Close menu when route changes
   useEffect(() => {
@@ -112,6 +114,16 @@ export default function ResponsiveNav() {
                   Коммерция
                 </Link>
               )}
+              {isAuthenticated && !isLoading && (
+                <Link 
+                  href="/admin"
+                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
+                    pathname.startsWith('/admin') ? 'text-gray-900' : ''
+                  }`}
+                >
+                  Админ панель
+                </Link>
+              )}
             </nav>
           </div>
         </div>
@@ -134,66 +146,81 @@ export default function ResponsiveNav() {
           </button>
         </div>
         
-        <nav className="flex flex-col py-4 px-6 space-y-4 mt-12">
-          {/* Mobile deal type toggle */}
-          <div className="py-2">
-            <DealTypeToggle 
-              current={dealType} 
-              variant="default" 
-              onChange={setDealType}
-            />
-          </div>
-          
-          {/* Mobile nav links */}
-          <Link 
-            href="/"
-            className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-              pathname === '/' ? 'text-gray-900 font-medium' : ''
-            }`}
-          >
-            Главная
-          </Link>
-          {shouldShowForRent('apartments') && (
+        <div className="relative h-[calc(100%-80px)] overflow-hidden">
+          {/* Main Mobile Menu */}
+          <nav className="mobile-menu-nav flex flex-col py-4 px-6 space-y-4 absolute inset-0">
+            {/* Mobile deal type toggle */}
+            <div className="py-2">
+              <DealTypeToggle 
+                current={dealType} 
+                variant="default" 
+                onChange={setDealType}
+              />
+            </div>
+            
+            {/* Mobile nav links */}
             <Link 
-              href={getCategoryUrl('apartments')}
+              href="/"
               className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                pathname === '/listing-category/apartments' ? 'text-gray-900 font-medium' : ''
+                pathname === '/' ? 'text-gray-900 font-medium' : ''
               }`}
             >
-              Квартиры
+              Главная
             </Link>
-          )}
-          {shouldShowForRent('houses') && (
-            <Link 
-              href={getCategoryUrl('houses')}
-              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                pathname === '/listing-category/houses' ? 'text-gray-900 font-medium' : ''
-              }`}
-            >
-              Дома
-            </Link>
-          )}
-          {shouldShowForRent('land') && (
-            <Link 
-              href={getCategoryUrl('land')}
-              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                pathname === '/listing-category/land' ? 'text-gray-900 font-medium' : ''
-              }`}
-            >
-              Земельные участки
-            </Link>
-          )}
-          {shouldShowForRent('commercial') && (
-            <Link 
-              href={getCategoryUrl('commercial')}
-              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                pathname === '/listing-category/commercial' ? 'text-gray-900 font-medium' : ''
-              }`}
-            >
-              Коммерция
-            </Link>
-          )}
-        </nav>
+            {shouldShowForRent('apartments') && (
+              <Link 
+                href={getCategoryUrl('apartments')}
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                  pathname === '/listing-category/apartments' ? 'text-gray-900 font-medium' : ''
+                }`}
+              >
+                Квартиры
+              </Link>
+            )}
+            {shouldShowForRent('houses') && (
+              <Link 
+                href={getCategoryUrl('houses')}
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                  pathname === '/listing-category/houses' ? 'text-gray-900 font-medium' : ''
+                }`}
+              >
+                Дома
+              </Link>
+            )}
+            {shouldShowForRent('land') && (
+              <Link 
+                href={getCategoryUrl('land')}
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                  pathname === '/listing-category/land' ? 'text-gray-900 font-medium' : ''
+                }`}
+              >
+                Земельные участки
+              </Link>
+            )}
+            {shouldShowForRent('commercial') && (
+              <Link 
+                href={getCategoryUrl('commercial')}
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                  pathname === '/listing-category/commercial' ? 'text-gray-900 font-medium' : ''
+                }`}
+              >
+                Коммерция
+              </Link>
+            )}
+            
+            {/* Admin panel link - only visible when authenticated */}
+            {isAuthenticated && !isLoading && (
+              <Link
+                href="/admin"
+                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                  pathname.startsWith('/admin') ? 'text-gray-900 font-medium' : ''
+                }`}
+              >
+                Админ панель
+              </Link>
+            )}
+          </nav>
+        </div>
       </div>
       
       {/* Mobile floating menu button */}
