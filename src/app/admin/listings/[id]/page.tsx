@@ -138,7 +138,7 @@ export default function EditListingPage() {
           return;
         }
         
-        // Fetch users
+        // Fetch users - still needed for backwards compatibility
         const usersRes = await fetch('/api/admin/users');
         const usersData = usersRes.ok ? await usersRes.json() : [];
         setUsers(usersData);
@@ -751,26 +751,9 @@ export default function EditListingPage() {
               </label>
             </div>
             
-            <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                Риелтор (контактное лицо) *
-              </label>
-              <select
-                id="userId"
-                name="userId"
-                value={formData.userId}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              >
-                {users.length === 0 && <option value="">Загрузка риелторов...</option>}
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} {user.phone ? `(${user.phone})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Realtor selection removed as it's no longer needed */}
+            {/* Hidden input to maintain the userId value for API compatibility */}
+            <input type="hidden" name="userId" value={formData.userId} />
           </div>
           
           <div className="mt-6">

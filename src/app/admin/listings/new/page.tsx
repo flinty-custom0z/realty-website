@@ -72,33 +72,33 @@ export default function NewListingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesRes, usersRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/admin/users'),
-        ]);
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          setCategories(categoriesData);
-          setFilteredCategories(categoriesData);
-          if (categoriesData.length > 0) {
-            setFormData(prev => ({ ...prev, categoryId: categoriesData[0].id }));
-          }
+        // Fetch categories
+        const categoriesRes = await fetch('/api/categories');
+        if (!categoriesRes.ok) {
+          throw new Error('Failed to fetch categories');
         }
-
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setUsers(usersData);
-          if (usersData.length > 0) {
-            setFormData(prev => ({ ...prev, userId: usersData[0].id }));
-          }
+        const categoriesData = await categoriesRes.json();
+        setCategories(categoriesData);
+        setFilteredCategories(categoriesData);
+        
+        // Still fetch users for API compatibility
+        const usersRes = await fetch('/api/admin/users');
+        if (!usersRes.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+        
+        // Set default userId if users are loaded
+        if (usersData.length > 0) {
+          setFormData(prev => ({ ...prev, userId: usersData[0].id }));
         }
       } catch (error) {
-        logger.error('Error fetching initial data:', { error });
-        setError('Ошибка при загрузке данных');
+        logger.error('Error fetching form data:', { error });
+        setError('Ошибка при загрузке данных: ' + (error instanceof Error ? error.message : String(error)));
       }
     };
-
+    
     fetchData();
   }, []);
 
@@ -507,26 +507,9 @@ export default function NewListingPage() {
               </label>
             </div>
             
-            <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                Риелтор (контактное лицо) *
-              </label>
-              <select
-                id="userId"
-                name="userId"
-                value={formData.userId}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-                required
-              >
-                {users.length === 0 && <option value="">Загрузка риелторов...</option>}
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} {user.phone ? `(${user.phone})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Realtor selection removed as it's no longer needed */}
+            {/* Hidden input to maintain the userId value for API compatibility */}
+            <input type="hidden" name="userId" value={formData.userId} />
           </div>
         </div>
         

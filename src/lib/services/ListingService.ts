@@ -163,11 +163,6 @@ export class ListingService {
       include: {
         images: true,
         category: true,
-        user: {
-          select: {
-            name: true,
-          }
-        }
       },
     });
 
@@ -188,7 +183,6 @@ export class ListingService {
               title: listing.title,
               category: listing.category.name,
               price: listing.price,
-              realtorName: listing.user.name,
               listingCode: listing.listingCode,
               imageCount: listing.images.length
             }
@@ -496,21 +490,17 @@ export class ListingService {
     status?: string | null;
     dealType?: string | null;
   }) {
-    const { 
-      page = 1, 
-      limit = 50, 
-      categorySlug = null, 
-      status = null,
-      dealType = null
-    } = params;
+    const { page = 1, limit = 50, categorySlug = null, status = null, dealType = null } = params;
     
-    // Build filter
+    // Create a filter object starting with all listings
     const filter: any = {};
     
+    // Add category filter if provided
     if (categorySlug) {
       const category = await prisma.category.findUnique({
         where: { slug: categorySlug },
       });
+      
       if (category) {
         filter.categoryId = category.id;
       }
@@ -529,12 +519,6 @@ export class ListingService {
         where: filter,
         include: {
           category: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
           images: {
             where: { isFeatured: true },
             take: 1,
@@ -572,12 +556,6 @@ export class ListingService {
       where: { id },
       include: {
         category: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         images: true,
       },
     });
@@ -592,12 +570,6 @@ export class ListingService {
       include: {
         category: true,
         images: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         comments: {
           orderBy: {
             createdAt: 'desc',

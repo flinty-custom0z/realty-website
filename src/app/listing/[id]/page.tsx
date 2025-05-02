@@ -49,7 +49,6 @@ export default async function ListingDetailPage({
       where: { id: id },
       include: {
         category: true,
-        user: { select: { id: true, name: true, phone: true, photo: true, createdAt: true } },
         images: true,
       },
     });
