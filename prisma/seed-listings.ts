@@ -1,7 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import fs from 'fs';
-import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +23,7 @@ interface SampleListing {
   condition?: string;
   price: number;
   noEncumbrances?: boolean;
-  noKids?: boolean;
+  noShares?: boolean;
   yearBuilt?: number;
   dealType: 'SALE' | 'RENT';
 }
@@ -131,7 +128,7 @@ async function main() {
       houseArea: 42,
       condition: 'Отличное',
       price: 25000,
-      noKids: true,
+      noShares: true,
       dealType: 'RENT',
     },
     {
@@ -198,7 +195,7 @@ async function main() {
         condition: listing.condition || null,
         yearBuilt: listing.yearBuilt || null,
         noEncumbrances: listing.noEncumbrances || false,
-        noKids: listing.noKids || false,
+        noShares: listing.noShares || false,
         price: listing.price,
         dealType: listing.dealType,
         listingCode,
