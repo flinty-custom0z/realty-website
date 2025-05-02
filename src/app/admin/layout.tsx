@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/env';
 import { createLogger } from '@/lib/logging';
+import AdminNavigation from '@/components/admin/AdminNavigation';
 
 // Create a logger instance
 const logger = createLogger('AdminLayout');
@@ -56,10 +57,17 @@ export default async function AdminLayout({
   }
   
   return (
-    <div className="min-h-screen bg-gray-100">
-      <main className="container mx-auto py-8 px-4 sm:px-6">
-        {children}
-      </main>
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex flex-col md:flex-row">
+        {/* AdminNavigation includes both sidebar and mobile nav */}
+        <AdminNavigation />
+
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-auto">
+          <div className="max-w-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

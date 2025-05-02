@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { Home, Building2, MapPin, Store, ListFilter, PlusCircle } from 'lucide-react';
 import { JWT_SECRET } from '@/lib/env';
-import AdminNavMenu from '@/components/AdminNavMenu';
 
 async function getUserFromCookie() {
   try {
@@ -63,13 +62,11 @@ export default async function AdminDashboard() {
   
   return (
     <div>
-      <AdminNavMenu userName={user.name} />
-      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Панель управления</h1>
         <Link 
           href="/admin/listings/new" 
-          className="inline-flex items-center justify-center px-4 py-2 bg-[#11535F] text-white rounded-[8px] text-sm font-medium hover:bg-[#0D454F] transition-all duration-200 shadow-sm"
+            className="inline-flex items-center justify-center px-4 py-2 bg-[#11535F] text-white rounded-[8px] text-sm font-medium hover:bg-[#0D454F] transition-all duration-200 shadow-sm"
         >
           <PlusCircle size={16} className="mr-2" />
           Добавить объявление

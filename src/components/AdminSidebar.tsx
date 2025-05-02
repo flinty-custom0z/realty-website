@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Button from './Button';
 import { 
   LayoutDashboard, 
   ListFilter, 
@@ -20,7 +19,7 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 h-screen sticky top-0">
+    <aside className="hidden md:block w-64 bg-white border-r border-gray-100 h-screen sticky top-0">
       <div className="p-6 border-b border-gray-100">
         <h2 className="text-xl font-medium text-gray-800">Админ панель</h2>
         <p className="text-sm text-gray-500 mt-1">Привет, {user.name}</p>
@@ -89,14 +88,13 @@ export default function AdminSidebar({ user }: { user: { name: string } }) {
         </div>
         
         <div className="border-t border-gray-100 pt-4 mt-6">
-          <button
-            type="button"
-            onClick={() => window.location.href = '/admin/logout'}
-            className="admin-logout-btn w-full flex items-center justify-start mt-2 text-sm"
+          <Link
+            href="/admin/logout"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50"
           >
-            <LogOut size={16} className="mr-2" />
-            Выйти
-          </button>
+            <LogOut size={18} />
+            <span>Выйти</span>
+          </Link>
         </div>
       </nav>
     </aside>
