@@ -3,14 +3,15 @@
 
 ### NOW
 
-- implement a feature based organization
-  - Visualize current structure
-    - Summarize things that belong to each feature
-  - Move features to each folder, one by one
-
-- add contact form (on main page & in each listingpage)
+- add contact form (on main page & in each listing page)
   - First Mail
   - Then Chat
+
+- Add phone in header (random one of the phones)
+
+- Add selection for districts
+
+- Add map and an option to show listings on the map
 
 - Help mom's coworker set up
 
@@ -41,3 +42,20 @@
 - Флаеры?
 - банеры
 - рассылки
+
+### Nice to
+
+- implement a feature based organization
+  - Visualize current structure
+    - Summarize things that belong to each feature
+  - Move features to each folder, one by one
+
+
+## Summary Table
+
+| Filter Group | Multi-Select | Logic | Disable Other Options? | Show Counts? | Calculation Logic |
+|--------------|-------------|---------|-----------------------|--------------|----------------------------------|
+| Districts | Yes | OR | No | Yes | Ignore own group in calculation |
+| Conditions | Yes | OR | No | Yes | Ignore own group in calculation |
+| Rooms | Yes | OR | No | Yes | Ignore own group in calculation |
+| Across Groups| N/A | AND | N/A | N/A | Apply all other filters |  

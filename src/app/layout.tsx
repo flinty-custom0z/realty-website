@@ -17,6 +17,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Вторичный Выбор - Краснодарская недвижимость',
   description: 'Сайт недвижимости в Краснодаре',
+  icons: {
+    icon: '/images/logo.png',
+    apple: '/images/logo.png',
+  }
 };
 
 export default function RootLayout({
