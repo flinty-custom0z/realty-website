@@ -3,11 +3,16 @@
 
 ### NOW
 
+- implement a feature based organization
+  - Visualize current structure
+    - Summarize things that belong to each feature
+  - Move features to each folder, one by one
 
-- add contact form (on main page?)
+- add contact form (on main page & in each listingpage)
+  - First Mail
+  - Then Chat
 
-- Help mom and her coworker set up
-
+- Help mom's coworker set up
 
 
 ### Next
@@ -19,14 +24,18 @@
 - steal from https://www.ayax.ru/
 - steal from https://krasnodar.etagi.com/
 
-
 - SEO
-- Заполнение договоров
 
-- Контактная форма (чат/мейл?)
-- Поиск с ИИ
+- Social Media
+  - VK
+  - Telegram
+  - Instagram
+  - Ok.ru
 
 ### Later
+
+- Заполнение договоров
+- Поиск с ИИ
 
 - Добавить категорию продажи/аренды (выставить на продажу/аренду)
 - Флаеры?
