@@ -1,0 +1,81 @@
+erDiagram
+    User {
+        string id PK
+        string name
+        string username UK
+        string password
+        string phone NULL
+        string photo NULL
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Category {
+        string id PK
+        string name
+        string slug UK
+        string description NULL
+    }
+    
+    Listing {
+        string id PK
+        string title
+        string publicDescription NULL
+        string adminComment NULL
+        string categoryId FK
+        string userId FK
+        string district NULL
+        string address NULL
+        int rooms NULL
+        float houseArea NULL
+        float kitchenArea NULL
+        float landArea NULL
+        int floor NULL
+        int totalFloors NULL
+        string condition NULL
+        int yearBuilt NULL
+        enum buildingType NULL
+        enum balconyType NULL
+        enum bathroomType NULL
+        enum windowsView NULL
+        boolean noEncumbrances
+        boolean noShares
+        float price
+        string currency
+        enum dealType
+        datetime dateAdded
+        string listingCode UK
+        string status
+    }
+    
+    Image {
+        string id PK
+        string listingId FK
+        string path
+        boolean isFeatured
+    }
+    
+    Comment {
+        string id PK
+        string listingId FK
+        string content
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    ListingHistory {
+        string id PK
+        string listingId FK
+        string userId FK
+        json changes
+        datetime createdAt
+        string action
+    }
+    
+    User ||--o{ Listing : "creates"
+    User ||--o{ ListingHistory : "creates"
+    Category ||--o{ Listing : "categorizes"
+    Listing ||--o{ Image : "has"
+    Listing ||--o{ Comment : "has"
+    Listing ||--o{ ListingHistory : "has"
+} 

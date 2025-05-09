@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real Estate Website Codebase Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    
+    .diagram-container {
+      margin-bottom: 40px;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-right: 10px;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid #3498db;
+      font-weight: bold;
+    }
+    
+    .diagram {
+      display: none;
+    }
+    
+    .diagram.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Real Estate Website Codebase Visualization</h1>
+  
+  <div class="tabs">
+    <div class="tab active" data-target="dependency">Dependency Graph</div>
+    <div class="tab" data-target="component">Component Hierarchy</div>
+    <div class="tab" data-target="data">Data Model</div>
+  </div>
+  
+  <div class="diagram-container">
+    <div id="dependency" class="diagram active">
+      <h2>Module Dependency Graph</h2>
+      <div class="mermaid">
+graph TD
+    %% Main Application Modules
+    App[src/app] --> Components[src/components]
+    App --> Lib[src/lib]
+    App --> Contexts[src/contexts]
+    Components --> Hooks[src/hooks]
+    
+    %% Library Dependencies
+    Lib --> Services[lib/services]
+    Lib --> Utils[lib/utils]
+    Lib --> Validators[lib/validators]
+    Services --> Prisma[prisma client]
+    
+    %% Services
+    Services --> ListingService[ListingService]
+    Services --> ImageService[ImageService]
+    Services --> FilterService[FilterService]
+    Services --> HistoryService[HistoryService]
+    Services --> CommentService[CommentService]
+    
+    %% Component Dependencies
+    Components --> UI[components/ui]
+    Components --> AdminComp[components/admin]
+    Components --> FiltersComp[components/filters]
+    
+    %% Main Components
+    Components --> ListingCard
+    Components --> ImageGallery
+    Components --> FilterSidebar
+    Components --> SearchForm
+    
+    %% API Routes
+    API[src/app/api] --> Services
+    API --> Validators
+    
+    %% Key Dependencies
+    ListingService --> ImageService
+    ListingService --> HistoryService
+    
+    %% High Fan-in Modules
+    Prisma -.-> ListingService
+    Prisma -.-> ImageService
+    Prisma -.-> HistoryService
+    Utils -.-> Components
+    Utils -.-> API
+    
+    %% Legend
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef component fill:#bbf,stroke:#333,stroke-width:1px
+    classDef library fill:#bfb,stroke:#333,stroke-width:1px
+    
+    class ListingService,ImageService,FilterService,HistoryService,CommentService service
+    class ListingCard,ImageGallery,FilterSidebar,SearchForm,UI,AdminComp,FiltersComp component
+    class Prisma,Utils,Validators library
+      </div>
+    </div>
+    
+    <div id="component" class="diagram">
+      <h2>React Component Hierarchy</h2>
+      <div class="mermaid">
+graph TD
+    RootLayout[RootLayout] --> AppPage[App Page]
+    RootLayout --> ListingPage[Listing Page]
+    RootLayout --> CategoryPage[Category Page]
+    RootLayout --> SearchPage[Search Page]
+    RootLayout --> AdminLayout[Admin Layout]
+    
+    AppPage --> ResponsiveNav
+    AppPage --> SearchForm
+    AppPage --> CategoryTiles
+    AppPage --> ListingsWithFilters
+    
+    ListingPage --> ImageGallery
+    ListingPage --> ListingDetails
+    
+    CategoryPage --> ListingsWithFilters
+    
+    SearchPage --> FilterSidebar
+    SearchPage --> SortSelector
+    SearchPage --> ListingsWithFilters
+    
+    AdminLayout --> AdminSidebar
+    AdminLayout --> AdminNavMenu
+    
+    ListingsWithFilters --> ListingCard
+    ListingCard --> ClientImage
+    
+    AdminLayout --> AdminListingForm
+    AdminListingForm --> ImageUpload
+    
+    FilterSidebar --> DealTypeToggle
+    FilterSidebar --> PriceRange
+    
+    classDef page fill:#f9f,stroke:#333,stroke-width:2px
+    classDef layout fill:#ff9,stroke:#333,stroke-width:2px
+    classDef component fill:#bbf,stroke:#333,stroke-width:1px
+    
+    class AppPage,ListingPage,CategoryPage,SearchPage page
+    class RootLayout,AdminLayout layout
+    class ResponsiveNav,SearchForm,CategoryTiles,ListingsWithFilters,ImageGallery,ListingCard,FilterSidebar,SortSelector component
+      </div>
+    </div>
+    
+    <div id="data" class="diagram">
+      <h2>Database Entity Relationship Diagram</h2>
+      <div class="mermaid">
+erDiagram
+    User {
+        string id PK
+        string name
+        string username UK
+        string password
+        string phone NULL
+        string photo NULL
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Category {
+        string id PK
+        string name
+        string slug UK
+        string description NULL
+    }
+    
+    Listing {
+        string id PK
+        string title
+        string publicDescription NULL
+        string adminComment NULL
+        string categoryId FK
+        string userId FK
+        string district NULL
+        string address NULL
+        int rooms NULL
+        float houseArea NULL
+        float kitchenArea NULL
+        float landArea NULL
+        int floor NULL
+        int totalFloors NULL
+        string condition NULL
+        int yearBuilt NULL
+        enum buildingType NULL
+        enum balconyType NULL
+        enum bathroomType NULL
+        enum windowsView NULL
+        boolean noEncumbrances
+        boolean noShares
+        float price
+        string currency
+        enum dealType
+        datetime dateAdded
+        string listingCode UK
+        string status
+    }
+    
+    Image {
+        string id PK
+        string listingId FK
+        string path
+        boolean isFeatured
+    }
+    
+    Comment {
+        string id PK
+        string listingId FK
+        string content
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    ListingHistory {
+        string id PK
+        string listingId FK
+        string userId FK
+        json changes
+        datetime createdAt
+        string action
+    }
+    
+    User ||--o{ Listing : "creates"
+    User ||--o{ ListingHistory : "creates"
+    Category ||--o{ Listing : "categorizes"
+    Listing ||--o{ Image : "has"
+    Listing ||--o{ Comment : "has"
+    Listing ||--o{ ListingHistory : "has"
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize mermaid
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and diagrams
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.diagram').forEach(d => d.classList.remove('active'));
+        
+        // Add active class to clicked tab
+        tab.classList.add('active');
+        
+        // Show corresponding diagram
+        const target = tab.getAttribute('data-target');
+        document.getElementById(target).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html> 

@@ -1,0 +1,54 @@
+graph TD
+    %% Main Application Modules
+    App[src/app] --> Components[src/components]
+    App --> Lib[src/lib]
+    App --> Contexts[src/contexts]
+    Components --> Hooks[src/hooks]
+    
+    %% Library Dependencies
+    Lib --> Services[lib/services]
+    Lib --> Utils[lib/utils]
+    Lib --> Validators[lib/validators]
+    Services --> Prisma[prisma client]
+    
+    %% Services
+    Services --> ListingService[ListingService]
+    Services --> ImageService[ImageService]
+    Services --> FilterService[FilterService]
+    Services --> HistoryService[HistoryService]
+    Services --> CommentService[CommentService]
+    
+    %% Component Dependencies
+    Components --> UI[components/ui]
+    Components --> AdminComp[components/admin]
+    Components --> FiltersComp[components/filters]
+    
+    %% Main Components
+    Components --> ListingCard
+    Components --> ImageGallery
+    Components --> FilterSidebar
+    Components --> SearchForm
+    
+    %% API Routes
+    API[src/app/api] --> Services
+    API --> Validators
+    
+    %% Key Dependencies
+    ListingService --> ImageService
+    ListingService --> HistoryService
+    
+    %% High Fan-in Modules
+    Prisma -.-> ListingService
+    Prisma -.-> ImageService
+    Prisma -.-> HistoryService
+    Utils -.-> Components
+    Utils -.-> API
+    
+    %% Legend
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef component fill:#bbf,stroke:#333,stroke-width:1px
+    classDef library fill:#bfb,stroke:#333,stroke-width:1px
+    
+    class ListingService,ImageService,FilterService,HistoryService,CommentService service
+    class ListingCard,ImageGallery,FilterSidebar,SearchForm,UI,AdminComp,FiltersComp component
+    class Prisma,Utils,Validators library 

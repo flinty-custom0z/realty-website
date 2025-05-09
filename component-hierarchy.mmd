@@ -1,0 +1,40 @@
+graph TD
+    RootLayout[RootLayout] --> AppPage[App Page]
+    RootLayout --> ListingPage[Listing Page]
+    RootLayout --> CategoryPage[Category Page]
+    RootLayout --> SearchPage[Search Page]
+    RootLayout --> AdminLayout[Admin Layout]
+    
+    AppPage --> ResponsiveNav
+    AppPage --> SearchForm
+    AppPage --> CategoryTiles
+    AppPage --> ListingsWithFilters
+    
+    ListingPage --> ImageGallery
+    ListingPage --> ListingDetails
+    
+    CategoryPage --> ListingsWithFilters
+    
+    SearchPage --> FilterSidebar
+    SearchPage --> SortSelector
+    SearchPage --> ListingsWithFilters
+    
+    AdminLayout --> AdminSidebar
+    AdminLayout --> AdminNavMenu
+    
+    ListingsWithFilters --> ListingCard
+    ListingCard --> ClientImage
+    
+    AdminLayout --> AdminListingForm
+    AdminListingForm --> ImageUpload
+    
+    FilterSidebar --> DealTypeToggle
+    FilterSidebar --> PriceRange
+    
+    classDef page fill:#f9f,stroke:#333,stroke-width:2px
+    classDef layout fill:#ff9,stroke:#333,stroke-width:2px
+    classDef component fill:#bbf,stroke:#333,stroke-width:1px
+    
+    class AppPage,ListingPage,CategoryPage,SearchPage page
+    class RootLayout,AdminLayout layout
+    class ResponsiveNav,SearchForm,CategoryTiles,ListingsWithFilters,ImageGallery,ListingCard,FilterSidebar,SortSelector component 
