@@ -1,5 +1,9 @@
 // src/lib/services/FilterService.ts - Fixed version
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger('FilterService');
 
 export interface FilterParams {
   categoryParams?: string[];
@@ -7,7 +11,7 @@ export interface FilterParams {
   categoryQuery?: string | null;
   minPrice?: string | null;
   maxPrice?: string | null;
-  districts?: string[];
+  districtIds?: string[];
   conditions?: string[];
   rooms?: string[];
   dealType?: string | null;
@@ -16,7 +20,9 @@ export interface FilterParams {
 
 export interface FilterOptions {
   districts: Array<{
-    value: string;
+    id: string;
+    name: string;
+    slug: string;
     count: number;
     available: boolean;
   }>;
@@ -56,21 +62,23 @@ export interface FilterOptions {
 
 export class FilterService {
   /**
-   * Parses search parameters from the request
+   * Parse filter parameters from a request
    */
-  static parseParams(req: Request): FilterParams {
-    const url = new URL(req.url);
-    const searchParams = url.searchParams;
+  static parseParams(req: NextRequest): FilterParams {
+    const { searchParams } = new URL(req.url);
+    
+    const category = searchParams.get('category');
+    const categoryParams = category ? [category] : searchParams.getAll('category');
     
     return {
-      categoryParams: searchParams.getAll('category'),
+      categoryParams,
       searchQuery: searchParams.get('q'),
-      categoryQuery: searchParams.get('categoryQuery'),
+      categoryQuery: searchParams.get('query'),
       minPrice: searchParams.get('minPrice'),
       maxPrice: searchParams.get('maxPrice'),
-      districts: searchParams.getAll('district'),
+      districtIds: searchParams.getAll('district'),
       conditions: searchParams.getAll('condition'),
-      rooms: searchParams.getAll('rooms'),
+      rooms: searchParams.getAll('room'),
       dealType: searchParams.get('deal'),
       applyPriceFilter: searchParams.get('applyPriceFilter') === 'true',
     };
@@ -86,7 +94,7 @@ export class FilterService {
       categoryQuery = null,
       minPrice = null,
       maxPrice = null,
-      districts = [],
+      districtIds = [],
       conditions = [],
       rooms = [],
       dealType = null,
@@ -129,37 +137,32 @@ export class FilterService {
 
     // Create the price filter separate from other filters to control when it's applied
     const priceFilter: any = {};
-    if (applyPriceFilter) {
-      if (minPrice) {
-        priceFilter.price = { ...(priceFilter.price || {}), gte: parseFloat(minPrice) };
-      }
-      if (maxPrice) {
-        priceFilter.price = { ...(priceFilter.price || {}), lte: parseFloat(maxPrice) };
+    
+    if (minPrice && !isNaN(parseFloat(minPrice))) {
+      priceFilter.price = { gte: parseFloat(minPrice) };
+    }
+    
+    if (maxPrice && !isNaN(parseFloat(maxPrice))) {
+      if (priceFilter.price) {
+        priceFilter.price.lte = parseFloat(maxPrice);
+      } else {
+        priceFilter.price = { lte: parseFloat(maxPrice) };
       }
     }
     
-    // Create the full filter with all current selections except price
-    const fullFilterWithoutPrice = { 
+    // Build the full filter by combining base, price, and other filters
+    const fullFilter = {
       ...baseFilter,
-      ...(districts.length > 0 ? { district: { in: districts } } : {}),
+      ...(applyPriceFilter ? priceFilter : {}),
+      ...(districtIds.length > 0 ? { districtId: { in: districtIds } } : {}),
       ...(conditions.length > 0 ? { condition: { in: conditions } } : {}),
-      ...(rooms.length > 0 ? { 
-        rooms: { 
-          in: rooms.map(r => parseInt(r)).filter(r => !isNaN(r)) 
-        } 
-      } : {})
+      ...(rooms.length > 0 ? { rooms: { in: rooms.map(r => parseInt(r)).filter(r => !isNaN(r)) } } : {})
     };
     
-    // Full filter with price when needed
-    const fullFilter = {
-      ...fullFilterWithoutPrice,
-      ...(Object.keys(priceFilter).length > 0 ? priceFilter : {})
-    };
-
-    // Calculate if any filters are applied beyond category/search/deal type
-    const hasFiltersApplied = districts.length > 0 || conditions.length > 0 || 
-                             rooms.length > 0 || 
-                             (applyPriceFilter && (minPrice !== null || maxPrice !== null));
+    // Check if any filters are applied
+    const hasFiltersApplied = districtIds.length > 0 || conditions.length > 0 ||
+      rooms.length > 0 || 
+      (applyPriceFilter && (minPrice !== null || maxPrice !== null));
 
     // For available options, we want to show what's available with the currently selected filters
     // except for the filter type we're calculating options for
@@ -174,8 +177,8 @@ export class FilterService {
       }
       
       // Add all filters except the one being excluded
-      if (excludeFilter !== 'district' && districts.length > 0) {
-        filter.district = { in: districts };
+      if (excludeFilter !== 'district' && districtIds.length > 0) {
+        filter.districtId = { in: districtIds };
       }
       
       if (excludeFilter !== 'condition' && conditions.length > 0) {
@@ -223,14 +226,22 @@ export class FilterService {
       }),
       
       // District options - exclude district filter
-      prisma.listing.groupBy({
-        by: ['district'],
-        where: { 
-          ...createFilterExcluding('district'),
-          district: { not: null } 
+      prisma.district.findMany({
+        where: {
+          listings: {
+            some: createFilterExcluding('district')
+          }
         },
-        _count: { district: true },
-        orderBy: { district: 'asc' },
+        include: {
+          _count: {
+            select: {
+              listings: {
+                where: createFilterExcluding('district')
+              }
+            }
+          }
+        },
+        orderBy: { name: 'asc' },
       }),
       
       // Condition options - exclude condition filter
@@ -303,13 +314,13 @@ export class FilterService {
       categoriesWithFullFilter,
     ] = await Promise.all([
       // Get districts with full filter
-      prisma.listing.groupBy({
-        by: ['district'],
-        where: { 
-          ...fullFilter,
-          district: { not: null } 
+      prisma.district.findMany({
+        where: {
+          listings: {
+            some: fullFilter
+          }
         },
-        _count: { district: true },
+        select: { id: true }
       }),
       
       // Get conditions with full filter
@@ -344,7 +355,7 @@ export class FilterService {
     ]);
     
     // Create sets for quick lookup
-    const districtWithFullFilterSet = new Set(districtsWithFullFilter.map(d => d.district));
+    const districtWithFullFilterSet = new Set(districtsWithFullFilter.map(d => d.id));
     const conditionWithFullFilterSet = new Set(conditionsWithFullFilter.map(c => c.condition));
     const roomWithFullFilterSet = new Set(roomsWithFullFilter.map(r => r.rooms?.toString()));
     const categoryWithFullFilterSet = new Set(categoriesWithFullFilter.map(c => c.slug));
@@ -379,11 +390,13 @@ export class FilterService {
     
     // Process district options
     const processedDistricts = districtOptions.map(district => ({
-      value: district.district!,
-      count: district._count.district,
+      id: district.id,
+      name: district.name,
+      slug: district.slug,
+      count: district._count.listings,
       // A district is available if it appears in the full filter results
       // or if no filters are applied
-      available: !hasFiltersApplied || districtWithFullFilterSet.has(district.district)
+      available: !hasFiltersApplied || districtWithFullFilterSet.has(district.id)
     }));
     
     // Process condition options

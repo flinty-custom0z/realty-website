@@ -13,15 +13,20 @@ export interface ListingData {
   categoryId: string;
   userId: string;
   price: number;
-  district?: string | null;
+  districtId?: string | null;
   address?: string | null;
   rooms?: number | null;
   floor?: number | null;
   totalFloors?: number | null;
   houseArea?: number | null;
+  kitchenArea?: number | null;
   landArea?: number | null;
   condition?: string | null;
   yearBuilt?: number | null;
+  buildingType?: 'BRICK' | 'PANEL' | 'MONOLITH' | 'OTHER' | null;
+  balconyType?: 'BALCONY' | 'LOGGIA' | 'BOTH' | 'NONE' | null;
+  bathroomType?: 'COMBINED' | 'SEPARATE' | 'MULTIPLE' | null;
+  windowsView?: 'COURTYARD' | 'STREET' | 'BOTH' | null;
   noEncumbrances?: boolean;
   noShares?: boolean;
   status?: string;
@@ -94,19 +99,25 @@ export class ListingService {
         publicDescription: true,
         adminComment: true,
         categoryId: true,
-        district: true,
+        districtId: true,
         address: true,
         rooms: true,
         floor: true,
         totalFloors: true,
         houseArea: true,
+        kitchenArea: true,
         landArea: true,
         condition: true,
         yearBuilt: true,
+        buildingType: true,
+        balconyType: true,
+        bathroomType: true,
+        windowsView: true,
         noEncumbrances: true,
         noShares: true,
         price: true,
         status: true,
+        dealType: true,
         userId: true,
       }
     });
@@ -636,7 +647,7 @@ export class ListingService {
     
     // Add district filter if provided
     if (districts.length > 0) {
-      filter.district = { in: districts };
+      filter.districtId = { in: districts };
     }
     
     // Add condition filter if provided

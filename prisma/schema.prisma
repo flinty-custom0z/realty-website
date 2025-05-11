@@ -1,16 +1,106 @@
-// Database connection
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// Generator
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
 }
 
-// Enums
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String           @id @default(cuid())
+  name             String
+  username         String           @unique
+  password         String
+  phone            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  photo            String?
+  listings         Listing[]
+  listingHistories ListingHistory[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  listings    Listing[]
+}
+
+model District {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  listings Listing[]
+}
+
+model Listing {
+  id                String           @id @default(cuid())
+  title             String
+  categoryId        String
+  userId            String
+  address           String?
+  rooms             Int?
+  houseArea         Float?
+  landArea          Float?
+  floor             Int?
+  totalFloors       Int?
+  condition         String?
+  yearBuilt         Int?
+  noEncumbrances    Boolean?         @default(false)
+  price             Float
+  currency          String           @default("₽")
+  dateAdded         DateTime         @default(now())
+  listingCode       String           @unique
+  status            String           @default("active")
+  adminComment      String?
+  publicDescription String?
+  dealType          DealType         @default(SALE)
+  balconyType       BalconyType?
+  bathroomType      BathroomType?
+  buildingType      BuildingType?
+  kitchenArea       Float?
+  noShares          Boolean?         @default(false)
+  windowsView       WindowsView?
+  districtId        String?
+  comments          Comment[]
+  images            Image[]
+  category          Category         @relation(fields: [categoryId], references: [id])
+  districtRef       District?        @relation(fields: [districtId], references: [id])
+  user              User             @relation(fields: [userId], references: [id])
+  history           ListingHistory[]
+}
+
+model Image {
+  id         String  @id @default(cuid())
+  listingId  String
+  path       String
+  isFeatured Boolean @default(false)
+  listing    Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  listingId String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model ListingHistory {
+  id        String   @id @default(cuid())
+  listingId String
+  userId    String
+  changes   Json
+  createdAt DateTime @default(now())
+  action    String   @default("update")
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
+
 enum DealType {
   SALE
   RENT
@@ -40,90 +130,4 @@ enum WindowsView {
   COURTYARD
   STREET
   BOTH
-}
-
-// Models
-model User {
-  id        String    @id @default(cuid())
-  name      String
-  username  String    @unique
-  password  String
-  phone     String?
-  photo     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  listings  Listing[]
-  listingHistories ListingHistory[]
-}
-
-model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  listings    Listing[]
-}
-
-model Listing {
-  id              String    @id @default(cuid())
-  title           String
-  publicDescription String?
-  adminComment      String?
-  categoryId      String
-  category        Category  @relation(fields: [categoryId], references: [id])
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  district        String?
-  address         String?
-  rooms           Int?
-  houseArea       Float?
-  kitchenArea     Float?
-  landArea        Float?
-  floor           Int?
-  totalFloors     Int?
-  condition       String?
-  yearBuilt       Int?
-  buildingType    BuildingType?
-  balconyType     BalconyType?
-  bathroomType    BathroomType?
-  windowsView     WindowsView?
-  noEncumbrances  Boolean?  @default(false)
-  noShares        Boolean?  @default(false)
-  price           Float
-  currency        String    @default("₽")
-  dealType        DealType  @default(SALE)
-  dateAdded       DateTime  @default(now())
-  listingCode     String    @unique
-  status          String    @default("active")
-  images          Image[]
-  comments        Comment[]
-  history         ListingHistory[]
-}
-
-model Image {
-  id        String  @id @default(cuid())
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  path      String
-  isFeatured Boolean @default(false)
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ListingHistory {
-  id          String   @id @default(cuid())
-  listingId   String
-  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  changes     Json
-  createdAt   DateTime @default(now())
-  action      String   @default("update") // can be "create", "update", "delete"
 }

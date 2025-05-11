@@ -11,7 +11,7 @@ export const listingSchema = z.object({
   adminComment: z.string().optional().nullable(),
   categoryId: z.string().min(1, "Category is required"),
   price: z.number().positive("Price must be positive"),
-  district: z.string().min(1, "District is required"),
+  districtId: z.string().min(1, "District is required"),
   address: z.string().min(1, "Address is required"),
   rooms: z.number().int().nonnegative().nullable().optional(),
   floor: z.number().int().nonnegative().nullable().optional(),
@@ -31,20 +31,38 @@ export const listingSchema = z.object({
   status: z.enum(["active", "sold", "pending", "inactive"]).default("active"),
   dealType: z.enum(["SALE", "RENT"]).default("SALE"),
 }).refine(async (data) => {
-  // If deal type is RENT, validate that category is either apartments or commercial
-  if (data.dealType === "RENT") {
+  // Check if the category exists
     const category = await prisma.category.findUnique({
       where: { id: data.categoryId },
-      select: { slug: true }
+  });
+  
+  if (!category) {
+    throw new Error('Category not found');
+  }
+  
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
+  });
+  
+  if (!user) {
+    throw new Error('User not found');
+  }
+  
+  // Check if district exists
+  if (data.districtId) {
+    const district = await prisma.district.findUnique({
+      where: { id: data.districtId },
     });
     
-    // Only allow apartments and commercial for rent
-    return category && ['apartments', 'commercial'].includes(category.slug);
+    if (!district) {
+      throw new Error('District not found');
   }
+  }
+  
   return true;
 }, {
-  message: "For rental listings, category must be either apartments or commercial",
-  path: ["categoryId"]
+  message: 'Validation failed',
 });
 
 export type ValidatedListingData = z.infer<typeof listingSchema>;
@@ -53,56 +71,53 @@ export type ValidatedListingData = z.infer<typeof listingSchema>;
  * Safely parses and validates form data for a listing using Zod
  * Throws a ZodError if validation fails
  */
-export function parseListingFormData(formData: FormData): Promise<ListingData> {
-  // Fields to exclude from validation (image-related fields)
-  const excludedFields = ['newImages', 'imagesToDelete', 'featuredImageId'];
+export async function parseListingFormData(formData: FormData): Promise<ListingData> {
+  // Extract data from form
+  const data: Record<string, any> = {};
   
-  // Extract listing data from form
-  const rawData = {
-    title: formData.get('title')?.toString() || "",
-    publicDescription: formData.get('publicDescription')?.toString() || "",
-    adminComment: formData.get('adminComment')?.toString() || null,
-    categoryId: formData.get('categoryId')?.toString() || "",
-    price: formData.get('price') ? parseFloat(formData.get('price') as string) : 0,
-    district: formData.get('district')?.toString() || "",
-    address: formData.get('address')?.toString() || "",
-    rooms: parseNumberOrNull(formData.get('rooms')?.toString()),
-    floor: parseNumberOrNull(formData.get('floor')?.toString()),
-    totalFloors: parseNumberOrNull(formData.get('totalFloors')?.toString()),
-    houseArea: parseFloatOrNull(formData.get('houseArea')?.toString()),
-    kitchenArea: parseFloatOrNull(formData.get('kitchenArea')?.toString()),
-    landArea: parseFloatOrNull(formData.get('landArea')?.toString()),
-    condition: formData.get('condition')?.toString() || null,
-    yearBuilt: parseNumberOrNull(formData.get('yearBuilt')?.toString()),
-    buildingType: validateEnumOrNull(formData.get('buildingType')?.toString(), ["BRICK", "PANEL", "MONOLITH", "OTHER"]),
-    balconyType: validateEnumOrNull(formData.get('balconyType')?.toString(), ["BALCONY", "LOGGIA", "BOTH", "NONE"]),
-    bathroomType: validateEnumOrNull(formData.get('bathroomType')?.toString(), ["COMBINED", "SEPARATE", "MULTIPLE"]),
-    windowsView: validateEnumOrNull(formData.get('windowsView')?.toString(), ["COURTYARD", "STREET", "BOTH"]),
-    noEncumbrances: formData.get('noEncumbrances') === 'true',
-    noShares: formData.get('noShares') === 'true',
-    userId: formData.get('userId')?.toString() || "",
-    status: formData.get('status')?.toString() || 'active',
-    dealType: (formData.get('dealType')?.toString() as 'SALE' | 'RENT') || 'SALE',
-  };
+  // Text fields
+  const textFields = [
+    'title', 'publicDescription', 'adminComment', 'categoryId', 
+    'districtId', 'address', 'condition', 'userId', 'status'
+  ];
   
-  // Helper functions for parsing numbers
-  function parseNumberOrNull(value: string | undefined): number | null {
-    if (!value || value.trim() === '') return null;
-    const num = parseInt(value, 10);
-    return isNaN(num) ? null : num;
-  }
+  textFields.forEach(field => {
+    const value = formData.get(field);
+    if (value) data[field] = String(value);
+  });
   
-  function parseFloatOrNull(value: string | undefined): number | null {
-    if (!value || value.trim() === '') return null;
-    const num = parseFloat(value);
-    return isNaN(num) ? null : num;
-  }
+  // Number fields
+  const numberFields = [
+    'price', 'rooms', 'floor', 'totalFloors', 
+    'houseArea', 'kitchenArea', 'landArea', 'yearBuilt'
+  ];
   
-  function validateEnumOrNull<T extends string>(value: string | undefined, allowedValues: T[]): T | null {
-    if (!value || value.trim() === '') return null;
-    return allowedValues.includes(value as T) ? value as T : null;
-  }
+  numberFields.forEach(field => {
+    const value = formData.get(field);
+    if (value !== null && value !== '') {
+      const num = Number(value);
+      if (!isNaN(num)) data[field] = num;
+    }
+  });
   
-  // Validate with Zod schema and return the validated data
-  return listingSchema.parseAsync(rawData);
+  // Boolean fields
+  const booleanFields = ['noEncumbrances', 'noShares'];
+  
+  booleanFields.forEach(field => {
+    const value = formData.get(field);
+    data[field] = value === 'true';
+  });
+  
+  // Enum fields
+  const enumFields = ['buildingType', 'balconyType', 'bathroomType', 'windowsView', 'dealType'];
+  
+  enumFields.forEach(field => {
+    const value = formData.get(field);
+    if (value) data[field] = String(value);
+  });
+  
+  // Validate data with schema
+  const validData = await listingSchema.parseAsync(data);
+  
+  return validData;
 } 

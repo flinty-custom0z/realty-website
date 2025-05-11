@@ -24,11 +24,8 @@ Application startup aborted for security reasons.
 `;
     console.error(errorMsg);
     
-    // In production, we want to fail hard and fast
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
-    
+    // Instead of exiting, we'll just throw an error which will
+    // cause the request to fail in both Node.js and Edge runtimes
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
   

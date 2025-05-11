@@ -9,11 +9,11 @@
 
 - Add phone in header (random one of the phones)
 
-- Add selection for districts
+- Add площадь
+
+- Add selection for districts in editing page from already existing
 
 - Add map and an option to show listings on the map
-
-- Help mom's coworker set up
 
 
 ### Next

@@ -151,19 +151,27 @@ export function createLogger(source: string): Logger {
 export const systemMonitor = {
   // Track resource usage
   recordResourceUsage: () => {
-    if (typeof process !== 'undefined') {
-      const memoryUsage = process.memoryUsage();
-      const logger = createLogger('SystemMonitor');
-      
-      logger.info('Resource usage stats', {
-        memory: {
-          rss: Math.round(memoryUsage.rss / 1024 / 1024) + 'MB', // Resident Set Size
-          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
-          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
-          external: Math.round((memoryUsage.external || 0) / 1024 / 1024) + 'MB',
-        },
-        uptime: process.uptime() + 's',
-      });
+    // Check if we're in a Node.js environment where process is available
+    // Skip this in Edge Runtime
+    if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function') {
+      try {
+        const memoryUsage = process.memoryUsage();
+        const logger = createLogger('SystemMonitor');
+        
+        logger.info('Resource usage stats', {
+          memory: {
+            rss: Math.round(memoryUsage.rss / 1024 / 1024) + 'MB', // Resident Set Size
+            heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
+            heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+            external: Math.round((memoryUsage.external || 0) / 1024 / 1024) + 'MB',
+          },
+          // Safely check if uptime is available
+          uptime: typeof process.uptime === 'function' ? process.uptime() + 's' : 'unavailable',
+        });
+      } catch (error) {
+        // Ignore errors in resource monitoring
+        console.warn('Resource monitoring not available in this environment');
+      }
     }
   },
   

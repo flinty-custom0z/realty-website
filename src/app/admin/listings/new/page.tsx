@@ -13,7 +13,7 @@ interface FormData {
   publicDescription: string;
   adminComment: string;
   categoryId: string;
-  district: string;
+  districtId: string;
   address: string;
   rooms: string;
   floor: string;
@@ -45,7 +45,7 @@ export default function NewListingPage() {
     publicDescription: '',
     adminComment: '',
     categoryId: '',
-    district: '',
+    districtId: '',
     address: '',
     rooms: '',
     floor: '',
@@ -68,6 +68,11 @@ export default function NewListingPage() {
   });
 
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [showNewDistrictInput, setShowNewDistrictInput] = useState(false);
+  const [newDistrict, setNewDistrict] = useState('');
+  const [isCreatingDistrict, setIsCreatingDistrict] = useState(false);
+  const [districtError, setDistrictError] = useState('');
   const [filteredCategories, setFilteredCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; phone?: string }[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -78,7 +83,7 @@ export default function NewListingPage() {
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
   const [resetKey, setResetKey] = useState(0);
 
-  // Fetch categories and users when the component mounts
+  // Fetch categories, districts, and users when the component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -90,6 +95,14 @@ export default function NewListingPage() {
         const categoriesData = await categoriesRes.json();
         setCategories(categoriesData);
         setFilteredCategories(categoriesData);
+        
+        // Fetch districts
+        const districtsRes = await fetch('/api/districts');
+        if (!districtsRes.ok) {
+          throw new Error('Failed to fetch districts');
+        }
+        const districtsData = await districtsRes.json();
+        setDistricts(districtsData);
         
         // Still fetch users for API compatibility
         const usersRes = await fetch('/api/admin/users');
@@ -136,6 +149,12 @@ export default function NewListingPage() {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
     
+    // Handle special case for district selection
+    if (name === 'districtId' && value === 'new') {
+      setShowNewDistrictInput(true);
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
@@ -160,6 +179,60 @@ export default function NewListingPage() {
     
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateDistrict = async () => {
+    if (!newDistrict.trim()) {
+      setDistrictError('Название района не может быть пустым');
+      return;
+    }
+    
+    setIsCreatingDistrict(true);
+    setDistrictError('');
+    
+    try {
+      const response = await fetch('/api/districts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newDistrict.trim() }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 409) {
+          // District already exists, use the existing one
+          setDistricts(prev => 
+            prev.find(d => d.id === data.district.id) 
+              ? prev 
+              : [...prev, data.district]
+          );
+          setFormData(prev => ({ ...prev, districtId: data.district.id }));
+          setShowNewDistrictInput(false);
+          setNewDistrict('');
+        } else {
+          throw new Error(data.error || 'Failed to create district');
+        }
+      } else {
+        // District created successfully
+        setDistricts(prev => [...prev, data]);
+        setFormData(prev => ({ ...prev, districtId: data.id }));
+        setShowNewDistrictInput(false);
+        setNewDistrict('');
+      }
+    } catch (error) {
+      setDistrictError(error instanceof Error ? error.message : 'Ошибка при создании района');
+    } finally {
+      setIsCreatingDistrict(false);
+    }
+  };
+
+  const cancelNewDistrict = () => {
+    setShowNewDistrictInput(false);
+    setNewDistrict('');
+    setDistrictError('');
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -351,14 +424,62 @@ export default function NewListingPage() {
               <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
                 Район
               </label>
+              {!showNewDistrictInput ? (
+                <select
+                  id="districtId"
+                  name="districtId"
+                  value={formData.districtId}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                >
+                  <option value="">Выберите район</option>
+                  {districts.map(district => (
+                    <option key={district.id} value={district.id}>
+                      {district.name}
+                    </option>
+                  ))}
+                  <option value="new">+ Добавить новый район</option>
+                </select>
+              ) : (
+                <div className="space-y-2">
               <input
                 type="text"
-                id="district"
-                name="district"
-                value={formData.district}
-                onChange={handleChange}
+                    value={newDistrict}
+                    onChange={(e) => setNewDistrict(e.target.value)}
+                    placeholder="Введите название района"
                 className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                    disabled={isCreatingDistrict}
               />
+                  {districtError && (
+                    <p className="text-sm text-red-600">{districtError}</p>
+                  )}
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateDistrict}
+                      className="px-3 py-1 bg-[#11535F] text-white rounded-md text-sm flex items-center"
+                      disabled={isCreatingDistrict}
+                    >
+                      {isCreatingDistrict ? (
+                        <>
+                          <Loader2 size={16} className="mr-2 animate-spin" />
+                          Создание...
+                        </>
+                      ) : (
+                        'Добавить район'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelNewDistrict}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                      disabled={isCreatingDistrict}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>
