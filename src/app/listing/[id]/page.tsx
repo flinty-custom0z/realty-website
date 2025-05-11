@@ -50,6 +50,7 @@ export default async function ListingDetailPage({
       include: {
         category: true,
         images: true,
+        districtRef: true,
       },
     });
     

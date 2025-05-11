@@ -10,7 +10,7 @@ interface ListingCardProps {
   id: string;
   title: string;
   price: number;
-  district?: string;
+  district?: string | { id: string; name: string; slug: string };
   address?: string;
   rooms?: number;
   area?: number;
@@ -48,6 +48,11 @@ export default function ListingCard({
   // For component styling, use the global context
   // but display the actual listing's deal type in the badge
   const { dealType: contextDealType } = useDealType();
+  
+  // Handle district display whether it's a string or object
+  const districtName = typeof district === 'object' && district !== null 
+    ? district.name 
+    : district;
   
   return (
     <Link href={`/listing/${id}`} className="block group">
@@ -109,9 +114,9 @@ export default function ListingCard({
           )}
           
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
-            {district && (
+            {districtName && (
               <div className="text-sm">
-                <span className="text-gray-500">Район:</span> <span className="text-gray-700">{district}</span>
+                <span className="text-gray-500">Район:</span> <span className="text-gray-700">{districtName}</span>
               </div>
             )}
             {rooms && (

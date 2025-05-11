@@ -84,8 +84,8 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
   }
 
   if (searchParams.district) {
-    const dists = Array.isArray(searchParams.district) ? searchParams.district : [searchParams.district];
-    filter.district = { in: dists };
+    const districtParams = Array.isArray(searchParams.district) ? searchParams.district : [searchParams.district];
+    filter.districtId = { in: districtParams };
   }
 
   if (searchParams.condition) {
@@ -116,6 +116,7 @@ async function getListings(searchParams: Record<string, string | string[] | unde
       include: {
         category: true,
         images: { where: { isFeatured: true }, take: 1 },
+        districtRef: true,
       },
       orderBy: { [sortField]: sortOrder },
       skip: (page - 1) * limit,
@@ -290,7 +291,7 @@ export default async function SearchPage({
                 id={l.id}
                 title={l.title}
                 price={l.price}
-                district={l.district || undefined}
+                district={l.districtRef || undefined}
                 address={l.address || undefined}
                 rooms={l.rooms || undefined}
                 area={l.houseArea || undefined}

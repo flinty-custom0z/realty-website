@@ -20,6 +20,11 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
     return a.isFeatured ? -1 : 1;
   });
 
+  // Get district name from either string or object
+  const districtName = listing.districtRef 
+    ? listing.districtRef.name 
+    : (typeof listing.district === 'string' ? listing.district : null);
+
   // Import DangerZone dynamically in case ListingInteractiveClient doesn't have it properly attached
   const DangerZone = ListingInteractiveClient.DangerZone;
 
@@ -52,7 +57,7 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
             <h2 className="text-xl font-bold mb-4">Характеристики объекта</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                {listing.district && <p className="mb-2"><span className="text-gray-600">Район:</span> {listing.district}</p>}
+                {districtName && <p className="mb-2"><span className="text-gray-600">Район:</span> {districtName}</p>}
                 {listing.address && <p className="mb-2"><span className="text-gray-600">Адрес:</span> {listing.address}</p>}
                 {listing.rooms && <p className="mb-2"><span className="text-gray-600">Комнат:</span> {listing.rooms}</p>}
                 {listing.floor && listing.totalFloors && 

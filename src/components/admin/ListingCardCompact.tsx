@@ -18,7 +18,7 @@ interface ListingCardCompactProps {
   category: {
     name: string;
   };
-  district: string;
+  district: string | { id: string; name: string; slug: string };
   address: string;
   dealType: string;
   dateAdded: string;
@@ -48,6 +48,11 @@ export default function ListingCardCompact({
     e.preventDefault();
     setExpanded(!expanded);
   };
+
+  // Handle district display whether it's a string or object
+  const districtName = typeof district === 'object' && district !== null 
+    ? district.name 
+    : district;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
@@ -86,7 +91,7 @@ export default function ListingCardCompact({
               
               <div className="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-sm">
                 <div className="font-medium">{formatPrice(price)}</div>
-                <div className="text-gray-600">{district}</div>
+                <div className="text-gray-600">{districtName}</div>
                 <span className="text-gray-500 text-xs">Код: {listingCode}</span>
               </div>
             </div>

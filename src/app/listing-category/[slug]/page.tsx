@@ -113,7 +113,7 @@ async function getListings(
       ? searchParams.district 
       : [searchParams.district as string];
     
-    filter.district = { in: districts };
+    filter.districtId = { in: districts };
   }
   
   if (searchParams.condition) {
@@ -144,6 +144,7 @@ async function getListings(
         where: { isFeatured: true },
         take: 1,
       },
+      districtRef: true,
     },
     orderBy: {
       [sortField as string]: sortOrder as 'asc' | 'desc',
@@ -271,7 +272,7 @@ export default async function CategoryPage({
                 id={listing.id}
                 title={listing.title}
                 price={listing.price}
-                district={listing.district || undefined}
+                district={listing.districtRef?.name || undefined}
                 address={listing.address || undefined}
                 rooms={listing.rooms || undefined}
                 area={listing.houseArea || undefined}

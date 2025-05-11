@@ -1,7 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import fs from 'fs';
-import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -31,6 +28,16 @@ interface SampleListing {
   dealType: 'SALE' | 'RENT';
 }
 
+// Function to create a slug from district name
+function createSlug(name: string): string {
+  return name.toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
 async function main() {
   console.log('Starting database reset and reseeding...');
   
@@ -53,6 +60,10 @@ async function main() {
     // Then delete all listings
     await prisma.listing.deleteMany({});
     console.log('Deleted all listings');
+    
+    // Delete all districts if you want a complete reset
+    await prisma.district.deleteMany({});
+    console.log('Deleted all districts');
   } catch (error) {
     console.error('Error deleting existing data:', error);
     return;
@@ -186,6 +197,29 @@ async function main() {
     },
   ];
   
+  // Extract unique district names
+  const districtNames = Array.from(new Set(sampleListings.map(listing => listing.district)));
+  console.log(`Found ${districtNames.length} unique districts to create`);
+  
+  // Create or find districts
+  const districtMap = new Map<string, string>(); // Map of district name to district ID
+  
+  for (const districtName of districtNames) {
+    const slug = createSlug(districtName);
+    
+    // Create district (we've already deleted all districts)
+    const district = await prisma.district.create({
+      data: {
+        name: districtName,
+        slug: slug
+      }
+    });
+    console.log(`Created district: ${districtName} (${district.id})`);
+    
+    // Store district ID for use with listings
+    districtMap.set(districtName, district.id);
+  }
+  
   console.log('Creating new listings...');
   
   // Create listings
@@ -194,6 +228,13 @@ async function main() {
     const category = categories.find(c => c.slug === listing.categorySlug);
     if (!category) {
       console.warn(`Category ${listing.categorySlug} not found, skipping listing ${listing.title}`);
+      continue;
+    }
+    
+    // Get district ID
+    const districtId = districtMap.get(listing.district);
+    if (!districtId) {
+      console.warn(`District ${listing.district} not found in map, skipping listing ${listing.title}`);
       continue;
     }
     
@@ -216,7 +257,7 @@ async function main() {
           title: listing.title,
           publicDescription: listing.publicDescription,
           categoryId: category.id,
-          district: listing.district,
+          districtId: districtId,
           rooms: listing.rooms || null,
           floor: listing.floor || null,
           totalFloors: listing.totalFloors || null,
@@ -250,7 +291,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('Error in reset and seed script:', e);
+    console.error('Error resetting and reseeding database:', e);
     process.exit(1);
   })
   .finally(async () => {

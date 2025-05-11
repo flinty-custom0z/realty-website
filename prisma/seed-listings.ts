@@ -28,6 +28,16 @@ interface SampleListing {
   dealType: 'SALE' | 'RENT';
 }
 
+// Function to create a slug from district name
+function createSlug(name: string): string {
+  return name.toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
 async function main() {
   console.log('Starting to seed listings...');
   
@@ -159,12 +169,56 @@ async function main() {
     },
   ];
   
+  // Extract unique district names
+  const districtNames = Array.from(new Set(sampleListings.map(listing => listing.district)));
+  console.log(`Found ${districtNames.length} unique districts to create`);
+  
+  // Create or find districts
+  const districtMap = new Map<string, string>(); // Map of district name to district ID
+  
+  for (const districtName of districtNames) {
+    const slug = createSlug(districtName);
+    
+    // Check if district already exists
+    let district = await prisma.district.findFirst({
+      where: {
+        OR: [
+          { name: { equals: districtName, mode: 'insensitive' } },
+          { slug: slug }
+        ]
+      }
+    });
+    
+    // Create district if it doesn't exist
+    if (!district) {
+      district = await prisma.district.create({
+        data: {
+          name: districtName,
+          slug: slug
+        }
+      });
+      console.log(`Created new district: ${districtName} (${district.id})`);
+    } else {
+      console.log(`Using existing district: ${districtName} (${district.id})`);
+    }
+    
+    // Store district ID for use with listings
+    districtMap.set(districtName, district.id);
+  }
+  
   // Create listings
   for (const listing of sampleListings) {
     // Find category
     const category = categories.find(c => c.slug === listing.categorySlug);
     if (!category) {
       console.warn(`Category ${listing.categorySlug} not found, skipping listing ${listing.title}`);
+      continue;
+    }
+    
+    // Get district ID
+    const districtId = districtMap.get(listing.district);
+    if (!districtId) {
+      console.warn(`District ${listing.district} not found in map, skipping listing ${listing.title}`);
       continue;
     }
     
@@ -186,7 +240,7 @@ async function main() {
         title: listing.title,
         publicDescription: listing.publicDescription,
         categoryId: category.id,
-        district: listing.district,
+        districtId: districtId,
         rooms: listing.rooms || null,
         floor: listing.floor || null,
         totalFloors: listing.totalFloors || null,
