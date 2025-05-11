@@ -23,6 +23,7 @@ export interface FilterOptions {
     id: string;
     name: string;
     slug: string;
+    value: string;
     count: number;
     available: boolean;
   }>;
@@ -393,6 +394,7 @@ export class FilterService {
       id: district.id,
       name: district.name,
       slug: district.slug,
+      value: district.name,
       count: district._count.listings,
       // A district is available if it appears in the full filter results
       // or if no filters are applied
