@@ -6,6 +6,7 @@
 - add contact form (on main page & in each listing page)
   - First Mail
   - Then Chat
+  - Whatsapp
 
 - Add phone in header (random one of the phones)
 
