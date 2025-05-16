@@ -115,7 +115,7 @@ async function getListings(searchParams: Record<string, string | string[] | unde
       where: filter,
       include: {
         category: true,
-        images: { where: { isFeatured: true }, take: 1 },
+        images: true,
         districtRef: true,
       },
       orderBy: { [sortField]: sortOrder },
@@ -289,19 +289,15 @@ export default async function SearchPage({
               <ListingCard
                 key={l.id}
                 id={l.id}
-                title={l.title}
                 price={l.price}
                 district={l.districtRef || undefined}
                 address={l.address || undefined}
                 rooms={l.rooms || undefined}
                 area={l.houseArea || undefined}
-                floor={l.floor || undefined}
-                totalFloors={l.totalFloors || undefined}
-                condition={l.condition || undefined}
-                imagePath={l.images[0]?.path}
+                imagePaths={l.images
+                  ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
+                  .map(img => img.path) ?? []}
                 listingCode={l.listingCode}
-                categoryName={l.category.name}
-                showCategory={true}
               />
             ))}
           </div>

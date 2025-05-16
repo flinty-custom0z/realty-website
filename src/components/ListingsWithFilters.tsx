@@ -23,6 +23,7 @@ interface Listing {
   };
   images: {
     path: string;
+    isFeatured: boolean;
   }[];
   dateAdded: string;
   district: string;
@@ -150,7 +151,9 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
                 floor={l.floor}
                 totalFloors={l.totalFloors}
                 condition={l.condition}
-                imagePath={l.images && l.images[0] ? l.images[0].path : undefined}
+                imagePaths={l.images
+                  ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
+                  .map(img => img.path) ?? []}
                 categoryName={l.category?.name}
                 showCategory={true}
                 dealType={l.dealType}

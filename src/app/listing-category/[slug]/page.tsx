@@ -140,10 +140,7 @@ async function getListings(
     where: filter,
     include: {
       category: true,  // Include category for reference
-      images: {
-        where: { isFeatured: true },
-        take: 1,
-      },
+      images: true,
       districtRef: true,
     },
     orderBy: {
@@ -270,20 +267,15 @@ export default async function CategoryPage({
               <ListingCard
                 key={listing.id}
                 id={listing.id}
-                title={listing.title}
                 price={listing.price}
                 district={listing.districtRef?.name || undefined}
                 address={listing.address || undefined}
                 rooms={listing.rooms || undefined}
                 area={listing.houseArea || undefined}
-                floor={listing.floor || undefined}
-                totalFloors={listing.totalFloors || undefined}
-                condition={listing.condition || undefined}
-                imagePath={listing.images[0]?.path}
+                imagePaths={listing.images
+                  ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
+                  .map(img => img.path) ?? []}
                 listingCode={listing.listingCode}
-                categoryName={listing.category.name}
-                showCategory={false} // Don't show category on category-specific pages
-                dealType={(listing as any).dealType}
               />
             ))}
           </div>

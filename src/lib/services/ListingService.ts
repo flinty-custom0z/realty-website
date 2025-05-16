@@ -767,10 +767,7 @@ export class ListingService {
         include: {
           category: true,
           propertyType: true,
-          images: {
-            where: { isFeatured: true },
-            take: 1
-          }
+          images: true,
         },
         orderBy: { [sort]: order === 'asc' ? 'asc' : 'desc' },
         skip: (Number(page) - 1) * Number(limit),
