@@ -24,9 +24,12 @@ export function formatNumber(num: number): string {
 
 /**
  * Format price to Russian ruble format
+ * @param price The price to format
+ * @param includeCurrency Whether to include the currency symbol (₽), defaults to true
  */
-export function formatPrice(price: number): string {
-  return price.toLocaleString('ru-RU') + ' ₽';
+export function formatPrice(price: number, includeCurrency = true): string {
+  const formattedNumber = price.toLocaleString('ru-RU');
+  return includeCurrency ? `${formattedNumber} ₽` : formattedNumber;
 }
 
 /**

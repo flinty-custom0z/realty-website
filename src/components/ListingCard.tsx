@@ -35,17 +35,12 @@ export default function ListingCard({
   price,
   district,
   address,
-  rooms,
   area,
-  floor,
-  totalFloors,
-  condition,
   imagePath,
   categoryName,
   showCategory = false,
   status,
   isNew,
-  dealType = 'SALE',
 }: ListingCardProps) {
   // For component styling, use the global context
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -55,11 +50,14 @@ export default function ListingCard({
   const districtName = typeof district === 'object' && district !== null 
     ? district.name 
     : district;
+
+  // Calculate price per square meter if area is available
+  const pricePerSquareMeter = area ? Math.round(price / area) : null;
   
   return (
     <Link href={`/listing/${id}`} className="block group">
       <div className="bg-white rounded-lg overflow-hidden transition-all duration-300 listing-card border border-gray-100 hover:border-gray-200 hover:shadow-md">
-        <div className="relative w-full h-64">
+        <div className="relative w-full h-44">
           {imagePath ? (
             <div className="relative w-full h-full overflow-hidden">
               <ClientImage
@@ -87,19 +85,17 @@ export default function ListingCard({
                 </ImageOverlay>
               )}
               
-              {/* Price overlay with accent border */}
-              <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-white text-gray-900 
-                           rounded-md shadow-sm z-10 text-sm font-medium
-                           border-l-4 deal-accent-border">
-                {formatPrice(price)}{dealType === 'RENT' ? '/мес' : ''}
-              </div>
-              
               {/* Category badge */}
               {showCategory && categoryName && (
-                <ImageOverlay type="category" position="top-left">
+                <div className="absolute top-3 left-3 px-2 py-1 bg-white bg-opacity-90 text-gray-800 text-xs font-medium rounded-md">
                   {categoryName}
-                </ImageOverlay>
+                </div>
               )}
+              
+              {/* Image counter overlay (1/5) */}
+              <div className="absolute bottom-3 right-3 px-2 py-1 bg-black bg-opacity-50 text-white text-xs rounded-md">
+                1/5
+              </div>
             </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
@@ -108,46 +104,31 @@ export default function ListingCard({
           )}
         </div>
         
-        <div className="p-5">
-          <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700 line-clamp-1">
-            {propertyType?.name || 'Недвижимость'}
-            {area && ` ${area} м²`}
+        <div className="p-4">
+          {/* Title with property type and area */}
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 line-clamp-1">
+            {propertyType?.name || 'Недвижимость'}{area ? ` ${area} м²` : ''}
           </h3>
           
-          {address && (
-            <div className="text-sm text-gray-500 mt-1 mb-3 line-clamp-1">{address}</div>
-          )}
-          
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
-            {districtName && (
-              <div className="text-sm">
-                <span className="text-gray-500">Район:</span> <span className="text-gray-700">{districtName}</span>
-              </div>
-            )}
-            {rooms && (
-              <div className="text-sm">
-                <span className="text-gray-500">Комнат:</span> <span className="text-gray-700">{rooms}</span>
-              </div>
-            )}
-            {area && (
-              <div className="text-sm">
-                <span className="text-gray-500">Площадь:</span> <span className="text-gray-700">{area} м²</span>
-              </div>
-            )}
-            {floor && totalFloors && (
-              <div className="text-sm">
-                <span className="text-gray-500">Этаж:</span> <span className="text-gray-700">{floor}/{totalFloors}</span>
-              </div>
-            )}
-            {condition && (
-              <div className="text-sm col-span-2">
-                <span className="text-gray-500">Состояние:</span> <span className="text-gray-700">{condition}</span>
-              </div>
-            )}
+          {/* Address with district */}
+          <div className="text-sm text-gray-600 mt-1 mb-4 line-clamp-1">
+            {districtName && <span>{districtName}</span>}
+            {address && districtName && <span>, </span>}
+            {address && <span>{address}</span>}
           </div>
           
-          <div className="mt-4 flex justify-end items-center">
-            {/* Removed listing code display */}
+          {/* Price display */}
+          <div className="border-t pt-3">
+            <div className="flex justify-between items-baseline">
+              <div className="text-xl font-bold">
+                {formatPrice(price, false)} ₽
+              </div>
+              {pricePerSquareMeter && (
+                <div className="text-xs text-gray-500">
+                  {formatPrice(pricePerSquareMeter, false)} ₽/м²
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
