@@ -11,7 +11,9 @@ import { formatDate, formatPrice } from '@/lib/utils';
 
 interface ListingCardCompactProps {
   id: string;
-  title: string;
+  propertyType: {
+    name: string;
+  };
   price: number;
   listingCode: string;
   status: string;
@@ -25,12 +27,13 @@ interface ListingCardCompactProps {
   images: {
     path: string;
   }[];
+  houseArea?: number;
   onDelete: (id: string) => void;
 }
 
 export default function ListingCardCompact({
   id,
-  title,
+  propertyType,
   price,
   listingCode,
   status,
@@ -40,6 +43,7 @@ export default function ListingCardCompact({
   dealType,
   dateAdded,
   images,
+  houseArea,
   onDelete,
 }: ListingCardCompactProps) {
   const [expanded, setExpanded] = useState(false);
@@ -62,7 +66,7 @@ export default function ListingCardCompact({
           {images && images[0] ? (
             <ClientImage
               src={images[0].path}
-              alt={title}
+              alt={propertyType.name}
               fill
               sizes="70px"
               className="object-cover"
@@ -85,7 +89,7 @@ export default function ListingCardCompact({
                   className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
                   target="_blank"
                 >
-                  <TruncatedCell text={title} maxWidth={280} />
+                  <TruncatedCell text={`${propertyType.name}${houseArea ? ` ${houseArea} м²` : ''}`} maxWidth={280} />
                 </Link>
               </h3>
               

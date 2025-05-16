@@ -2,12 +2,13 @@ import prisma from '@/lib/prisma';
 import { ImageService } from './ImageService';
 import { HistoryService } from './HistoryService';
 import { createLogger } from '@/lib/logging';
+import { Listing, ListingHistory } from '@prisma/client';
 
 // Create a logger instance
 const logger = createLogger('ListingService');
 
 export interface ListingData {
-  title: string;
+  typeId: string;
   publicDescription?: string | null;
   adminComment?: string | null;
   categoryId: string;
@@ -40,6 +41,40 @@ export interface ImageUploadData {
   isFeatured: boolean;
 }
 
+interface OriginalListing {
+  typeId: string;
+  publicDescription: string | null;
+  adminComment: string | null;
+  categoryId: string;
+  districtId: string | null;
+  address: string | null;
+  rooms: number | null;
+  floor: number | null;
+  totalFloors: number | null;
+  houseArea: number | null;
+  kitchenArea: number | null;
+  landArea: number | null;
+  condition: string | null;
+  yearBuilt: number | null;
+  buildingType: string | null;
+  balconyType: string | null;
+  bathroomType: string | null;
+  windowsView: string | null;
+  noEncumbrances: boolean;
+  noShares: boolean;
+  price: number;
+  status: string;
+  dealType: string | null;
+  userId: string;
+}
+
+interface DeletedImageInfo {
+  id: string;
+  path: string;
+  isFeatured: boolean;
+  error?: string;
+}
+
 export class ListingService {
   /**
    * Generates a unique listing code based on category and random number
@@ -54,9 +89,22 @@ export class ListingService {
   /**
    * Creates a new listing
    */
-  static async createListing(listingData: ListingData, currentUserId: string): Promise<any> {
+  static async createListing(listingData: ListingData, currentUserId: string): Promise<Listing> {
     // Generate listing code
     const listingCode = await this.generateListingCode(listingData.categoryId);
+    
+    // Get property type name for dynamic title generation
+    const propertyType = await prisma.propertyType.findUnique({
+      where: { id: listingData.typeId }
+    });
+    
+    if (!propertyType) {
+      throw new Error('Property type not found');
+    }
+    
+    // Generate dynamic title based on property type and area
+    const area = listingData.houseArea ? `${listingData.houseArea} м²` : '';
+    const title = `${propertyType.name}${area ? ` ${area}` : ''}`;
     
     // Use transaction to ensure atomic creation of listing and history record
     return prisma.$transaction(async (tx) => {
@@ -64,6 +112,7 @@ export class ListingService {
       const newListing = await tx.listing.create({
         data: {
           ...listingData,
+          title,
           listingCode,
           status: listingData.status || 'active',
         },
@@ -74,7 +123,7 @@ export class ListingService {
         data: {
           listingId: newListing.id,
           userId: currentUserId,
-          changes: { action: 'create', data: { ...listingData, listingCode } },
+          changes: { action: 'create', data: { ...listingData, title, listingCode } },
           action: 'create'
         }
       });
@@ -90,59 +139,80 @@ export class ListingService {
     listingId: string, 
     listingData: ListingData, 
     currentUserId: string
-  ): Promise<any> {
+  ): Promise<Listing> {
     // Get the original listing before changes for history tracking
     const originalListing = await prisma.listing.findUnique({
       where: { id: listingId },
-      select: {
-        title: true,
-        publicDescription: true,
-        adminComment: true,
-        categoryId: true,
-        districtId: true,
-        address: true,
-        rooms: true,
-        floor: true,
-        totalFloors: true,
-        houseArea: true,
-        kitchenArea: true,
-        landArea: true,
-        condition: true,
-        yearBuilt: true,
-        buildingType: true,
-        balconyType: true,
-        bathroomType: true,
-        windowsView: true,
-        noEncumbrances: true,
-        noShares: true,
-        price: true,
-        status: true,
-        dealType: true,
-        userId: true,
+      include: {
+        propertyType: true
       }
     });
-
+    
     if (!originalListing) {
       throw new Error('Listing not found');
     }
-
-    // Compare fields to identify what has changed
-    const changes: Record<string, { from: any, to: any }> = {};
-    Object.keys(listingData).forEach(key => {
-      if (key in originalListing && originalListing[key as keyof typeof originalListing] !== listingData[key as keyof typeof listingData]) {
+    
+    // Get property type name for dynamic title generation if property type changed
+    let propertyType = originalListing.propertyType;
+    
+    if (!propertyType) {
+      propertyType = await prisma.propertyType.findUnique({
+        where: { id: listingData.typeId || originalListing.typeId || '' }
+      });
+      
+      if (!propertyType) {
+        throw new Error('Property type not found');
+      }
+    } else if (listingData.typeId && listingData.typeId !== originalListing.typeId) {
+      propertyType = await prisma.propertyType.findUnique({
+        where: { id: listingData.typeId }
+      });
+      
+      if (!propertyType) {
+        throw new Error('Property type not found');
+      }
+    }
+    
+    // Generate dynamic title based on property type and area
+    const area = listingData.houseArea !== undefined ? 
+      `${listingData.houseArea} м²` : 
+      (originalListing.houseArea ? `${originalListing.houseArea} м²` : '');
+    
+    const title = `${propertyType.name}${area ? ` ${area}` : ''}`;
+    
+    // Track changes for history
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
+    
+    // Compare and record changes
+    Object.entries(listingData).forEach(([key, newValue]) => {
+      const oldValue = (originalListing as Record<string, unknown>)[key];
+      
+      // Only record if the value has actually changed
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
         changes[key] = {
-          from: originalListing[key as keyof typeof originalListing],
-          to: listingData[key as keyof typeof listingData]
+          old: oldValue,
+          new: newValue
         };
       }
     });
+    
+    // Add title to changes if it changed
+    if (title !== originalListing.title) {
+      changes.title = {
+        old: originalListing.title,
+        new: title
+      };
+    }
 
     // Use transaction to ensure atomic update of listing and history record
     return prisma.$transaction(async (tx) => {
       // Update listing
       const updatedListing = await tx.listing.update({
         where: { id: listingId },
-        data: listingData,
+        data: {
+          ...listingData,
+          title
+        },
       });
 
       // Only create history entry if there were actual changes
@@ -174,6 +244,7 @@ export class ListingService {
       include: {
         images: true,
         category: true,
+        propertyType: true
       },
     });
 
@@ -191,7 +262,7 @@ export class ListingService {
           changes: {
             message: "Listing deleted",
             details: {
-              title: listing.title,
+              propertyType: listing.propertyType.name,
               category: listing.category.name,
               price: listing.price,
               listingCode: listing.listingCode,
@@ -362,7 +433,7 @@ export class ListingService {
     listingId: string, 
     imageIds: string[], 
     currentUserId: string
-  ): Promise<any[]> {
+  ): Promise<DeletedImageInfo[]> {
     if (imageIds.length === 0) return [];
     
     // Get details of images to be deleted for history
@@ -375,7 +446,7 @@ export class ListingService {
     
     if (imagesToDelete.length === 0) return [];
     
-    const deletedImages = [];
+    const deletedImages: DeletedImageInfo[] = [];
     
     // First: Delete database records in a transaction
     await prisma.$transaction(async (tx) => {
@@ -504,7 +575,7 @@ export class ListingService {
     const { page = 1, limit = 50, categorySlug = null, status = null, dealType = null } = params;
     
     // Create a filter object starting with all listings
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     
     // Add category filter if provided
     if (categorySlug) {
@@ -530,6 +601,7 @@ export class ListingService {
         where: filter,
         include: {
           category: true,
+          propertyType: true,
           images: {
             where: { isFeatured: true },
             take: 1,
@@ -567,6 +639,7 @@ export class ListingService {
       where: { id },
       include: {
         category: true,
+        propertyType: true,
         images: true,
       },
     });
@@ -599,7 +672,21 @@ export class ListingService {
   /**
    * Gets filtered listings for public site with pagination
    */
-  static async getFilteredListings(filterParams: any) {
+  static async getFilteredListings(filterParams: {
+    categoryParams?: string[];
+    searchQuery?: string | null;
+    minPrice?: string | null;
+    maxPrice?: string | null;
+    districts?: string[];
+    conditions?: string[];
+    rooms?: string[];
+    dealType?: string | null;
+    propertyTypes?: string[];
+    page?: number;
+    limit?: number;
+    sort?: string;
+    order?: 'asc' | 'desc';
+  }) {
     const { 
       categoryParams = [], 
       searchQuery = null,
@@ -609,6 +696,7 @@ export class ListingService {
       conditions = [], 
       rooms = [],
       dealType = null,
+      propertyTypes = [],
       page = 1,
       limit = 12,
       sort = 'dateAdded',
@@ -616,7 +704,7 @@ export class ListingService {
     } = filterParams;
     
     // Build filter for active listings
-    const filter: any = { status: 'active' };
+    const filter: Record<string, unknown> = { status: 'active' };
     
     // Add category filter if provided
     if (categoryParams.length > 0) {
@@ -629,10 +717,15 @@ export class ListingService {
       }
     }
     
+    // Add property type filter if provided
+    if (propertyTypes.length > 0) {
+      filter.typeId = { in: propertyTypes };
+    }
+    
     // Add search query if provided
     if (searchQuery) {
       filter.OR = [
-        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { propertyType: { name: { contains: searchQuery, mode: 'insensitive' } } },
         { publicDescription: { contains: searchQuery, mode: 'insensitive' } }
       ];
     }
@@ -673,6 +766,7 @@ export class ListingService {
         where: filter,
         include: {
           category: true,
+          propertyType: true,
           images: {
             where: { isFeatured: true },
             take: 1

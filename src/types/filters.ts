@@ -7,6 +7,15 @@ export interface Category {
   available?: boolean;
 }
 
+export interface PropertyType {
+  id: string;
+  name: string;
+  slug: string;
+  categoryId: string;
+  count?: number;
+  available?: boolean;
+}
+
 export interface FilterOption {
   value: string;
   count: number;
@@ -32,6 +41,7 @@ export interface FilterOptions {
   conditions: FilterOption[];
   rooms: FilterOption[];
   dealTypes: DealTypeOption[];
+  propertyTypes: PropertyType[];
   priceRange: PriceRange;
   categories: Category[];
   totalCount: number;
@@ -46,6 +56,7 @@ export interface FilterState {
   selectedDistricts: string[];
   selectedConditions: string[];
   selectedRooms: string[];
+  selectedPropertyTypes: string[];
   selectedDealType: string;
   searchInputValue: string;
   
@@ -60,12 +71,13 @@ export interface FilterState {
 }
 
 export type FilterAction =
-  | { type: 'INIT_FROM_URL'; payload: any }
+  | { type: 'INIT_FROM_URL'; payload: Record<string, unknown> }
   | { type: 'SET_SEARCH_INPUT'; payload: string }
   | { type: 'TOGGLE_CATEGORY'; payload: string }
   | { type: 'TOGGLE_DISTRICT'; payload: string }
   | { type: 'TOGGLE_CONDITION'; payload: string }
   | { type: 'TOGGLE_ROOM'; payload: string }
+  | { type: 'TOGGLE_PROPERTY_TYPE'; payload: string }
   | { type: 'SET_PRICE'; payload: { type: 'min' | 'max'; value: string } }
   | { type: 'SET_PRICE_RANGE'; payload: { min: string; max: string } }
   | { type: 'SET_DEAL_TYPE'; payload: string }
@@ -79,6 +91,7 @@ export interface FilterParams {
   selectedDistricts: string[];
   selectedConditions: string[];
   selectedRooms: string[];
+  selectedPropertyTypes: string[];
   selectedDealType: string;
   minPrice: string;
   maxPrice: string;
@@ -90,7 +103,7 @@ export interface FilterSidebarProps {
   categorySlug?: string;
   categories?: Category[];
   searchQuery?: string;
-  filters?: Record<string, any>;
-  onChange?: (filters: Record<string, any>) => void;
+  filters?: Record<string, unknown>;
+  onChange?: (filters: Record<string, unknown>) => void;
   filteredCount?: number;
 } 

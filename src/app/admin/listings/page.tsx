@@ -14,7 +14,9 @@ import ListingCardCompact from '@/components/admin/ListingCardCompact';
 
 interface Listing {
   id: string;
-  title: string;
+  propertyType: {
+    name: string;
+  };
   price: number;
   listingCode: string;
   status: string;
@@ -31,6 +33,7 @@ interface Listing {
   district: string;
   address: string;
   dealType: string;
+  houseArea?: number;
 }
 
 interface PaginationData {
@@ -70,8 +73,8 @@ export default function AdminListingsPage() {
         return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
       } else if (sortField === 'title') {
         return sortOrder === 'asc' 
-          ? a.title.localeCompare(b.title) 
-          : b.title.localeCompare(a.title);
+          ? a.propertyType.name.localeCompare(b.propertyType.name) 
+          : b.propertyType.name.localeCompare(a.propertyType.name);
       }
       return 0;
     });
@@ -195,7 +198,7 @@ export default function AdminListingsPage() {
           <ListingCardCompact
             key={listing.id}
             id={listing.id}
-            title={listing.title}
+            propertyType={listing.propertyType}
             price={listing.price}
             listingCode={listing.listingCode}
             status={listing.status}
@@ -205,6 +208,7 @@ export default function AdminListingsPage() {
             dealType={listing.dealType}
             dateAdded={listing.dateAdded}
             images={listing.images}
+            houseArea={listing.houseArea}
             onDelete={handleDeleteListing}
           />
         ))}
@@ -255,7 +259,7 @@ export default function AdminListingsPage() {
                     {listing.images && listing.images[0] ? (
                       <ClientImage
                         src={listing.images[0].path}
-                        alt={listing.title}
+                        alt={listing.propertyType.name}
                         fill
                         sizes="48px"
                         className="object-cover"
@@ -274,7 +278,7 @@ export default function AdminListingsPage() {
                     className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
                     target="_blank"
                   >
-                    <TruncatedCell text={listing.title} maxWidth={220} />
+                    <TruncatedCell text={listing.propertyType.name} maxWidth={220} />
                   </Link>
                 </td>
                 <td data-label="Категория">{listing.category.name}</td>

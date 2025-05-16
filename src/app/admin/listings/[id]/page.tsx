@@ -11,12 +11,12 @@ import Button from '@/components/Button';
 import { createLogger } from '@/lib/logging';
 
 interface ListingFormData {
-  title: string;
   publicDescription: string,
   adminComment: string,
   categoryId: string;
   district: string;
   districtId: string;
+  typeId: string;
   address: string;
   rooms: string;
   floor: string;
@@ -55,6 +55,10 @@ interface ListingData extends ListingFormData {
   dateAdded: string;
   images: ImageData[];
   category: Category;
+  propertyType?: {
+    id: string;
+    name: string;
+  };
   user: {
     id: string;
     name: string;
@@ -78,6 +82,8 @@ export default function EditListingPage() {
   const [listing, setListing] = useState<ListingData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string; categoryId: string }[]>([]);
+  const [filteredPropertyTypes, setFilteredPropertyTypes] = useState<{ id: string; name: string; categoryId: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -104,12 +110,12 @@ export default function EditListingPage() {
   
   // Form data
   const [formData, setFormData] = useState<ListingFormData & { userId?: string }>({
-    title: '',
     publicDescription: '',
     adminComment: '',
     categoryId: '',
     district: '',
     districtId: '',
+    typeId: '',
     address: '',
     rooms: '',
     floor: '',
@@ -163,12 +169,12 @@ export default function EditListingPage() {
         
         // Set form data
         setFormData({
-          title: listingData.title,
           publicDescription: listingData.publicDescription || '',
           adminComment: listingData.adminComment || '',
           categoryId: listingData.categoryId,
           district: listingData.district || '',
           districtId: listingData.districtId || '',
+          typeId: listingData.typeId || '',
           address: listingData.address || '',
           rooms: listingData.rooms?.toString() || '',
           floor: listingData.floor?.toString() || '',
@@ -203,7 +209,31 @@ export default function EditListingPage() {
         }
         const categoriesData = await categoriesRes.json();
         setCategories(categoriesData);
-        setFilteredCategories(categoriesData);
+        
+        // Filter categories based on deal type
+        if (listingData.dealType === 'RENT') {
+          const allowedSlugs = ['apartments', 'commercial'];
+          const filtered = categoriesData.filter((category: Category) => 
+            allowedSlugs.includes(category.slug)
+          );
+          setFilteredCategories(filtered);
+        } else {
+          setFilteredCategories(categoriesData);
+        }
+        
+        // Fetch property types
+        const propertyTypesRes = await fetch('/api/admin/property-types');
+        if (!propertyTypesRes.ok) {
+          throw new Error('Failed to fetch property types');
+        }
+        const propertyTypesData = await propertyTypesRes.json();
+        setPropertyTypes(propertyTypesData);
+        
+        // Filter property types based on category
+        const filteredTypes = propertyTypesData.filter(
+          (pt: { id: string; name: string; categoryId: string }) => pt.categoryId === listingData.categoryId
+        );
+        setFilteredPropertyTypes(filteredTypes);
         
         // Fetch districts
         const districtsRes = await fetch('/api/districts');
@@ -247,10 +277,11 @@ export default function EditListingPage() {
   useEffect(() => {
     if (categories.length === 0) return;
     
-    // For rent, only allow apartments and commercial
     if (formData.dealType === 'RENT') {
       const allowedSlugs = ['apartments', 'commercial'];
-      const filtered = categories.filter(category => allowedSlugs.includes(category.slug));
+      const filtered = categories.filter(category => 
+        allowedSlugs.includes(category.slug)
+      );
       setFilteredCategories(filtered);
       
       // If current category is not in allowed list, update to first allowed category
@@ -259,10 +290,28 @@ export default function EditListingPage() {
         setFormData(prev => ({ ...prev, categoryId: filtered[0].id }));
       }
     } else {
-      // For sale, show all categories
       setFilteredCategories(categories);
     }
   }, [formData.dealType, categories, formData.categoryId]);
+  
+  // Filter property types based on selected category
+  useEffect(() => {
+    if (propertyTypes.length === 0 || !formData.categoryId) {
+      setFilteredPropertyTypes([]);
+      return;
+    }
+
+    const filtered = propertyTypes.filter(
+      propertyType => propertyType.categoryId === formData.categoryId
+    );
+    
+    setFilteredPropertyTypes(filtered);
+    
+    // Clear selected property type if it's not in the filtered list
+    if (formData.typeId && !filtered.some(pt => pt.id === formData.typeId)) {
+      setFormData(prev => ({ ...prev, typeId: '' }));
+    }
+  }, [formData.categoryId, propertyTypes, formData.typeId]);
   
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -579,21 +628,6 @@ export default function EditListingPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Название *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-                required
-              />
-            </div>
-            
-            <div>
               <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
                 Тип сделки *
               </label>
@@ -629,6 +663,34 @@ export default function EditListingPage() {
                 {filteredCategories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="typeId" className="block text-sm font-medium text-gray-700 mb-1">
+                Тип недвижимости *
+              </label>
+              <select
+                id="typeId"
+                name="typeId"
+                value={formData.typeId}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                required
+                disabled={!formData.categoryId || filteredPropertyTypes.length === 0}
+              >
+                <option value="">
+                  {!formData.categoryId 
+                    ? 'Сначала выберите категорию' 
+                    : filteredPropertyTypes.length === 0 
+                      ? 'Нет доступных типов недвижимости' 
+                      : 'Выберите тип недвижимости'}
+                </option>
+                {filteredPropertyTypes.map(propertyType => (
+                  <option key={propertyType.id} value={propertyType.id}>
+                    {propertyType.name}
                   </option>
                 ))}
               </select>

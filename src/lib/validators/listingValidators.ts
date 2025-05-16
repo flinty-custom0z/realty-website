@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
  * Zod schema for validating listing data
  */
 export const listingSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
+  typeId: z.string().min(1, "Property type is required"),
   publicDescription: z.string().min(1, "Description is required"),
   adminComment: z.string().optional().nullable(),
   categoryId: z.string().min(1, "Category is required"),
@@ -32,8 +32,8 @@ export const listingSchema = z.object({
   dealType: z.enum(["SALE", "RENT"]).default("SALE"),
 }).refine(async (data) => {
   // Check if the category exists
-    const category = await prisma.category.findUnique({
-      where: { id: data.categoryId },
+  const category = await prisma.category.findUnique({
+    where: { id: data.categoryId },
   });
   
   if (!category) {
@@ -57,7 +57,21 @@ export const listingSchema = z.object({
     
     if (!district) {
       throw new Error('District not found');
+    }
   }
+  
+  // Check if property type exists and belongs to the selected category
+  // @ts-expect-error - Prisma client will be generated with the new model
+  const propertyType = await prisma.propertyType.findUnique({
+    where: { id: data.typeId },
+  });
+  
+  if (!propertyType) {
+    throw new Error('Property type not found');
+  }
+  
+  if (propertyType.categoryId !== data.categoryId) {
+    throw new Error('Property type does not belong to the selected category');
   }
   
   return true;
@@ -73,11 +87,11 @@ export type ValidatedListingData = z.infer<typeof listingSchema>;
  */
 export async function parseListingFormData(formData: FormData): Promise<ListingData> {
   // Extract data from form
-  const data: Record<string, any> = {};
+  const data: Record<string, string | number | boolean> = {};
   
   // Text fields
   const textFields = [
-    'title', 'publicDescription', 'adminComment', 'categoryId', 
+    'typeId', 'publicDescription', 'adminComment', 'categoryId', 
     'districtId', 'address', 'condition', 'userId', 'status'
   ];
   

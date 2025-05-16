@@ -11,7 +11,9 @@ import { useDealType } from '@/contexts/DealTypeContext';
 
 interface Listing {
   id: string;
-  title: string;
+  propertyType: {
+    name: string;
+  };
   price: number;
   listingCode: string;
   status: string;
@@ -117,7 +119,7 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
       <div className="w-full md:w-3/4" id="listings-section">
         <div className="mb-4 flex justify-between items-center">
           <p className="text-gray-600">
-            {data.pagination.total > 0
+            {data?.pagination && typeof data.pagination.total === 'number' && data.pagination.total > 0
               ? `Отображаются ${(data.pagination.page - 1) * data.pagination.limit + 1}‑${Math.min(
                   data.pagination.page * data.pagination.limit,
                   data.pagination.total,
@@ -133,11 +135,11 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
               <div key={index} className="bg-gray-100 rounded-lg h-80 animate-pulse"></div>
             ))
           ) : (
-            data.listings.map((l: Listing) => (
+            data?.listings?.map((l: Listing) => (
               <ListingCard
                 key={l.id}
                 id={l.id}
-                title={l.title}
+                propertyType={l.propertyType}
                 price={l.price}
                 listingCode={l.listingCode}
                 status={mapListingStatus(l.status)}
@@ -153,10 +155,10 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
                 showCategory={true}
                 dealType={l.dealType}
               />
-            ))
+            )) || []
           )}
         </div>
-        {data.listings.length === 0 && !isValidating && (
+        {(data?.listings && data.listings.length === 0) && !isValidating && (
           <div className="text-center py-8">
             <h3 className="text-xl font-medium mb-2">Объявления не найдены</h3>
             <p className="text-gray-500">Попробуйте изменить параметры поиска</p>

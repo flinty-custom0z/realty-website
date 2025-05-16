@@ -10,7 +10,8 @@ import {
   DealTypeFilter,
   FilterHeader,
   MultiSelectFilter,
-  PriceRangeFilter
+  PriceRangeFilter,
+  PropertyTypeFilter
 } from '@/components/filters';
 import { FilterSidebarProps } from '@/types/filters';
 import { useDealType } from '@/contexts/DealTypeContext';
@@ -36,6 +37,7 @@ export default function FilterSidebar({
     handlePriceChange,
     hasCustomFilters,
     getCategoryAvailability,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     fetchFilterOptions
   } = useFilterState({
     categorySlug,
@@ -130,7 +132,7 @@ export default function FilterSidebar({
       {categorySlug && (
         <CategorySearch
           value={state.searchInputValue}
-          onChange={(value) => dispatch({ type: 'SET_SEARCH_INPUT', payload: value })}
+          onChange={(value: string) => dispatch({ type: 'SET_SEARCH_INPUT', payload: value })}
           onSearch={handleCategorySearch}
         />
       )}
@@ -155,7 +157,7 @@ export default function FilterSidebar({
             <CategoryFilter
               categories={categories}
               selected={state.selectedCategories}
-              onChange={(category) => dispatch({ type: 'TOGGLE_CATEGORY', payload: category })}
+              onChange={(category: string) => dispatch({ type: 'TOGGLE_CATEGORY', payload: category })}
               getCategoryAvailability={getCategoryAvailability}
             />
           </div>
@@ -168,7 +170,7 @@ export default function FilterSidebar({
             max={state.visibleFilterOptions.priceRange.max}
             currentMin={state.minPrice ? parseInt(state.minPrice) : null}
             currentMax={state.maxPrice ? parseInt(state.maxPrice) : null}
-            onChange={(min, max) => {
+            onChange={(min: number, max: number) => {
               dispatch({
                 type: 'SET_PRICE_RANGE',
                 payload: { min: min.toString(), max: max.toString() }
@@ -185,10 +187,22 @@ export default function FilterSidebar({
             title="Районы"
             options={state.visibleFilterOptions.districts}
             selected={state.selectedDistricts}
-            onChange={(district) => dispatch({ type: 'TOGGLE_DISTRICT', payload: district })}
+            onChange={(district: string) => dispatch({ type: 'TOGGLE_DISTRICT', payload: district })}
             maxHeight="12rem"
           />
         </div>
+        
+        {/* Property Types - only show when at least one category is selected */}
+        {(state.selectedCategories.length > 0 || categorySlug) && (
+          <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+            <PropertyTypeFilter
+              propertyTypes={state.visibleFilterOptions.propertyTypes}
+              selectedPropertyTypes={state.selectedPropertyTypes}
+              onChange={(propertyType: string) => dispatch({ type: 'TOGGLE_PROPERTY_TYPE', payload: propertyType })}
+              isLoading={state.isLoading}
+            />
+          </div>
+        )}
         
         {/* Available Conditions - use opacity to handle loading state without layout shifts */}
         <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
@@ -196,7 +210,7 @@ export default function FilterSidebar({
             title="Состояние"
             options={state.visibleFilterOptions.conditions}
             selected={state.selectedConditions}
-            onChange={(condition) => dispatch({ type: 'TOGGLE_CONDITION', payload: condition })}
+            onChange={(condition: string) => dispatch({ type: 'TOGGLE_CONDITION', payload: condition })}
           />
         </div>
         
@@ -206,7 +220,7 @@ export default function FilterSidebar({
             title="Комнаты"
             options={state.visibleFilterOptions.rooms}
             selected={state.selectedRooms}
-            onChange={(rooms) => dispatch({ type: 'TOGGLE_ROOM', payload: rooms })}
+            onChange={(rooms: string) => dispatch({ type: 'TOGGLE_ROOM', payload: rooms })}
           />
         </div>
         

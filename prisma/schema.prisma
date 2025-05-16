@@ -22,11 +22,21 @@ model User {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  listings    Listing[]
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  description   String?
+  listings      Listing[]
+  propertyTypes PropertyType[]
+}
+
+model PropertyType {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  categoryId String
+  listings   Listing[]
+  category   Category  @relation(fields: [categoryId], references: [id])
 }
 
 model District {
@@ -65,10 +75,12 @@ model Listing {
   noShares          Boolean?         @default(false)
   windowsView       WindowsView?
   districtId        String?
+  typeId            String?
   comments          Comment[]
   images            Image[]
   category          Category         @relation(fields: [categoryId], references: [id])
   districtRef       District?        @relation(fields: [districtId], references: [id])
+  propertyType      PropertyType?    @relation(fields: [typeId], references: [id])
   user              User             @relation(fields: [userId], references: [id])
   history           ListingHistory[]
 }

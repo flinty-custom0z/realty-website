@@ -10,25 +10,37 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const limit = Number(searchParams.get('limit') || '4');
     
-    // New: Search by query string for suggestions
+    // Search by query string for suggestions
     if (q && q.trim().length >= 2) {
       const suggestions = await prisma.listing.findMany({
         where: {
           status: 'active',
           OR: [
-            { title: { contains: q, mode: 'insensitive' } },
+            { propertyType: { name: { contains: q, mode: 'insensitive' } } },
             { address: { contains: q, mode: 'insensitive' } }
           ]
         },
         select: {
           id: true,
-          title: true,
-          address: true
+          address: true,
+          propertyType: {
+            select: {
+              name: true
+            }
+          }
         },
         take: limit,
         orderBy: { dateAdded: 'desc' }
       });
-      return NextResponse.json({ suggestions });
+      
+      // Format the response
+      const formattedSuggestions = suggestions.map(suggestion => ({
+        id: suggestion.id,
+        address: suggestion.address,
+        propertyTypeName: suggestion.propertyType.name
+      }));
+      
+      return NextResponse.json({ suggestions: formattedSuggestions });
     }
     
     if (!listingId && !categoryId) {
@@ -57,7 +69,8 @@ export async function GET(req: NextRequest) {
             where: { isFeatured: true },
             take: 1
           },
-          category: true
+          category: true,
+          propertyType: true
         },
         take: limit,
         orderBy: { dateAdded: 'desc' }
@@ -77,7 +90,8 @@ export async function GET(req: NextRequest) {
           where: { isFeatured: true },
           take: 1
         },
-        category: true
+        category: true,
+        propertyType: true
       },
       take: limit,
       orderBy: { dateAdded: 'desc' }

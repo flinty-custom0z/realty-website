@@ -8,7 +8,10 @@ import { useDealType } from '@/contexts/DealTypeContext';
 
 interface ListingCardProps {
   id: string;
-  title: string;
+  propertyType?: {
+    name: string;
+    slug?: string;
+  };
   price: number;
   district?: string | { id: string; name: string; slug: string };
   address?: string;
@@ -28,7 +31,7 @@ interface ListingCardProps {
 
 export default function ListingCard({
   id,
-  title,
+  propertyType,
   price,
   district,
   address,
@@ -38,7 +41,6 @@ export default function ListingCard({
   totalFloors,
   condition,
   imagePath,
-  listingCode,
   categoryName,
   showCategory = false,
   status,
@@ -46,7 +48,7 @@ export default function ListingCard({
   dealType = 'SALE',
 }: ListingCardProps) {
   // For component styling, use the global context
-  // but display the actual listing's deal type in the badge
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { dealType: contextDealType } = useDealType();
   
   // Handle district display whether it's a string or object
@@ -62,7 +64,7 @@ export default function ListingCard({
             <div className="relative w-full h-full overflow-hidden">
               <ClientImage
                 src={imagePath}
-                alt={title}
+                alt={propertyType?.name || 'Недвижимость'}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -107,7 +109,10 @@ export default function ListingCard({
         </div>
         
         <div className="p-5">
-          <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700 line-clamp-1">{title}</h3>
+          <h3 className="text-lg font-medium text-gray-900 group-hover:text-gray-700 line-clamp-1">
+            {propertyType?.name || 'Недвижимость'}
+            {area && ` ${area} м²`}
+          </h3>
           
           {address && (
             <div className="text-sm text-gray-500 mt-1 mb-3 line-clamp-1">{address}</div>

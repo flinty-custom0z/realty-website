@@ -9,11 +9,11 @@ import Link from 'next/link';
 import { createLogger } from '@/lib/logging';
 
 interface FormData {
-  title: string;
   publicDescription: string;
   adminComment: string;
   categoryId: string;
   districtId: string;
+  typeId: string;
   address: string;
   rooms: string;
   floor: string;
@@ -41,11 +41,11 @@ const logger = createLogger('AdminListingNewPage');
 export default function NewListingPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
-    title: '',
     publicDescription: '',
     adminComment: '',
     categoryId: '',
     districtId: '',
+    typeId: '',
     address: '',
     rooms: '',
     floor: '',
@@ -69,6 +69,8 @@ export default function NewListingPage() {
 
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [districts, setDistricts] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [propertyTypes, setPropertyTypes] = useState<{ id: string; name: string; categoryId: string }[]>([]);
+  const [filteredPropertyTypes, setFilteredPropertyTypes] = useState<{ id: string; name: string; categoryId: string }[]>([]);
   const [showNewDistrictInput, setShowNewDistrictInput] = useState(false);
   const [newDistrict, setNewDistrict] = useState('');
   const [isCreatingDistrict, setIsCreatingDistrict] = useState(false);
@@ -103,6 +105,14 @@ export default function NewListingPage() {
         }
         const districtsData = await districtsRes.json();
         setDistricts(districtsData);
+        
+        // Fetch property types
+        const propertyTypesRes = await fetch('/api/admin/property-types');
+        if (!propertyTypesRes.ok) {
+          throw new Error('Failed to fetch property types');
+        }
+        const propertyTypesData = await propertyTypesRes.json();
+        setPropertyTypes(propertyTypesData);
         
         // Still fetch users for API compatibility
         const usersRes = await fetch('/api/admin/users');
@@ -145,6 +155,25 @@ export default function NewListingPage() {
       setFilteredCategories(categories);
     }
   }, [formData.dealType, categories, formData.categoryId]);
+
+  // Filter property types based on selected category
+  useEffect(() => {
+    if (propertyTypes.length === 0 || !formData.categoryId) {
+      setFilteredPropertyTypes([]);
+      return;
+    }
+
+    const filtered = propertyTypes.filter(
+      propertyType => propertyType.categoryId === formData.categoryId
+    );
+    
+    setFilteredPropertyTypes(filtered);
+    
+    // Clear selected property type if it's not in the filtered list
+    if (formData.typeId && !filtered.some(pt => pt.id === formData.typeId)) {
+      setFormData(prev => ({ ...prev, typeId: '' }));
+    }
+  }, [formData.categoryId, propertyTypes, formData.typeId]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -333,21 +362,6 @@ export default function NewListingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Название *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-                required
-              />
-            </div>
-            
-            <div>
               <label htmlFor="dealType" className="block text-sm font-medium text-gray-700 mb-1">
                 Тип сделки *
               </label>
@@ -383,6 +397,34 @@ export default function NewListingPage() {
                 {filteredCategories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="typeId" className="block text-sm font-medium text-gray-700 mb-1">
+                Тип недвижимости *
+              </label>
+              <select
+                id="typeId"
+                name="typeId"
+                value={formData.typeId}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                required
+                disabled={!formData.categoryId || filteredPropertyTypes.length === 0}
+              >
+                <option value="">
+                  {!formData.categoryId 
+                    ? 'Сначала выберите категорию' 
+                    : filteredPropertyTypes.length === 0 
+                      ? 'Нет доступных типов недвижимости' 
+                      : 'Выберите тип недвижимости'}
+                </option>
+                {filteredPropertyTypes.map(propertyType => (
+                  <option key={propertyType.id} value={propertyType.id}>
+                    {propertyType.name}
                   </option>
                 ))}
               </select>

@@ -25,8 +25,11 @@
 
 - steal from https://www.ayax.ru/
 - steal from https://krasnodar.etagi.com/
+- steal from https://delorealty.ru
 
 - SEO
+
+- buy short domain 
 
 - Social Media
   - VK
