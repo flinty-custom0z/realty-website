@@ -61,7 +61,6 @@ export const listingSchema = z.object({
   }
   
   // Check if property type exists and belongs to the selected category
-  // @ts-expect-error - Prisma client will be generated with the new model
   const propertyType = await prisma.propertyType.findUnique({
     where: { id: data.typeId },
   });

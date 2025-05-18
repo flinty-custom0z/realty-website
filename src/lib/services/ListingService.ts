@@ -215,20 +215,28 @@ export class ListingService {
         },
       });
 
-      // Only create history entry if there were actual changes
-      if (Object.keys(changes).length > 0) {
-        await tx.listingHistory.create({
-          data: {
-            listingId,
-            userId: currentUserId,
-            changes: {
-              action: 'update_fields',
-              fields: changes
-            },
-            action: 'update'
-          }
-        });
-      }
+      // Convert changes to a simple object structure for JSON serialization
+      const changesForHistory: Record<string, any> = {
+        action: 'update_fields',
+        fields: {}
+      };
+      
+      // Convert the complex changes object to a simpler structure
+      Object.entries(changes).forEach(([key, value]) => {
+        changesForHistory.fields[key] = {
+          old: JSON.parse(JSON.stringify(value.old)),
+          new: JSON.parse(JSON.stringify(value.new))
+        };
+      });
+      
+      await tx.listingHistory.create({
+        data: {
+          listingId,
+          userId: currentUserId,
+          changes: changesForHistory,
+          action: 'update'
+        }
+      });
 
       return updatedListing;
     });
@@ -262,7 +270,7 @@ export class ListingService {
           changes: {
             message: "Listing deleted",
             details: {
-              propertyType: listing.propertyType.name,
+              propertyType: listing.propertyType?.name || 'Unknown',
               category: listing.category.name,
               price: listing.price,
               listingCode: listing.listingCode,

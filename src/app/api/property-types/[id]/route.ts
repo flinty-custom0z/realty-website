@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    // Await the params promise to get the real value
+    const { id } = await params;
 
     if (!id) {
       throw new ApiError('Missing property type ID', 400);

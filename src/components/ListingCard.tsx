@@ -20,6 +20,13 @@ interface ListingCardProps {
   area?: number;
   imagePaths: string[];
   listingCode: string;
+  status?: 'active' | 'inactive';
+  floor?: number;
+  totalFloors?: number;
+  condition?: string;
+  categoryName?: string;
+  showCategory?: boolean;
+  dealType?: 'SALE' | 'RENT';
 }
 
 export default function ListingCard({

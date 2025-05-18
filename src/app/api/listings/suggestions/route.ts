@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       const formattedSuggestions = suggestions.map(suggestion => ({
         id: suggestion.id,
         address: suggestion.address,
-        propertyTypeName: suggestion.propertyType.name
+        propertyTypeName: suggestion.propertyType?.name || 'Unknown'
       }));
       
       return NextResponse.json({ suggestions: formattedSuggestions });

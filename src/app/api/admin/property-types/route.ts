@@ -108,8 +108,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       data: {
         name: data.name,
         slug: data.slug,
-        categoryId: data.categoryId,
-        count: data.count || 0
+        categoryId: data.categoryId
       }
     });
     

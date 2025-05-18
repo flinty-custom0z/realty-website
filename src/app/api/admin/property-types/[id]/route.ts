@@ -6,10 +6,10 @@ import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 // GET endpoint to fetch a specific property type
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!id) {
       throw new ApiError('Missing property type ID', 400);
@@ -39,9 +39,9 @@ export async function GET(
 }
 
 // PUT endpoint to update a property type (admin only)
-export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const PUT = withAuth(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const { id } = params;
+    const { id } = await params;
     const data = await req.json();
     
     // Validate required fields
@@ -76,8 +76,7 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
       data: {
         name: data.name,
         slug: data.slug,
-        categoryId: data.categoryId,
-        count: data.count
+        categoryId: data.categoryId
       }
     });
     
@@ -88,9 +87,9 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
 });
 
 // DELETE endpoint to delete a property type (admin only)
-export const DELETE = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const DELETE = withAuth(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // Check if there are any listings using this property type
     const listingsCount = await prisma.listing.count({

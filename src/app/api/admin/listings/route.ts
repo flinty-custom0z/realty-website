@@ -22,7 +22,6 @@ async function handleCreateListing(req: NextRequest) {
     const listingData = await parseListingFormData(formData);
     
     logger.info("Extracted and validated form data:", {
-      title: listingData.title,
       categoryId: listingData.categoryId,
       price: listingData.price,
       dealType: listingData.dealType
@@ -32,7 +31,7 @@ async function handleCreateListing(req: NextRequest) {
     logger.info("Creating listing in database");
     const newListing = await ListingService.createListing(listingData, user.id);
 
-    logger.info("Listing created with ID:", newListing.id);
+    logger.info("Listing created with ID", { id: newListing.id });
 
     // Handle image uploads
     const images = formData.getAll('images');
