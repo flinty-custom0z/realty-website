@@ -52,7 +52,6 @@ model Listing {
   categoryId        String
   userId            String
   address           String?
-  rooms             Int?
   houseArea         Float?
   landArea          Float?
   floor             Int?

@@ -2,7 +2,6 @@
 
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/Button';
 import ImageUpload from '@/components/ImageUpload';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -15,7 +14,6 @@ interface FormData {
   districtId: string;
   typeId: string;
   address: string;
-  rooms: string;
   floor: string;
   totalFloors: string;
   houseArea: string;
@@ -47,7 +45,6 @@ export default function NewListingPage() {
     districtId: '',
     typeId: '',
     address: '',
-    rooms: '',
     floor: '',
     totalFloors: '',
     houseArea: '',
@@ -76,7 +73,7 @@ export default function NewListingPage() {
   const [isCreatingDistrict, setIsCreatingDistrict] = useState(false);
   const [districtError, setDistrictError] = useState('');
   const [filteredCategories, setFilteredCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [users, setUsers] = useState<{ id: string; name: string; phone?: string }[]>([]);
+  // We still need to fetch users for API compatibility, but we don't need to expose the state
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<{ file: File; url: string }[]>([]);
   const [error, setError] = useState<string>('');
@@ -120,7 +117,6 @@ export default function NewListingPage() {
           throw new Error('Failed to fetch users');
         }
         const usersData = await usersRes.json();
-        setUsers(usersData);
         
         // Set default userId if users are loaded
         if (usersData.length > 0) {
@@ -538,20 +534,7 @@ export default function NewListingPage() {
               />
             </div>
             
-            <div>
-              <label htmlFor="rooms" className="block text-sm font-medium text-gray-700 mb-1">
-                Количество комнат
-              </label>
-              <input
-                type="number"
-                id="rooms"
-                name="rooms"
-                min="0"
-                value={formData.rooms}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-              />
-            </div>
+
             
             <div className="grid grid-cols-2 gap-4">
               <div>

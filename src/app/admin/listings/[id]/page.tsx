@@ -18,7 +18,6 @@ interface ListingFormData {
   districtId: string;
   typeId: string;
   address: string;
-  rooms: string;
   floor: string;
   totalFloors: string;
   houseArea: string;
@@ -117,7 +116,6 @@ export default function EditListingPage() {
     districtId: '',
     typeId: '',
     address: '',
-    rooms: '',
     floor: '',
     totalFloors: '',
     houseArea: '',
@@ -176,7 +174,6 @@ export default function EditListingPage() {
           districtId: listingData.districtId || '',
           typeId: listingData.typeId || '',
           address: listingData.address || '',
-          rooms: listingData.rooms?.toString() || '',
           floor: listingData.floor?.toString() || '',
           totalFloors: listingData.totalFloors?.toString() || '',
           houseArea: listingData.houseArea?.toString() || '',
@@ -804,20 +801,7 @@ export default function EditListingPage() {
               />
             </div>
             
-            <div>
-              <label htmlFor="rooms" className="block text-sm font-medium text-gray-700 mb-1">
-                Количество комнат
-              </label>
-              <input
-                type="number"
-                id="rooms"
-                name="rooms"
-                min="0"
-                value={formData.rooms}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-              />
-            </div>
+
             
             <div>
               <label htmlFor="floor" className="block text-sm font-medium text-gray-700 mb-1">
