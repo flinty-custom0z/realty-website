@@ -1,6 +1,6 @@
 /**
- * Format a phone number to a more readable format
- * Example: +79385154439 → +7 938 515 4439
+ * Format a phone number to a more readable format with dashes
+ * Example: +79385154439 → +7-938-515-44-39
  */
 export function formatPhoneNumber(phone: string | null | undefined): string {
   if (!phone) return '';
@@ -9,7 +9,8 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
   const digits = phone.replace(/\D/g, '');
   
   if (digits.length === 11 && digits.startsWith('7')) { // Russian format
-    return `+7 ${digits.substr(1, 3)} ${digits.substr(4, 3)} ${digits.substr(7)}`;
+    // +7-XXX-XXX-XX-XX
+    return `+7-${digits.substr(1, 3)}-${digits.substr(4, 3)}-${digits.substr(7, 2)}-${digits.substr(9, 2)}`;
   }
   
   return phone; // Return original if not matching expected format

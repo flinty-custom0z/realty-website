@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Phone } from 'lucide-react';
 import { useDealType } from '@/contexts/DealTypeContext';
 import DealTypeToggle from '@/components/DealTypeToggle';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { formatPhoneNumber } from '@/lib/utils';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,23 +50,25 @@ export default function ResponsiveNav() {
   
   return (
     <div className="w-full">
-      {/* Desktop sticky header - hidden on mobile */}
+      {/* SOLUTION 1: Three-column layout with better spacing */}
       <div className="container mx-auto px-6">
-        <div className="flex justify-between items-center py-6">
-          <Logo />
+        <div className="flex items-center justify-between py-5">
+          {/* Left section: Logo */}
+          <div className="flex items-center">
+            <Logo />
+          </div>
           
-          <div className="flex items-center space-x-4">
-            {/* Deal type toggle in navbar - only visible on desktop */}
-            <div className="hidden md:flex mr-8">
-              <DealTypeToggle 
-                current={dealType} 
-                variant="nav" 
-                onChange={setDealType}
-              />
-            </div>
+          {/* Center section: Deal toggle and navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            {/* Deal type toggle */}
+            <DealTypeToggle 
+              current={dealType} 
+              variant="nav" 
+              onChange={setDealType}
+            />
             
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex space-x-8 mr-6">
+            {/* Navigation Links */}
+            <nav className="flex items-center space-x-6">
               <Link 
                 href="/"
                 className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
@@ -126,6 +129,24 @@ export default function ResponsiveNav() {
               )}
             </nav>
           </div>
+          
+          {/* Right section: Phone numbers */}
+          <div className="hidden md:flex flex-col items-start space-y-1">
+            <a
+              href="tel:+79624441579"
+              className="flex items-center text-[14px] font-medium deal-accent-text hover:opacity-80 transition-colors"
+            >
+              <Phone className="w-5 h-5 mr-2 deal-accent-text" />
+              {formatPhoneNumber('+79624441579')}
+            </a>
+            <a
+              href="tel:+79097725578"
+              className="flex items-center text-[14px] font-medium deal-accent-text hover:opacity-80 transition-colors"
+            >
+              <Phone className="w-5 h-5 mr-2 deal-accent-text" />
+              {formatPhoneNumber('+79097725578')}
+            </a>
+          </div>
         </div>
       </div>
       
@@ -156,6 +177,19 @@ export default function ResponsiveNav() {
                 variant="default" 
                 onChange={setDealType}
               />
+            </div>
+            
+            {/* Phone numbers - mobile */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-2">
+              <a href="tel:+79624441579" className="flex items-center justify-center py-2 text-[15px] font-semibold deal-accent-text hover:opacity-80 transition-colors">
+                <Phone className="h-4 w-4 mr-2 deal-accent-text" />
+                {formatPhoneNumber('+79624441579')}
+              </a>
+              <div className="h-px bg-blue-100 my-2"></div>
+              <a href="tel:+79097725578" className="flex items-center justify-center py-2 text-[15px] font-medium deal-accent-text hover:opacity-80 transition-colors">
+                <Phone className="h-4 w-4 mr-2 deal-accent-text" />
+                {formatPhoneNumber('+79097725578')}
+              </a>
             </div>
             
             {/* Mobile nav links */}

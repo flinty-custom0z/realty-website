@@ -10,6 +10,8 @@
 
 - Add phone in header (random one of the phones)
 
+- Buy short
+
 - Add площадь
 
 - Add selection for districts in editing page from already existing
