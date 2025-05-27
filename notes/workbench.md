@@ -1,16 +1,11 @@
 ## Backlog
 
-
 ### NOW
 
 - add contact form (on main page & in each listing page)
-  - First Mail
+  - First Mail ()
   - Then Chat
   - Whatsapp
-
-- Add phone in header (random one of the phones)
-
-- Buy short
 
 - Add площадь
 
@@ -18,16 +13,17 @@
 
 - Add map and an option to show listings on the map
 
-
 ### Next
 
 - improve mobile version
 - Add roles (Me - admin, other users - agents)
 
-
 - steal from https://www.ayax.ru/
 - steal from https://krasnodar.etagi.com/
 - steal from https://delorealty.ru
+- steal from https://krasnodar.cian.ru/
+- steal from https://krasnodar.domclick.ru/
+- steal from https://www.avito.ru/krasnodar
 
 - SEO
 
