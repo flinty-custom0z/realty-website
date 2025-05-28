@@ -29,5 +29,19 @@ Application startup aborted for security reasons.
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
   
+  // Check for recommended (but not required) environment variables
+  const recommendedEmailVars = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD'];
+  const missingEmail = recommendedEmailVars.filter(key => !process.env[key]);
+  
+  if (missingEmail.length > 0) {
+    console.warn(`
+⚠️  Warning: Missing recommended email environment variables:
+${missingEmail.join(', ')}
+
+The contact form may not work without these variables.
+See CONTACT_FORM_SETUP.md for instructions on setting up email.
+    `);
+  }
+  
   console.log('✅ Environment validation successful - all required variables are set');
 } 

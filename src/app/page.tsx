@@ -11,6 +11,7 @@ import ListingsWithFilters from '@/components/ListingsWithFilters';
 import DealTypeToggle from '@/components/DealTypeToggle';
 import HomeDealTypeToggle from '@/components/HomeDealTypeToggle';
 import CategoryTiles from '@/components/CategoryTiles';
+import ContactForm from '@/components/ui/ContactForm';
 import { Metadata } from 'next';
 
 // Force dynamic rendering to prevent caching
@@ -290,6 +291,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           initialFilters={paramsWithDefaults}
           categories={[]} // We don't need to pass categories here now
         />
+      </div>
+      
+      {/* Contact form section */}
+      <div className="my-16 max-w-4xl mx-auto">
+        <ContactForm />
       </div>
     </div>
   );
