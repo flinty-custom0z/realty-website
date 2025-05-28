@@ -65,10 +65,10 @@ export default function ContactForm() {
   const inputClass = "w-full px-4 py-3 rounded-lg border-2 border-white border-opacity-50 bg-white bg-opacity-90 text-gray-800 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent shadow-sm";
 
   return (
-    <div className={`rounded-xl p-8 text-white shadow-lg ${gradientClass}`}>
-      <h2 className="text-2xl font-bold mb-4 text-center">Бесплатная консультация экспертов</h2>
+    <div className={`rounded-xl p-8 text-black shadow-lg ${gradientClass}`}>
+      <h2 className="text-2xl font-bold mb-4 text-center tracking-tight">Бесплатная консультация экспертов</h2>
       
-      <p className="text-center mb-6">
+      <p className="text-center mb-6 text-lg opacity-90 max-w-2xl mx-auto">
         Оставьте свой номер телефона, мы назначим время звонка и поможем принять решение
       </p>
       
