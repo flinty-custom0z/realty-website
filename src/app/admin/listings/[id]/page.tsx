@@ -8,6 +8,7 @@ import ImageModal from '@/components/ImageModal';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import Button from '@/components/Button';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { createLogger } from '@/lib/logging';
 
 interface ListingFormData {
@@ -18,6 +19,9 @@ interface ListingFormData {
   districtId: string;
   typeId: string;
   address: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  fullAddress?: string | null;
   floor: string;
   totalFloors: string;
   houseArea: string;
@@ -116,6 +120,9 @@ export default function EditListingPage() {
     districtId: '',
     typeId: '',
     address: '',
+    latitude: null,
+    longitude: null,
+    fullAddress: null,
     floor: '',
     totalFloors: '',
     houseArea: '',
@@ -134,6 +141,9 @@ export default function EditListingPage() {
     status: 'active',
     userId: '',
   });
+  
+  // Add state for coordinates
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   
   // Add new state for image preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -174,6 +184,9 @@ export default function EditListingPage() {
           districtId: listingData.districtId || '',
           typeId: listingData.typeId || '',
           address: listingData.address || '',
+          latitude: listingData.latitude,
+          longitude: listingData.longitude,
+          fullAddress: listingData.fullAddress,
           floor: listingData.floor?.toString() || '',
           totalFloors: listingData.totalFloors?.toString() || '',
           houseArea: listingData.houseArea?.toString() || '',
@@ -791,17 +804,68 @@ export default function EditListingPage() {
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                 Адрес
               </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
+              <AddressAutocomplete
                 value={formData.address}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                onChange={(value) => setFormData({ ...formData, address: value })}
+                onSelect={(data) => {
+                  setFormData({
+                    ...formData,
+                    address: data.address,
+                    fullAddress: data.fullAddress,
+                    latitude: data.coordinates?.lat || null,
+                    longitude: data.coordinates?.lng || null
+                  });
+                  setCoordinates(data.coordinates || null);
+                }}
+                placeholder="Начните вводить адрес..."
+                className="w-full"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Введите адрес для автозаполнения координат и полного адреса
+              </p>
+            </div>
+            
+            <div>
+              <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
+                Широта
+              </label>
+              <input
+                type="number"
+                id="latitude"
+                name="latitude"
+                value={formData.latitude ?? ''}
+                readOnly
+                className="w-full p-2 border rounded bg-gray-50"
               />
             </div>
             
-
+            <div>
+              <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
+                Долгота
+              </label>
+              <input
+                type="number"
+                id="longitude"
+                name="longitude"
+                value={formData.longitude ?? ''}
+                readOnly
+                className="w-full p-2 border rounded bg-gray-50"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="fullAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                Полный адрес
+              </label>
+              <input
+                type="text"
+                id="fullAddress"
+                name="fullAddress"
+                value={formData.fullAddress ?? ''}
+                readOnly
+                className="w-full p-2 border rounded bg-gray-50"
+              />
+            </div>
             
             <div>
               <label htmlFor="floor" className="block text-sm font-medium text-gray-700 mb-1">
