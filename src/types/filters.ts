@@ -39,7 +39,6 @@ export interface PriceRange {
 export interface FilterOptions {
   districts: FilterOption[];
   conditions: FilterOption[];
-  rooms: FilterOption[];
   dealTypes: DealTypeOption[];
   propertyTypes: PropertyType[];
   priceRange: PriceRange;
@@ -55,7 +54,6 @@ export interface FilterState {
   selectedCategories: string[];
   selectedDistricts: string[];
   selectedConditions: string[];
-  selectedRooms: string[];
   selectedPropertyTypes: string[];
   selectedDealType: string;
   searchInputValue: string;
@@ -76,7 +74,6 @@ export type FilterAction =
   | { type: 'TOGGLE_CATEGORY'; payload: string }
   | { type: 'TOGGLE_DISTRICT'; payload: string }
   | { type: 'TOGGLE_CONDITION'; payload: string }
-  | { type: 'TOGGLE_ROOM'; payload: string }
   | { type: 'TOGGLE_PROPERTY_TYPE'; payload: string }
   | { type: 'SET_PRICE'; payload: { type: 'min' | 'max'; value: string } }
   | { type: 'SET_PRICE_RANGE'; payload: { min: string; max: string } }
@@ -90,7 +87,6 @@ export interface FilterParams {
   selectedCategories: string[];
   selectedDistricts: string[];
   selectedConditions: string[];
-  selectedRooms: string[];
   selectedPropertyTypes: string[];
   selectedDealType: string;
   minPrice: string;

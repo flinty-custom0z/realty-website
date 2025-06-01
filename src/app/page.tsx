@@ -164,11 +164,6 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     const conds = Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition];
     filter.condition = { in: conds };
   }
-  if (searchParams.rooms) {
-    const roomsArr = Array.isArray(searchParams.rooms) ? searchParams.rooms : [searchParams.rooms];
-    const values = roomsArr.map((r) => parseInt(r as string)).filter(Boolean);
-    if (values.length) filter.rooms = { in: values };
-  }
 
   // Pagination
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;

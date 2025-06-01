@@ -27,7 +27,8 @@ export async function generateMetadata({
       title: listing ? `${listing.title} | Realty Website` : 'Объявление не найдено',
       description: listing ? `Подробная информация о недвижимости: ${listing.title}` : 'Информация о объекте недвижимости'
     };
-  } catch (error) {
+  } catch (_error) {
+    // Error handling, specifics not needed
     return {
       title: 'Просмотр объявления | Realty Website',
       description: 'Информация о объекте недвижимости'
@@ -51,6 +52,9 @@ export default async function ListingDetailPage({
         category: true,
         images: true,
         districtRef: true,
+        propertyType: {
+          select: { name: true }
+        },
       },
     });
     
@@ -60,12 +64,13 @@ export default async function ListingDetailPage({
     
     // If user is not admin, strip out adminComment
     if (!isAdmin) {
-      const { adminComment, ...publicData } = listing;
-      return <ListingDetail listing={publicData} isAdmin={isAdmin} />;
+      // Use spread to create a new object without adminComment
+      const { adminComment: _, ...publicData } = listing;
+      return <ListingDetail listing={publicData as any} isAdmin={isAdmin} />;
     }
     
     // Admin sees everything
-    return <ListingDetail listing={listing} isAdmin={isAdmin} />;
+    return <ListingDetail listing={listing as any} isAdmin={isAdmin} />;
   } catch (error) {
     console.error('Error fetching listing:', error);
     redirect('/404');

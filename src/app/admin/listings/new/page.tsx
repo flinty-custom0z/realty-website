@@ -6,6 +6,7 @@ import ImageUpload from '@/components/ImageUpload';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createLogger } from '@/lib/logging';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 interface FormData {
   publicDescription: string;
@@ -81,6 +82,8 @@ export default function NewListingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
   const [resetKey, setResetKey] = useState(0);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [fullAddress, setFullAddress] = useState('');
 
   // Fetch categories, districts, and users when the component mounts
   useEffect(() => {
@@ -275,6 +278,17 @@ export default function NewListingPage() {
           formDataToSend.append(key, String(value));
         }
       });
+      
+      // Add coordinates if available
+      if (coordinates) {
+        formDataToSend.append('latitude', coordinates.lat.toString());
+        formDataToSend.append('longitude', coordinates.lng.toString());
+      }
+      
+      // Add full address if available
+      if (fullAddress) {
+        formDataToSend.append('fullAddress', fullAddress);
+      }
       
       // Add images
       if (imageFiles.length > 0) {
@@ -524,13 +538,16 @@ export default function NewListingPage() {
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                 Адрес
               </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
+              <AddressAutocomplete
                 value={formData.address}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                onChange={(value) => setFormData(prev => ({ ...prev, address: value }))}
+                onSelect={(data) => {
+                  setFormData(prev => ({ ...prev, address: data.address }));
+                  setCoordinates(data.coordinates || null);
+                  setFullAddress(data.fullAddress);
+                }}
+                placeholder="Начните вводить адрес..."
+                error={error && error.includes('address') ? 'Введите корректный адрес' : undefined}
               />
             </div>
             

@@ -13,7 +13,9 @@ export const listingSchema = z.object({
   price: z.number().positive("Price must be positive"),
   districtId: z.string().min(1, "District is required"),
   address: z.string().min(1, "Address is required"),
-  rooms: z.number().int().nonnegative().nullable().optional(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
+  fullAddress: z.string().optional().nullable(),
   floor: z.number().int().nonnegative().nullable().optional(),
   totalFloors: z.number().int().nonnegative().nullable().optional(),
   houseArea: z.number().nonnegative().nullable().optional(),
@@ -91,7 +93,7 @@ export async function parseListingFormData(formData: FormData): Promise<ListingD
   // Text fields
   const textFields = [
     'typeId', 'publicDescription', 'adminComment', 'categoryId', 
-    'districtId', 'address', 'condition', 'userId', 'status'
+    'districtId', 'address', 'condition', 'userId', 'status', 'fullAddress'
   ];
   
   textFields.forEach(field => {
@@ -101,8 +103,9 @@ export async function parseListingFormData(formData: FormData): Promise<ListingD
   
   // Number fields
   const numberFields = [
-    'price', 'rooms', 'floor', 'totalFloors', 
-    'houseArea', 'kitchenArea', 'landArea', 'yearBuilt'
+    'price', 'floor', 'totalFloors', 
+    'houseArea', 'kitchenArea', 'landArea', 'yearBuilt',
+    'latitude', 'longitude'
   ];
   
   numberFields.forEach(field => {

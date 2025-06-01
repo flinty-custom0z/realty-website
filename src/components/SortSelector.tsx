@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 const SORT_OPTIONS = [
   { value: 'dateAdded_desc', label: 'Дата (новые)' },
@@ -10,26 +11,27 @@ const SORT_OPTIONS = [
 ];
 
 interface SortSelectorProps {
-  filters?: Record<string, any>;
-  onChange?: (filters: Record<string, any>) => void;
+  filters?: Record<string, string | number>;
+  onChange?: (filters: Record<string, string | number>) => void;
 }
 
 export default function SortSelector({ filters, onChange }: SortSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   
   // Controlled mode if filters and onChange are provided
   const isControlled = typeof filters !== 'undefined' && typeof onChange === 'function';
 
   let sort = 'dateAdded';
   let order = 'desc';
-  if (isControlled) {
-    sort = filters.sort || 'dateAdded';
-    order = filters.order || 'desc';
-  } else {
+  if (isControlled && filters) {
+    sort = filters.sort?.toString() || 'dateAdded';
+    order = filters.order?.toString() || 'desc';
+  } else if (searchParams) {
     // Uncontrolled: use URL params
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const searchParams = require('next/navigation').useSearchParams();
     sort = searchParams.get('sort') || 'dateAdded';
     order = searchParams.get('order') || 'desc';
   }
@@ -45,14 +47,8 @@ export default function SortSelector({ filters, onChange }: SortSelectorProps) {
 
     if (isControlled && onChange) {
       onChange({ ...filters, sort: sortField, order: sortOrder, page: 1 });
-    } else {
+    } else if (searchParams) {
       // Uncontrolled: update URL
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const searchParams = require('next/navigation').useSearchParams();
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const pathname = require('next/navigation').usePathname();
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const router = require('next/navigation').useRouter();
       // Convert entries to string[][]
       const entries = Array.from(searchParams.entries()) as [string, string | string[]][];
       const params = new URLSearchParams(

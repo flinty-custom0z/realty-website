@@ -148,7 +148,6 @@ export default function ListingHistory({ listingId }: ListingHistoryProps) {
       categoryId: 'Категория',
       district: 'Район',
       address: 'Адрес',
-      rooms: 'Комнаты',
       floor: 'Этаж',
       totalFloors: 'Этажность',
       houseArea: 'Площадь помещения',

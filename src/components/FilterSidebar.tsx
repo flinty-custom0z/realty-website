@@ -214,16 +214,6 @@ export default function FilterSidebar({
           />
         </div>
         
-        {/* Available Rooms - use opacity to handle loading state without layout shifts */}
-        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
-          <MultiSelectFilter
-            title="Комнаты"
-            options={state.visibleFilterOptions.rooms}
-            selected={state.selectedRooms}
-            onChange={(rooms: string) => dispatch({ type: 'TOGGLE_ROOM', payload: rooms })}
-          />
-        </div>
-        
         {/* Apply Filters Button */}
         <ApplyFiltersButton
           onClick={handleApplyClick}

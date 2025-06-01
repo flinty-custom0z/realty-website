@@ -15,7 +15,6 @@ interface SampleListing {
   publicDescription: string;
   categorySlug: string;
   district: string;
-  rooms?: number;
   floor?: number;
   totalFloors?: number;
   houseArea?: number;
@@ -91,7 +90,6 @@ async function main() {
       publicDescription: 'Просторная квартира в хорошем состоянии',
       categorySlug: 'apartments',
       district: 'Школьная',
-      rooms: 1,
       floor: 1,
       totalFloors: 5,
       houseArea: 39,
@@ -105,7 +103,6 @@ async function main() {
       publicDescription: 'Уютная квартира в центре города',
       categorySlug: 'apartments',
       district: 'Ставропольский',
-      rooms: 1, 
       floor: 2,
       totalFloors: 9,
       houseArea: 33,
@@ -121,7 +118,6 @@ async function main() {
       publicDescription: 'Просторный дом для большой семьи',
       categorySlug: 'houses',
       district: 'Дружелюбный',
-      rooms: 3,
       houseArea: 90,
       landArea: 4,
       condition: 'Хорошее',
@@ -160,7 +156,6 @@ async function main() {
       publicDescription: 'Сдается однокомнатная квартира на длительный срок',
       categorySlug: 'apartments',
       district: 'Центр',
-      rooms: 1,
       floor: 3,
       totalFloors: 5,
       houseArea: 42,
@@ -174,7 +169,6 @@ async function main() {
       publicDescription: 'Просторная двухкомнатная квартира в центре, все условия для комфортной жизни',
       categorySlug: 'apartments',
       district: 'Центр',
-      rooms: 2,
       floor: 4,
       totalFloors: 9,
       houseArea: 58,
@@ -258,7 +252,6 @@ async function main() {
           publicDescription: listing.publicDescription,
           categoryId: category.id,
           districtId: districtId,
-          rooms: listing.rooms || null,
           floor: listing.floor || null,
           totalFloors: listing.totalFloors || null,
           houseArea: listing.houseArea || null,

@@ -28,7 +28,6 @@ interface Listing {
   dateAdded: string;
   district: string;
   address: string;
-  rooms?: number;
   houseArea?: number;
   floor?: number;
   totalFloors?: number;
@@ -146,7 +145,6 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
                 status={mapListingStatus(l.status)}
                 district={l.district}
                 address={l.address}
-                rooms={l.rooms}
                 area={l.houseArea}
                 floor={l.floor}
                 totalFloors={l.totalFloors}

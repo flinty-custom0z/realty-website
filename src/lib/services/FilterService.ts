@@ -13,7 +13,6 @@ export interface FilterParams {
   maxPrice?: string | null;
   districtIds?: string[];
   conditions?: string[];
-  rooms?: string[];
   dealType?: string | null;
   applyPriceFilter?: boolean;
 }
@@ -28,11 +27,6 @@ export interface FilterOptions {
     available: boolean;
   }>;
   conditions: Array<{
-    value: string;
-    count: number;
-    available: boolean;
-  }>;
-  rooms: Array<{
     value: string;
     count: number;
     available: boolean;
@@ -79,7 +73,6 @@ export class FilterService {
       maxPrice: searchParams.get('maxPrice'),
       districtIds: searchParams.getAll('district'),
       conditions: searchParams.getAll('condition'),
-      rooms: searchParams.getAll('room'),
       dealType: searchParams.get('deal'),
       applyPriceFilter: searchParams.get('applyPriceFilter') === 'true',
     };
@@ -97,7 +90,6 @@ export class FilterService {
       maxPrice = null,
       districtIds = [],
       conditions = [],
-      rooms = [],
       dealType = null,
       applyPriceFilter = false
     } = params;
@@ -157,12 +149,10 @@ export class FilterService {
       ...(applyPriceFilter ? priceFilter : {}),
       ...(districtIds.length > 0 ? { districtId: { in: districtIds } } : {}),
       ...(conditions.length > 0 ? { condition: { in: conditions } } : {}),
-      ...(rooms.length > 0 ? { rooms: { in: rooms.map(r => parseInt(r)).filter(r => !isNaN(r)) } } : {})
     };
     
     // Check if any filters are applied
     const hasFiltersApplied = districtIds.length > 0 || conditions.length > 0 ||
-      rooms.length > 0 || 
       (applyPriceFilter && (minPrice !== null || maxPrice !== null));
 
     // For available options, we want to show what's available with the currently selected filters
@@ -186,13 +176,6 @@ export class FilterService {
         filter.condition = { in: conditions };
       }
       
-      if (excludeFilter !== 'rooms' && rooms.length > 0) {
-        const roomValues = rooms.map(r => parseInt(r)).filter(r => !isNaN(r));
-        if (roomValues.length > 0) {
-          filter.rooms = { in: roomValues };
-        }
-      }
-      
       return filter;
     };
     
@@ -207,7 +190,6 @@ export class FilterService {
       // Get all available options for each filter type (excluding its own filter)
       districtOptions,
       conditionOptions,
-      roomOptions,
       
       // Get categories that match current deal type and other filters
       categoryOptions,
@@ -256,17 +238,6 @@ export class FilterService {
         orderBy: { condition: 'asc' },
       }),
       
-      // Room options - exclude room filter
-      prisma.listing.groupBy({
-        by: ['rooms'],
-        where: { 
-          ...createFilterExcluding('rooms'),
-          rooms: { not: null } 
-        },
-        _count: { rooms: true },
-        orderBy: { rooms: 'asc' },
-      }),
-      
       // Category options - exclude category filter
       prisma.category.findMany({
         where: {
@@ -311,7 +282,6 @@ export class FilterService {
     const [
       districtsWithFullFilter,
       conditionsWithFullFilter,
-      roomsWithFullFilter,
       categoriesWithFullFilter,
     ] = await Promise.all([
       // Get districts with full filter
@@ -333,17 +303,7 @@ export class FilterService {
         },
         _count: { condition: true },
       }),
-      
-      // Get rooms with full filter
-      prisma.listing.groupBy({
-        by: ['rooms'],
-        where: { 
-          ...fullFilter,
-          rooms: { not: null } 
-        },
-        _count: { rooms: true },
-      }),
-      
+
       // Get categories with full filter
       prisma.category.findMany({
         where: {
@@ -358,7 +318,6 @@ export class FilterService {
     // Create sets for quick lookup
     const districtWithFullFilterSet = new Set(districtsWithFullFilter.map(d => d.id));
     const conditionWithFullFilterSet = new Set(conditionsWithFullFilter.map(c => c.condition));
-    const roomWithFullFilterSet = new Set(roomsWithFullFilter.map(r => r.rooms?.toString()));
     const categoryWithFullFilterSet = new Set(categoriesWithFullFilter.map(c => c.slug));
     
     // Determine which deal types to show based on current selection
@@ -410,20 +369,12 @@ export class FilterService {
       available: !hasFiltersApplied || conditionWithFullFilterSet.has(condition.condition)
     }));
     
-    // Process room options
-    const processedRooms = roomOptions.map(room => ({
-      value: room.rooms?.toString() || '',
-      count: room._count.rooms,
-      // A room option is available if it appears in the full filter results
-      // or if no filters are applied
-      available: !hasFiltersApplied || roomWithFullFilterSet.has(room.rooms?.toString())
-    }));
+    
     
     // Return compiled filter options
     return {
       districts: processedDistricts,
       conditions: processedConditions,
-      rooms: processedRooms,
       dealTypes,
       priceRange: {
         min: priceStats._min.price || 0,

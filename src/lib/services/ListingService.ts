@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { ImageService } from './ImageService';
 import { HistoryService } from './HistoryService';
 import { createLogger } from '@/lib/logging';
-import { Listing, ListingHistory } from '@prisma/client';
+import { Listing } from '@prisma/client';
 
 // Create a logger instance
 const logger = createLogger('ListingService');
@@ -16,7 +16,9 @@ export interface ListingData {
   price: number;
   districtId?: string | null;
   address?: string | null;
-  rooms?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  fullAddress?: string | null;
   floor?: number | null;
   totalFloors?: number | null;
   houseArea?: number | null;
@@ -39,33 +41,6 @@ export interface ImageUploadData {
   size: string;
   path: string;
   isFeatured: boolean;
-}
-
-interface OriginalListing {
-  typeId: string;
-  publicDescription: string | null;
-  adminComment: string | null;
-  categoryId: string;
-  districtId: string | null;
-  address: string | null;
-  rooms: number | null;
-  floor: number | null;
-  totalFloors: number | null;
-  houseArea: number | null;
-  kitchenArea: number | null;
-  landArea: number | null;
-  condition: string | null;
-  yearBuilt: number | null;
-  buildingType: string | null;
-  balconyType: string | null;
-  bathroomType: string | null;
-  windowsView: string | null;
-  noEncumbrances: boolean;
-  noShares: boolean;
-  price: number;
-  status: string;
-  dealType: string | null;
-  userId: string;
 }
 
 interface DeletedImageInfo {
@@ -216,10 +191,10 @@ export class ListingService {
       });
 
       // Convert changes to a simple object structure for JSON serialization
-      const changesForHistory: Record<string, any> = {
+      const changesForHistory = {
         action: 'update_fields',
         fields: {}
-      };
+      } as any; // Type assertion to avoid Prisma JSON type issues
       
       // Convert the complex changes object to a simpler structure
       Object.entries(changes).forEach(([key, value]) => {
@@ -687,7 +662,6 @@ export class ListingService {
     maxPrice?: string | null;
     districts?: string[];
     conditions?: string[];
-    rooms?: string[];
     dealType?: string | null;
     propertyTypes?: string[];
     page?: number;
@@ -702,7 +676,6 @@ export class ListingService {
       maxPrice = null, 
       districts = [], 
       conditions = [], 
-      rooms = [],
       dealType = null,
       propertyTypes = [],
       page = 1,
@@ -754,11 +727,6 @@ export class ListingService {
     // Add condition filter if provided
     if (conditions.length > 0) {
       filter.condition = { in: conditions };
-    }
-    
-    // Add rooms filter if provided
-    if (rooms.length > 0) {
-      filter.rooms = { in: rooms.map((r: string) => parseInt(r)).filter((r: number) => !isNaN(r)) };
     }
     
     // Add deal type filter if provided

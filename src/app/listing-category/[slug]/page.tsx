@@ -8,6 +8,15 @@ import { headers } from 'next/headers';
 import SortSelector from '@/components/SortSelector';
 import { Metadata } from 'next';
 
+// Wrap the SortSelector in a client component to avoid hydration issues
+function SortSelectorWrapper() {
+  return (
+    <Suspense fallback={<div className="w-48 h-9 bg-gray-100 animate-pulse rounded" />}>
+      <SortSelector />
+    </Suspense>
+  );
+}
+
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
 
@@ -39,20 +48,6 @@ export async function generateMetadata(
   };
 }
 
-// // Helper function to handle Russian grammatical cases
-function getDativeCase(categoryName: string): string {
-  // Handle Russian declensions for common category names
-  const dative: Record<string, string> = {
-    'Квартиры': 'квартирам',
-    'Дома': 'домам',
-    'Земельные участки': 'земельным участкам',
-    'Коммерция': 'коммерческим объектам',
-    'Промышленные объекты': 'промышленным объектам'
-  };
-  
-  return dative[categoryName] || categoryName.toLowerCase();
-}
-
 async function getCategory(slug: string) {
   const category = await prisma.category.findUnique({
     where: { slug },
@@ -66,7 +61,7 @@ async function getListings(
   searchParams: Record<string, string | string[] | undefined>
 ) {
   // Build filter object
-  const filter: any = { 
+  const filter: Record<string, unknown> = { 
     categoryId,
     status: 'active',
   };
@@ -93,19 +88,6 @@ async function getListings(
   
   if (searchParams.maxPrice) {
     filter.price = { ...(filter.price || {}), lte: parseFloat(searchParams.maxPrice as string) };
-  }
-  
-  // Multi-room selection support
-  const roomParams = searchParams.rooms;
-  if (roomParams) {
-    // Handle both array and single value cases
-    const roomValues = Array.isArray(roomParams) 
-      ? roomParams.map(r => parseInt(r)) 
-      : [parseInt(roomParams as string)];
-    
-    if (roomValues.some(v => !isNaN(v))) {
-      filter.rooms = { in: roomValues.filter(v => !isNaN(v)) };
-    }
   }
   
   if (searchParams.district) {
@@ -201,7 +183,7 @@ export default async function CategoryPage({
   const { listings: unfilteredListings, pagination } = await getListings(category.id, resolvedSearchParams);
 
   // Additional client-side filtering to ensure correct deal type
-  const listings = unfilteredListings.filter((listing: any) => 
+  const listings = unfilteredListings.filter((listing) => 
     listing.dealType === dealType
   );
 
@@ -259,7 +241,7 @@ export default async function CategoryPage({
                 ${Math.min(adjustedPagination.page * adjustedPagination.limit, adjustedPagination.total)} из ${adjustedPagination.total} результатов`
               ) : 'Нет результатов'}
             </p>
-            <SortSelector />
+            <SortSelectorWrapper />
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -270,7 +252,6 @@ export default async function CategoryPage({
                 price={listing.price}
                 district={listing.districtRef?.name || undefined}
                 address={listing.address || undefined}
-                rooms={listing.rooms || undefined}
                 area={listing.houseArea || undefined}
                 imagePaths={listing.images
                   ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))

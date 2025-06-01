@@ -68,19 +68,12 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
     }
   }
 
-  // Numeric filters (price, rooms)
+  // Numeric filters (price)
   if (searchParams.minPrice) {
     filter.price = { ...(filter.price || {}), gte: parseFloat(searchParams.minPrice as string) };
   }
   if (searchParams.maxPrice) {
     filter.price = { ...(filter.price || {}), lte: parseFloat(searchParams.maxPrice as string) };
-  }
-
-  const roomParams = searchParams.rooms;
-  if (roomParams) {
-    const roomsArr = Array.isArray(roomParams) ? roomParams : [roomParams];
-    const values = roomsArr.map((r) => parseInt(r as string)).filter(Boolean);
-    if (values.length) filter.rooms = { in: values };
   }
 
   if (searchParams.district) {
@@ -292,7 +285,6 @@ export default async function SearchPage({
                 price={l.price}
                 district={l.districtRef || undefined}
                 address={l.address || undefined}
-                rooms={l.rooms || undefined}
                 area={l.houseArea || undefined}
                 imagePaths={l.images
                   ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))

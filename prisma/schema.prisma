@@ -52,6 +52,9 @@ model Listing {
   categoryId        String
   userId            String
   address           String?
+  latitude          Float?
+  longitude         Float?
+  fullAddress       String?
   houseArea         Float?
   landArea          Float?
   floor             Int?

@@ -8,7 +8,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
     const district = searchParams.get('district');
-    const rooms = searchParams.get('rooms');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const minArea = searchParams.get('minArea');

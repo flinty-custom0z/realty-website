@@ -16,7 +16,6 @@ interface ListingCardProps {
   price: number;
   district?: string | { id: string; name: string; slug: string };
   address?: string;
-  rooms?: number;
   area?: number;
   imagePaths: string[];
   listingCode: string;

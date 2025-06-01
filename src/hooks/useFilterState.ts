@@ -32,7 +32,6 @@ const initialFilterState: FilterState = {
   selectedCategories: [],
   selectedDistricts: [],
   selectedConditions: [],
-  selectedRooms: [],
   selectedPropertyTypes: [],
   selectedDealType: '',
   searchInputValue: '',
@@ -44,7 +43,6 @@ const initialFilterState: FilterState = {
   filterOptions: {
     districts: [],
     conditions: [],
-    rooms: [],
     dealTypes: [],
     propertyTypes: [],
     priceRange: { min: 0, max: 100000000, currentMin: null, currentMax: null },
@@ -55,7 +53,6 @@ const initialFilterState: FilterState = {
   visibleFilterOptions: {
     districts: [],
     conditions: [],
-    rooms: [],
     dealTypes: [],
     propertyTypes: [],
     priceRange: { min: 0, max: 100000000, currentMin: null, currentMax: null },
@@ -98,13 +95,6 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
         selectedConditions: state.selectedConditions.includes(action.payload)
           ? state.selectedConditions.filter(c => c !== action.payload)
           : [...state.selectedConditions, action.payload]
-      };
-    case 'TOGGLE_ROOM':
-      return {
-        ...state,
-        selectedRooms: state.selectedRooms.includes(action.payload)
-          ? state.selectedRooms.filter(r => r !== action.payload)
-          : [...state.selectedRooms, action.payload]
       };
     case 'SET_PRICE':
       return {
@@ -281,11 +271,6 @@ export function useFilterState({
         state.selectedConditions.forEach(condition => params.append('condition', condition));
       }
       
-      // Add room filter
-      if (state.selectedRooms.length > 0) {
-        state.selectedRooms.forEach(rooms => params.append('rooms', rooms));
-      }
-      
       // Add price filters (always include in params)
       if (state.minPrice) {
         params.append('minPrice', state.minPrice);
@@ -366,7 +351,6 @@ export function useFilterState({
     state.selectedCategories, 
     state.selectedDistricts, 
     state.selectedConditions, 
-    state.selectedRooms, 
     state.selectedDealType,
     state.minPrice,
     state.maxPrice,
@@ -401,7 +385,6 @@ export function useFilterState({
             selectedCategories: initialFilters.category || [],
             selectedDistricts: initialFilters.district || [],
             selectedConditions: initialFilters.condition || [],
-            selectedRooms: initialFilters.rooms || [],
             selectedDealType: initialFilters.deal === 'rent' ? 'RENT' : 'SALE',
             searchInputValue: initialFilters.q || searchQuery || '',
             userEditedPrice: {
@@ -429,10 +412,9 @@ export function useFilterState({
           );
         }
         
-        // Initialize districts, conditions, and rooms
+        // Initialize districts, conditions
         const urlDistricts = searchParams?.getAll('district') || [];
         const urlConditions = searchParams?.getAll('condition') || [];
-        const urlRooms = searchParams?.getAll('rooms') || [];
         
         // Initialize price range
         const urlMinPrice = searchParams?.get('minPrice') || '';
@@ -446,7 +428,6 @@ export function useFilterState({
             selectedCategories: effectiveCategories,
             selectedDistricts: urlDistricts,
             selectedConditions: urlConditions,
-            selectedRooms: urlRooms,
             selectedDealType: initialDealType,
             searchInputValue: urlSearchInput,
             userEditedPrice: {
@@ -474,7 +455,6 @@ export function useFilterState({
     categories: state.selectedCategories,
     districts: state.selectedDistricts, 
     conditions: state.selectedConditions,
-    rooms: state.selectedRooms,
     dealType: state.selectedDealType,
   }, 300);
   
@@ -499,7 +479,6 @@ export function useFilterState({
     debouncedSelections.categories,
     debouncedSelections.districts,
     debouncedSelections.conditions,
-    debouncedSelections.rooms,
     debouncedSelections.dealType,
     fetchFilterOptions
   ]);
@@ -540,7 +519,6 @@ export function useFilterState({
     const hasOtherFilters = 
       state.selectedDistricts.length > 0 || 
       state.selectedConditions.length > 0 || 
-      state.selectedRooms.length > 0 ||
       (!categorySlug && state.selectedCategories.length > 0);
     
     return hasSearchQuery || hasCustomPrice || hasOtherFilters || state.selectedDealType !== '';
@@ -551,7 +529,6 @@ export function useFilterState({
     state.maxPrice,
     state.selectedDistricts,
     state.selectedConditions,
-    state.selectedRooms,
     state.selectedCategories,
     state.selectedDealType,
     state.filterOptions.priceRange
@@ -595,11 +572,7 @@ export function useFilterState({
         if (state.selectedConditions.length > 0) {
           newFilters.condition = state.selectedConditions;
         }
-        
-        if (state.selectedRooms.length > 0) {
-          newFilters.rooms = state.selectedRooms;
-        }
-        
+
         // Add deal type (only for rent, not for sale which is default)
         if (state.selectedDealType === 'RENT') {
           newFilters.deal = 'rent';
@@ -633,7 +606,6 @@ export function useFilterState({
         
         state.selectedDistricts.forEach(d => params.append('district', d));
         state.selectedConditions.forEach(c => params.append('condition', c));
-        state.selectedRooms.forEach(r => params.append('rooms', r));
         
         // Add deal type (only for rent, not for sale which is default)
         if (state.selectedDealType === 'RENT') {
@@ -683,7 +655,6 @@ export function useFilterState({
     state.selectedCategories,
     state.selectedDistricts,
     state.selectedConditions,
-    state.selectedRooms,
     state.selectedDealType,
     categorySlug,
     fetchFilterOptions,
@@ -813,7 +784,6 @@ export function useFilterState({
       // Include other filters
       if (state.selectedDistricts.length > 0) newFilters.district = state.selectedDistricts;
       if (state.selectedConditions.length > 0) newFilters.condition = state.selectedConditions;
-      if (state.selectedRooms.length > 0) newFilters.rooms = state.selectedRooms;
       if (state.minPrice) newFilters.minPrice = state.minPrice;
       if (state.maxPrice) newFilters.maxPrice = state.maxPrice;
       
@@ -852,7 +822,6 @@ export function useFilterState({
     state.selectedCategories,
     state.selectedDistricts,
     state.selectedConditions,
-    state.selectedRooms,
     state.minPrice, 
     state.maxPrice,
     isControlled,

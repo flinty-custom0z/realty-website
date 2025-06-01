@@ -1,24 +1,61 @@
 // Server component that renders listing details
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import ClientImage from '@/components/ClientImage';
-import { formatPhoneNumber, formatDate, formatPrice } from '@/lib/utils';
+import { formatDate, formatPrice } from '@/lib/utils';
 import ListingInteractiveClient from './ListingInteractiveClient';
 import ImageGallery from '@/components/ImageGallery';
+import ListingMapClient from '@/components/ListingMapClient';
+
+interface ListingImage {
+  path: string;
+  isFeatured: boolean;
+  id?: string;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  dateAdded: Date;
+  price: number;
+  images: ListingImage[];
+  address?: string;
+  floor?: number;
+  totalFloors?: number;
+  houseArea?: number;
+  landArea?: number;
+  yearBuilt?: number;
+  condition?: string;
+  listingCode: string;
+  publicDescription?: string;
+  adminComment?: string;
+  latitude?: number;
+  longitude?: number;
+  fullAddress?: string;
+  districtRef?: {
+    name: string;
+  };
+  district?: string;
+  propertyType?: {
+    name: string;
+  };
+}
 
 interface ListingDetailProps {
-  listing: any;
+  listing: Listing;
   isAdmin: boolean;
 }
 
 export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) {
   const formattedDate = formatDate(listing.dateAdded);
   
-  // Ensure main image is first
-  const sortedImages = listing.images.slice().sort((a: any, b: any) => {
+  // Ensure main image is first and add id for ImageGallery
+  const sortedImages = listing.images.slice().sort((a, b) => {
     if (a.isFeatured === b.isFeatured) return 0;
     return a.isFeatured ? -1 : 1;
-  });
+  }).map((img, index) => ({
+    ...img,
+    id: img.id || `img-${index}` // Ensure each image has an id
+  }));
 
   // Get district name from either string or object
   const districtName = listing.districtRef 
@@ -59,7 +96,6 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
               <div>
                 {districtName && <p className="mb-2"><span className="text-gray-600">Район:</span> {districtName}</p>}
                 {listing.address && <p className="mb-2"><span className="text-gray-600">Адрес:</span> {listing.address}</p>}
-                {listing.rooms && <p className="mb-2"><span className="text-gray-600">Комнат:</span> {listing.rooms}</p>}
                 {listing.floor && listing.totalFloors && 
                   <p className="mb-2"><span className="text-gray-600">Этаж:</span> {listing.floor}/{listing.totalFloors}</p>
                 }
@@ -75,6 +111,17 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
               </div>
             </div>
           </section>
+           
+          {/* Map section */}
+          {listing.latitude && listing.longitude && (
+            <ListingMapClient
+              longitude={listing.longitude}
+              latitude={listing.latitude}
+              propertyType={listing.propertyType?.name}
+              listingId={listing.id}
+              fullAddress={listing.fullAddress}
+            />
+          )}
           
           {/* public description */}
           {listing.publicDescription && (

@@ -117,6 +117,14 @@ export default function ResponsiveNav() {
                   Коммерция
                 </Link>
               )}
+              <Link 
+                href="/map"
+                className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
+                  pathname === '/map' ? 'text-gray-900' : ''
+                }`}
+              >
+                Карта
+              </Link>
               {isAuthenticated && !isLoading && (
                 <Link 
                   href="/admin"
@@ -241,6 +249,15 @@ export default function ResponsiveNav() {
                 Коммерция
               </Link>
             )}
+            
+            <Link 
+              href="/map"
+              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                pathname === '/map' ? 'text-gray-900 font-medium' : ''
+              }`}
+            >
+              Карта
+            </Link>
             
             {/* Admin panel link - only visible when authenticated */}
             {isAuthenticated && !isLoading && (

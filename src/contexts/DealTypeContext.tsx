@@ -98,7 +98,7 @@ export function DealTypeProvider({ children }: { children: React.ReactNode }) {
     
     // 2. remove filters that belong only to the *previous* deal type
     //    (otherwise the request can return 0 rows)
-    ['category', 'district', 'condition', 'rooms'].forEach((key) =>
+    ['category', 'district', 'condition'].forEach((key) =>
       params.delete(key)
     );
     
