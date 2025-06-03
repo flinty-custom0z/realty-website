@@ -41,7 +41,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
   return (
     <div className="w-full">
       {/* Main image container */}
-      <div className="relative w-full aspect-[16/9] mb-4 rounded-lg overflow-hidden bg-gray-50">
+      <div className="relative w-full flex justify-center items-center mb-4 rounded-lg overflow-hidden bg-gray-50" style={{ maxHeight: '70vh' }}>
         {/* Navigation buttons */}
         {images.length > 1 && (
           <>
@@ -64,12 +64,11 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
         )}
       
         {/* Main image */}
-        <div className="relative h-full w-full" onClick={() => setIsModalOpen(true)}>
+        <div className="relative w-full flex justify-center items-center cursor-pointer" style={{ maxHeight: '70vh' }} onClick={() => setIsModalOpen(true)}>
           <ClientImage
             src={images[selectedImageIndex].path}
             alt={`${title} - фото ${selectedImageIndex + 1}`}
-            fill
-            className="object-contain cursor-pointer"
+            className="object-contain max-h-[70vh] w-auto h-auto mx-auto"
             sizes="(max-width: 1200px) 100vw, 1200px"
             priority={true}
             fallbackSrc="/images/placeholder.png"
