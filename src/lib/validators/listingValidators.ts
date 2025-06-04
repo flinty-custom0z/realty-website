@@ -11,7 +11,7 @@ export const listingSchema = z.object({
   adminComment: z.string().optional().nullable(),
   categoryId: z.string().min(1, "Category is required"),
   price: z.number().positive("Price must be positive"),
-  districtId: z.string().min(1, "District is required"),
+  districtId: z.string().optional().nullable(),
   address: z.string().min(1, "Address is required"),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),

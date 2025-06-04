@@ -38,7 +38,7 @@ export default function RootLayout({
                 <Suspense fallback={<div className="h-12 w-full bg-gray-100 animate-pulse rounded mb-4"></div>}>
                   <ResponsiveNav />
                 </Suspense>
-                <div className="w-full max-w-xl mx-auto mt-6 pb-6 px-4">
+                <div className="w-full max-w-xl mx-auto mt-6 pb-6 px-4 hide-when-sticky">
                   <Suspense fallback={<div className="h-10 w-full bg-gray-100 animate-pulse rounded"></div>}>
                     <SearchFormWrapper />
                   </Suspense>

@@ -268,6 +268,16 @@ header {
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(8px);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding-bottom: 0;
+  }
+  
+  /* Add padding to body when header is sticky to prevent content jump */
+  header.sticky + main {
+    padding-top: 195px; /* Adjust this value to match the header height */
+  }
+  
+  header.sticky .hide-when-sticky {
+    display: none !important;
   }
 }
 
@@ -709,10 +719,11 @@ button {
 /* Table & List Styling */
 .admin-table {
   width: 100%;
-  min-width: 0;
+  min-width: 1000px; /* Ensure minimum width for better mobile scrolling */
   border-collapse: separate;
   border-spacing: 0;
   margin-bottom: 1.5rem;
+  table-layout: auto; /* Auto layout to respect content */
 }
 
 .admin-table th {
@@ -729,12 +740,28 @@ button {
   white-space: nowrap;
 }
 
+/* Column width guidelines */
+.admin-table th:nth-child(1) { width: 60px; } /* Photo */
+.admin-table th:nth-child(2) { width: 180px; } /* Title */
+.admin-table th:nth-child(3) { width: 120px; } /* Category */
+.admin-table th:nth-child(4) { width: 80px; } /* Code */
+.admin-table th:nth-child(5) { width: 120px; } /* District */
+.admin-table th:nth-child(6) { width: 180px; } /* Address */
+.admin-table th:nth-child(7) { width: 100px; } /* Price */
+.admin-table th:nth-child(8) { width: 90px; } /* Type */
+.admin-table th:nth-child(9) { width: 100px; } /* Status */
+.admin-table th:nth-child(10) { width: 100px; } /* Date */
+.admin-table th:nth-child(11) { width: 120px; } /* Actions */
+
 .admin-table td {
   padding: 12px;
   vertical-align: middle;
   border-bottom: 1px solid #e2e8f0;
   font-size: 14px;
   color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-table tr:nth-child(even) {
@@ -756,6 +783,13 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
+}
+
+/* Ensure all table cells handle overflow properly */
+.admin-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Custom Checkbox - Improved styling */
@@ -1080,7 +1114,9 @@ button {
 /* Fix for horizontal scrollbar in desktop view */
 .admin-table-wrapper {
   width: 100%;
-  overflow-x: visible;
+  overflow-x: auto;
+  padding-bottom: 8px; /* Add padding to ensure scrollbar is visible */
+  margin-bottom: 16px;
 }
 
 @media (max-width: 1023px) {
@@ -1091,7 +1127,7 @@ button {
 
 .admin-table-wrapper table {
   width: 100%;
-  table-layout: auto;
+  min-width: 1000px; /* Ensure minimum width for better scrolling */
 }
 
 /* Remove the admin-table-container overflow which causes scrollbar to appear */
@@ -1102,4 +1138,10 @@ button {
 /* Center pagination buttons */
 .flex.justify-center .pagination-btn {
   margin-bottom: 8px;
+}
+
+@media (min-width: 768px) {
+  header.sticky .hide-when-sticky {
+    display: none !important;
+  }
 }

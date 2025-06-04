@@ -219,8 +219,8 @@ export default function AdminListingsPage() {
   // Render list (table) view of listings
   const renderListView = (listingsToRender: Listing[]) => {
     return (
-      <div className="admin-table-wrapper">
-        <table className="admin-table w-full">
+      <div className="admin-table-wrapper overflow-x-auto">
+        <table className="admin-table">
           <thead>
             <tr>
               <th className="w-16">Фото</th>
@@ -272,7 +272,7 @@ export default function AdminListingsPage() {
                     )}
                   </div>
                 </td>
-                <td className="title-cell" data-label="Название">
+                <td className="title-cell truncate whitespace-nowrap" data-label="Название">
                   <Link 
                     href={`/listing/${listing.id}`}
                     className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
@@ -281,23 +281,23 @@ export default function AdminListingsPage() {
                     <TruncatedCell text={listing.propertyType.name} maxWidth={220} />
                   </Link>
                 </td>
-                <td data-label="Категория">{listing.category.name}</td>
-                <td data-label="Код">{listing.listingCode}</td>
-                <td data-label="Район">{listing.district}</td>
-                <td data-label="Адрес">
+                <td className="truncate whitespace-nowrap" data-label="Категория">{listing.category.name}</td>
+                <td className="truncate whitespace-nowrap" data-label="Код">{listing.listingCode}</td>
+                <td className="truncate whitespace-nowrap" data-label="Район">{listing.district}</td>
+                <td className="truncate whitespace-nowrap" data-label="Адрес">
                   <TruncatedCell text={listing.address} maxWidth={180} />
                 </td>
-                <td className="text-right font-medium" data-label="Цена">{formatPrice(listing.price)}</td>
-                <td data-label="Тип">
+                <td className="text-right font-medium whitespace-nowrap" data-label="Цена">{formatPrice(listing.price)}</td>
+                <td className="whitespace-nowrap" data-label="Тип">
                   <span className={`px-2 py-1 rounded-full text-xs ${listing.dealType === 'SALE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
                     {listing.dealType === 'SALE' ? 'Продажа' : 'Аренда'}
                   </span>
                 </td>
-                <td className="status-cell" data-label="Статус">
+                <td className="status-cell whitespace-nowrap" data-label="Статус">
                   <StatusBadge status={listing.status} />
                 </td>
-                <td data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
-                <td className="actions-cell" data-label="Действия">
+                <td className="whitespace-nowrap" data-label="Дата"><span className="timestamp">{formatDate(listing.dateAdded)}</span></td>
+                <td className="actions-cell text-right" data-label="Действия">
                   <div className="flex justify-end space-x-2">
                     <Button
                       variant="primary"
