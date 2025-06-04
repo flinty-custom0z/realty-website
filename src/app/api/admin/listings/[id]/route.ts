@@ -29,10 +29,10 @@ export async function GET(
   }
 }
 
-export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id: string } }) => {
+export const PUT = withAuth(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const formData = await req.formData();
-    const listingId = params.id;
+    const { id: listingId } = await params;
     const user = (req as any).user;
 
     // First handle image operations to prevent interference with form validation
@@ -87,9 +87,9 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: { id:
   }
 });
 
-async function handleDeleteListing(req: NextRequest, { params }: { params: { id: string } }) {
+async function handleDeleteListing(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const listingId = params.id;
+    const { id: listingId } = await params;
     const user = (req as any).user;
 
     if (!listingId) {

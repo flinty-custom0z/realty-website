@@ -826,48 +826,6 @@ export default function EditListingPage() {
             </div>
             
             <div>
-              <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
-                Широта
-              </label>
-              <input
-                type="number"
-                id="latitude"
-                name="latitude"
-                value={formData.latitude ?? ''}
-                readOnly
-                className="w-full p-2 border rounded bg-gray-50"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
-                Долгота
-              </label>
-              <input
-                type="number"
-                id="longitude"
-                name="longitude"
-                value={formData.longitude ?? ''}
-                readOnly
-                className="w-full p-2 border rounded bg-gray-50"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="fullAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                Полный адрес
-              </label>
-              <input
-                type="text"
-                id="fullAddress"
-                name="fullAddress"
-                value={formData.fullAddress ?? ''}
-                readOnly
-                className="w-full p-2 border rounded bg-gray-50"
-              />
-            </div>
-            
-            <div>
               <label htmlFor="floor" className="block text-sm font-medium text-gray-700 mb-1">
                 Этаж
               </label>
