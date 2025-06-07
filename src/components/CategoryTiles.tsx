@@ -36,6 +36,12 @@ const categoryIcons: Record<string, React.ReactNode> = {
   'commercial': (
     <span className="category-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="10" width="10" height="20" stroke="currentColor" strokeWidth="2.2"/><rect x="22" y="16" width="10" height="14" stroke="currentColor" strokeWidth="2.2"/><path d="M4 36h32" stroke="currentColor" strokeWidth="2.2"/></svg></span>
   ),
+  'new-construction': (
+    <span className="category-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="14" width="8" height="16" stroke="currentColor" strokeWidth="2.2"/><rect x="22" y="10" width="8" height="20" stroke="currentColor" strokeWidth="2.2"/><rect x="14" y="18" width="2" height="4" fill="currentColor"/><rect x="26" y="14" width="2" height="4" fill="currentColor"/><rect x="26" y="20" width="2" height="4" fill="currentColor"/><rect x="14" y="24" width="2" height="4" fill="currentColor"/><path d="M6 34h28" stroke="currentColor" strokeWidth="2.2"/></svg></span>
+  ),
+  'international': (
+    <span className="category-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="2.2"/><path d="M10 20H30M15 12c4 0 8 16 0 16-8 0-4-16 0-16z" stroke="currentColor" strokeWidth="2.2"/></svg></span>
+  ),
 };
 
 // Determine plural form based on the count
