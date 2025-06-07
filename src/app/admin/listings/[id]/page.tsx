@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
+import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminImagePreview from '@/components/AdminImagePreview';
@@ -323,19 +323,55 @@ export default function EditListingPage() {
     }
   }, [formData.categoryId, propertyTypes, formData.typeId]);
   
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
+  // Handle form field changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
     
-    // Handle special case for district selection
-    if (name === 'districtId' && value === 'new') {
-      setShowNewDistrictInput(true);
-      return;
+    // Special handling for categoryId to ensure proper property type filtering
+    if (name === 'categoryId') {
+      if (value) {
+        const newCategory = categories.find(c => c.id === value);
+        const newCategorySlug = newCategory?.slug;
+        
+        // Check if the new category has property types
+        const hasPropertyTypes = propertyTypes.some(pt => pt.categoryId === value);
+        
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          // Clear typeId when switching to international or new-construction or a category without property types
+          typeId: (newCategorySlug === 'international' || newCategorySlug === 'new-construction' || !hasPropertyTypes) ? '' : prev.typeId
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          typeId: '' // Clear typeId when category is cleared
+        }));
+      }
     }
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    }));
+    // Special handling for numeric inputs
+    else if (type === 'number') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value ? parseFloat(value) : ''
+      }));
+    }
+    // Special handling for checkboxes
+    else if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({
+        ...prev, 
+        [name]: checked
+      }));
+    }
+    // Default handling for other fields
+    else {
+      setFormData(prev => ({
+        ...prev, 
+        [name]: value
+      }));
+    }
   };
   
   const handleCreateDistrict = async () => {
@@ -669,7 +705,7 @@ export default function EditListingPage() {
                 className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                 required
               >
-                {filteredCategories.length === 0 && <option value="">Загрузка категорий...</option>}
+                <option value="">Выберите категорию</option>
                 {filteredCategories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -678,33 +714,32 @@ export default function EditListingPage() {
               </select>
             </div>
             
-            <div>
-              <label htmlFor="typeId" className="block text-sm font-medium text-gray-700 mb-1">
-                Тип недвижимости *
-              </label>
-              <select
-                id="typeId"
-                name="typeId"
-                value={formData.typeId}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-                required
-                disabled={!formData.categoryId || filteredPropertyTypes.length === 0}
-              >
-                <option value="">
-                  {!formData.categoryId 
-                    ? 'Сначала выберите категорию' 
-                    : filteredPropertyTypes.length === 0 
-                      ? 'Нет доступных типов недвижимости' 
+            {filteredPropertyTypes.length > 0 && (
+              <div>
+                <label htmlFor="typeId" className="block text-sm font-medium text-gray-700 mb-1">
+                  Тип недвижимости *
+                </label>
+                <select
+                  id="typeId"
+                  name="typeId"
+                  value={formData.typeId}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                  required
+                >
+                  <option value="">
+                    {!formData.categoryId 
+                      ? 'Сначала выберите категорию' 
                       : 'Выберите тип недвижимости'}
-                </option>
-                {filteredPropertyTypes.map(propertyType => (
-                  <option key={propertyType.id} value={propertyType.id}>
-                    {propertyType.name}
                   </option>
-                ))}
-              </select>
-            </div>
+                  {filteredPropertyTypes.map(propertyType => (
+                    <option key={propertyType.id} value={propertyType.id}>
+                      {propertyType.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">

@@ -1,0 +1,5 @@
+# This is manually created to register the migration
+# This file is manually managed
+# To create a migration use: npx prisma migrate dev --name=name-of-migration
+
+migration_name = "20250607181619_make_property_type_optional" 

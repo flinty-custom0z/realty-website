@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
  * Zod schema for validating listing data
  */
 export const listingSchema = z.object({
-  typeId: z.string().min(1, "Property type is required"),
+  typeId: z.string().optional().nullable(),
   publicDescription: z.string().min(1, "Description is required"),
   adminComment: z.string().optional().nullable(),
   categoryId: z.string().min(1, "Category is required"),
@@ -63,16 +63,18 @@ export const listingSchema = z.object({
   }
   
   // Check if property type exists and belongs to the selected category
-  const propertyType = await prisma.propertyType.findUnique({
-    where: { id: data.typeId },
-  });
-  
-  if (!propertyType) {
-    throw new Error('Property type not found');
-  }
-  
-  if (propertyType.categoryId !== data.categoryId) {
-    throw new Error('Property type does not belong to the selected category');
+  if (data.typeId) {
+    const propertyType = await prisma.propertyType.findUnique({
+      where: { id: data.typeId },
+    });
+    
+    if (!propertyType) {
+      throw new Error('Property type not found');
+    }
+    
+    if (propertyType.categoryId !== data.categoryId) {
+      throw new Error('Property type does not belong to the selected category');
+    }
   }
   
   return true;

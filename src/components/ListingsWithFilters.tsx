@@ -20,6 +20,7 @@ interface Listing {
   dealType: 'SALE' | 'RENT';
   category: {
     name: string;
+    slug: string;
   };
   images: {
     path: string;
@@ -153,6 +154,7 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
                   ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
                   .map(img => img.path) ?? []}
                 categoryName={l.category?.name}
+                category={l.category}
                 showCategory={true}
                 dealType={l.dealType}
               />

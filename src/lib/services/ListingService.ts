@@ -8,7 +8,7 @@ import { Listing } from '@prisma/client';
 const logger = createLogger('ListingService');
 
 export interface ListingData {
-  typeId: string;
+  typeId?: string | null;
   publicDescription?: string | null;
   adminComment?: string | null;
   categoryId: string;
@@ -67,20 +67,35 @@ export class ListingService {
   static async createListing(listingData: ListingData, currentUserId: string): Promise<Listing> {
     // Generate listing code
     const listingCode = await this.generateListingCode(listingData.categoryId);
-    
-    // Get property type name for dynamic title generation
-    const propertyType = await prisma.propertyType.findUnique({
-      where: { id: listingData.typeId }
-    });
-    
-    if (!propertyType) {
-      throw new Error('Property type not found');
-    }
-    
-    // Generate dynamic title based on property type and area
+    let title = '';
     const area = listingData.houseArea ? `${listingData.houseArea} м²` : '';
-    const title = `${propertyType.name}${area ? ` ${area}` : ''}`;
-    
+
+    if (listingData.typeId) {
+      const propertyType = await prisma.propertyType.findUnique({
+        where: { id: listingData.typeId }
+      });
+      if (!propertyType) {
+        throw new Error('Property type not found');
+      }
+      title = `${propertyType.name}${area ? ` ${area}` : ''}`;
+    } else {
+      // No property type, use category name
+      const category = await prisma.category.findUnique({ where: { id: listingData.categoryId } });
+      if (!category) {
+        throw new Error('Category not found');
+      }
+      
+      // Use singular form "Новостройка" for new-construction category
+      let categoryName = category.name;
+      if (category.slug === 'new-construction') {
+        categoryName = 'Новостройка';
+      } else if (category.slug === 'international') {
+        categoryName = 'Недвижимость за рубежом';
+      }
+      
+      title = `${categoryName}${area ? ` ${area}` : ''}`;
+    }
+
     // Use transaction to ensure atomic creation of listing and history record
     return prisma.$transaction(async (tx) => {
       // Create listing within transaction
@@ -92,7 +107,6 @@ export class ListingService {
           status: listingData.status || 'active',
         },
       });
-      
       // Create history entry for creation within the same transaction
       await tx.listingHistory.create({
         data: {
@@ -102,7 +116,6 @@ export class ListingService {
           action: 'create'
         }
       });
-      
       return newListing;
     });
   }
@@ -127,18 +140,13 @@ export class ListingService {
       throw new Error('Listing not found');
     }
     
-    // Get property type name for dynamic title generation if property type changed
     let propertyType = originalListing.propertyType;
+    let title = '';
+    const area = listingData.houseArea !== undefined ? 
+      `${listingData.houseArea} м²` : 
+      (originalListing.houseArea ? `${originalListing.houseArea} м²` : '');
     
-    if (!propertyType) {
-      propertyType = await prisma.propertyType.findUnique({
-        where: { id: listingData.typeId || originalListing.typeId || '' }
-      });
-      
-      if (!propertyType) {
-        throw new Error('Property type not found');
-      }
-    } else if (listingData.typeId && listingData.typeId !== originalListing.typeId) {
+    if (listingData.typeId) {
       propertyType = await prisma.propertyType.findUnique({
         where: { id: listingData.typeId }
       });
@@ -146,14 +154,24 @@ export class ListingService {
       if (!propertyType) {
         throw new Error('Property type not found');
       }
+      title = `${propertyType.name}${area ? ` ${area}` : ''}`;
+    } else {
+      // No property type, use category name
+      const category = await prisma.category.findUnique({ where: { id: listingData.categoryId } });
+      if (!category) {
+        throw new Error('Category not found');
+      }
+      
+      // Use singular form "Новостройка" for new-construction category
+      let categoryName = category.name;
+      if (category.slug === 'new-construction') {
+        categoryName = 'Новостройка';
+      } else if (category.slug === 'international') {
+        categoryName = 'Недвижимость за рубежом';
+      }
+      
+      title = `${categoryName}${area ? ` ${area}` : ''}`;
     }
-    
-    // Generate dynamic title based on property type and area
-    const area = listingData.houseArea !== undefined ? 
-      `${listingData.houseArea} м²` : 
-      (originalListing.houseArea ? `${originalListing.houseArea} м²` : '');
-    
-    const title = `${propertyType.name}${area ? ` ${area}` : ''}`;
     
     // Track changes for history
     const changes: Record<string, { old: unknown; new: unknown }> = {};
@@ -191,10 +209,10 @@ export class ListingService {
       });
 
       // Convert changes to a simple object structure for JSON serialization
-      const changesForHistory = {
+      const changesForHistory: { action: string; fields: Record<string, { old: unknown; new: unknown }> } = {
         action: 'update_fields',
         fields: {}
-      } as any; // Type assertion to avoid Prisma JSON type issues
+      };
       
       // Convert the complex changes object to a simpler structure
       Object.entries(changes).forEach(([key, value]) => {
@@ -208,7 +226,8 @@ export class ListingService {
         data: {
           listingId,
           userId: currentUserId,
-          changes: changesForHistory,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          changes: changesForHistory as any,
           action: 'update'
         }
       });

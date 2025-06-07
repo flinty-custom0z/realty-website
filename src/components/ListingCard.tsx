@@ -26,6 +26,10 @@ interface ListingCardProps {
   categoryName?: string;
   showCategory?: boolean;
   dealType?: 'SALE' | 'RENT';
+  category?: {
+    name: string;
+    slug: string;
+  };
 }
 
 export default function ListingCard({
@@ -36,6 +40,7 @@ export default function ListingCard({
   address,
   area,
   imagePaths,
+  category,
 }: ListingCardProps) {
   // For component styling, use the global context
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,7 +151,11 @@ export default function ListingCard({
       <div className="p-4 space-y-1">
         {/* title */}
         <h3 className="text-base font-semibold text-gray-900 leading-tight line-clamp-1">
-          {propertyType?.name ?? 'Квартира'}{area ? ` ${area} м²` : ''}
+          {category?.slug === 'new-construction' 
+            ? 'Новостройка' 
+            : category?.slug === 'international'
+              ? 'Недвижимость за рубежом'
+              : propertyType?.name ?? 'Квартира'}{area ? ` ${area} м²` : ''}
         </h3>
         {/* address */}
         <p className="text-xs text-gray-500 line-clamp-1">
