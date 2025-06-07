@@ -55,6 +55,9 @@ export default async function ListingDetailPage({
         propertyType: {
           select: { name: true }
         },
+        city: {
+          select: { name: true }
+        }
       },
     });
     
