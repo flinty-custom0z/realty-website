@@ -38,6 +38,7 @@ interface ListingFormData {
   price: string;
   dealType: 'SALE' | 'RENT';
   status: string;
+  cityId: string;
 }
 
 interface Category {
@@ -140,10 +141,8 @@ export default function EditListingPage() {
     dealType: 'SALE',
     status: 'active',
     userId: '',
+    cityId: '',
   });
-  
-  // Add state for coordinates
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   
   // Add new state for image preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -151,6 +150,13 @@ export default function EditListingPage() {
   
   // Ref for clearing file input
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Add city-related state
+  const [cities, setCities] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [showNewCityInput, setShowNewCityInput] = useState(false);
+  const [newCity, setNewCity] = useState('');
+  const [isCreatingCity, setIsCreatingCity] = useState(false);
+  const [cityError, setCityError] = useState('');
   
   // Fetch users (realtors) and listing data
   useEffect(() => {
@@ -204,6 +210,7 @@ export default function EditListingPage() {
           dealType: listingData.dealType || 'SALE',
           status: listingData.status,
           userId: listingData.user?.id || (usersData[0]?.id ?? ''),
+          cityId: listingData.cityId || '',
         });
         
         // Set featured image
@@ -252,6 +259,12 @@ export default function EditListingPage() {
         }
         const districtsData = await districtsRes.json();
         setDistricts(districtsData);
+        
+        // Fetch cities
+        const citiesRes = await fetch('/api/cities');
+        if (!citiesRes.ok) throw new Error('Failed to fetch cities');
+        const citiesData = await citiesRes.json();
+        setCities(citiesData);
       } catch (error) {
         logger.error('Error fetching data:', { error });
         setError('Failed to load listing data');
@@ -605,6 +618,29 @@ export default function EditListingPage() {
     setPreviewModalOpen(false);
   };
   
+  const handleCreateCity = async () => {
+    if (!newCity.trim()) return;
+    setIsCreatingCity(true);
+    setCityError('');
+    try {
+      const res = await fetch('/api/cities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCity.trim() })
+      });
+      if (!res.ok) throw new Error('Ошибка при создании города');
+      const city = await res.json();
+      setCities(prev => [...prev, city]);
+      setFormData(prev => ({ ...prev, cityId: city.id }));
+      setShowNewCityInput(false);
+      setNewCity('');
+    } catch {
+      setCityError('Ошибка при создании города');
+    } finally {
+      setIsCreatingCity(false);
+    }
+  };
+  
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -774,6 +810,40 @@ export default function EditListingPage() {
             </div>
             
             <div>
+              <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-1">
+                Город *
+              </label>
+              <div className="flex gap-2 items-center">
+                <select
+                  id="cityId"
+                  name="cityId"
+                  value={formData.cityId}
+                  onChange={e => setFormData(prev => ({ ...prev, cityId: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Выберите город</option>
+                  {cities.map(city => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowNewCityInput(v => !v)} className="text-blue-600 underline text-xs">{showNewCityInput ? 'Отмена' : 'Добавить город'}</button>
+              </div>
+              {showNewCityInput && (
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newCity}
+                    onChange={e => setNewCity(e.target.value)}
+                    className="p-2 border rounded w-full"
+                    placeholder="Введите новый город"
+                  />
+                  <button type="button" onClick={handleCreateCity} disabled={isCreatingCity} className="bg-blue-600 text-white px-3 py-1 rounded">{isCreatingCity ? 'Добавление...' : 'Добавить'}</button>
+                </div>
+              )}
+              {cityError && <div className="text-red-500 text-xs mt-1">{cityError}</div>}
+            </div>
+            
+            <div>
               <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
                 Район
               </label>
@@ -847,10 +917,7 @@ export default function EditListingPage() {
                     ...formData,
                     address: data.address,
                     fullAddress: data.fullAddress,
-                    latitude: data.coordinates?.lat || null,
-                    longitude: data.coordinates?.lng || null
                   });
-                  setCoordinates(data.coordinates || null);
                 }}
                 placeholder="Начните вводить адрес..."
                 className="w-full"

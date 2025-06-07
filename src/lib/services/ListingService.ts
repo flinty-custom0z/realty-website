@@ -604,6 +604,7 @@ export class ListingService {
         include: {
           category: true,
           propertyType: true,
+          city: true,
           images: {
             where: { isFeatured: true },
             take: 1,

@@ -46,6 +46,13 @@ model District {
   listings Listing[]
 }
 
+model City {
+  id    String   @id @default(cuid())
+  name  String
+  slug  String   @unique
+  listings Listing[]
+}
+
 model Listing {
   id                String           @id @default(cuid())
   title             String
@@ -78,12 +85,14 @@ model Listing {
   windowsView       WindowsView?
   districtId        String?
   typeId            String?
+  cityId            String?
   comments          Comment[]
   images            Image[]
   category          Category         @relation(fields: [categoryId], references: [id])
   districtRef       District?        @relation(fields: [districtId], references: [id])
   propertyType      PropertyType?    @relation(fields: [typeId], references: [id])
   user              User             @relation(fields: [userId], references: [id])
+  city              City?            @relation(fields: [cityId], references: [id])
   history           ListingHistory[]
 }
 

@@ -34,6 +34,9 @@ interface Listing {
   address: string;
   dealType: string;
   houseArea?: number;
+  city?: {
+    name: string;
+  };
 }
 
 interface PaginationData {
@@ -209,6 +212,7 @@ export default function AdminListingsPage() {
             dateAdded={listing.dateAdded}
             images={listing.images}
             houseArea={listing.houseArea}
+            city={listing.city}
             onDelete={handleDeleteListing}
           />
         ))}
@@ -233,6 +237,7 @@ export default function AdminListingsPage() {
               <th>Категория</th>
               <th>Код</th>
               <th>Район</th>
+              <th>Город</th>
               <th>Адрес</th>
               <th 
                 className="text-right cursor-pointer hover:bg-gray-50"
@@ -259,7 +264,7 @@ export default function AdminListingsPage() {
                     {listing.images && listing.images[0] ? (
                       <ClientImage
                         src={listing.images[0].path}
-                        alt={listing.propertyType.name}
+                        alt={listing.propertyType?.name || 'Объект недвижимости'}
                         fill
                         sizes="48px"
                         className="object-cover"
@@ -278,21 +283,18 @@ export default function AdminListingsPage() {
                     className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
                     target="_blank"
                   >
-                    <TruncatedCell text={listing.propertyType.name} maxWidth={220} />
+                    <TruncatedCell text={listing.propertyType?.name || 'Объект недвижимости'} maxWidth={220} />
                   </Link>
                 </td>
-                <td className="truncate whitespace-nowrap" data-label="Категория">{listing.category.name}</td>
+                <td className="truncate whitespace-nowrap" data-label="Категория">{listing.category?.name || 'Не указана'}</td>
                 <td className="truncate whitespace-nowrap" data-label="Код">{listing.listingCode}</td>
                 <td className="truncate whitespace-nowrap" data-label="Район">{listing.district}</td>
+                <td className="truncate whitespace-nowrap" data-label="Город">{listing.city?.name || 'Не указан'}</td>
                 <td className="truncate whitespace-nowrap" data-label="Адрес">
                   <TruncatedCell text={listing.address} maxWidth={180} />
                 </td>
                 <td className="text-right font-medium whitespace-nowrap" data-label="Цена">{formatPrice(listing.price)}</td>
-                <td className="whitespace-nowrap" data-label="Тип">
-                  <span className={`px-2 py-1 rounded-full text-xs ${listing.dealType === 'SALE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                    {listing.dealType === 'SALE' ? 'Продажа' : 'Аренда'}
-                  </span>
-                </td>
+                <td className="whitespace-nowrap" data-label="Тип">{listing.propertyType?.name || 'Не указан'}</td>
                 <td className="status-cell whitespace-nowrap" data-label="Статус">
                   <StatusBadge status={listing.status} />
                 </td>

@@ -32,6 +32,7 @@ export const listingSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
   status: z.enum(["active", "sold", "pending", "inactive"]).default("active"),
   dealType: z.enum(["SALE", "RENT"]).default("SALE"),
+  cityId: z.string().optional().nullable(),
 }).refine(async (data) => {
   // Check if the category exists
   const category = await prisma.category.findUnique({
@@ -95,7 +96,7 @@ export async function parseListingFormData(formData: FormData): Promise<ListingD
   // Text fields
   const textFields = [
     'typeId', 'publicDescription', 'adminComment', 'categoryId', 
-    'districtId', 'address', 'condition', 'userId', 'status', 'fullAddress'
+    'districtId', 'address', 'condition', 'userId', 'status', 'fullAddress', 'cityId'
   ];
   
   textFields.forEach(field => {

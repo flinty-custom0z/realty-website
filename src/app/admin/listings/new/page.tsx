@@ -7,11 +7,6 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createLogger } from '@/lib/logging';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { 
-  User,
-  Category,
-  PropertyType as PropertyTypeModel 
-} from '@prisma/client';
 
 interface FormData {
   publicDescription: string;
@@ -37,6 +32,7 @@ interface FormData {
   dealType: 'SALE' | 'RENT';
   status: string;
   userId: string;
+  cityId: string;
 }
 
 // Create a logger instance
@@ -68,6 +64,7 @@ export default function NewListingPage() {
     dealType: 'SALE',
     status: 'active',
     userId: '',
+    cityId: '',
   });
 
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
@@ -89,6 +86,11 @@ export default function NewListingPage() {
   const [resetKey, setResetKey] = useState(0);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [fullAddress, setFullAddress] = useState('');
+  const [cities, setCities] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [showNewCityInput, setShowNewCityInput] = useState(false);
+  const [newCity, setNewCity] = useState('');
+  const [isCreatingCity, setIsCreatingCity] = useState(false);
+  const [cityError, setCityError] = useState('');
 
   // Fetch categories, districts, and users when the component mounts
   useEffect(() => {
@@ -130,6 +132,12 @@ export default function NewListingPage() {
         if (usersData.length > 0) {
           setFormData(prev => ({ ...prev, userId: usersData[0].id }));
         }
+        
+        // Fetch cities
+        const citiesRes = await fetch('/api/cities');
+        if (!citiesRes.ok) throw new Error('Failed to fetch cities');
+        const citiesData = await citiesRes.json();
+        setCities(citiesData);
       } catch (error) {
         logger.error('Error fetching form data:', { error });
         setError('Ошибка при загрузке данных: ' + (error instanceof Error ? error.message : String(error)));
@@ -302,6 +310,29 @@ export default function NewListingPage() {
     setShowNewDistrictInput(false);
     setNewDistrict('');
     setDistrictError('');
+  };
+
+  const handleCreateCity = async () => {
+    if (!newCity.trim()) return;
+    setIsCreatingCity(true);
+    setCityError('');
+    try {
+      const res = await fetch('/api/cities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCity.trim() })
+      });
+      if (!res.ok) throw new Error('Ошибка при создании города');
+      const city = await res.json();
+      setCities(prev => [...prev, city]);
+      setFormData(prev => ({ ...prev, cityId: city.id }));
+      setShowNewCityInput(false);
+      setNewCity('');
+    } catch {
+      setCityError('Ошибка при создании города');
+    } finally {
+      setIsCreatingCity(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -808,6 +839,40 @@ export default function NewListingPage() {
                 <span className="checkbox-icon"></span>
                 <span className="text-sm text-gray-700">Без долей</span>
               </label>
+            </div>
+            
+            <div>
+              <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-1">
+                Город *
+              </label>
+              <div className="flex gap-2 items-center">
+                <select
+                  id="cityId"
+                  name="cityId"
+                  value={formData.cityId}
+                  onChange={e => setFormData(prev => ({ ...prev, cityId: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Выберите город</option>
+                  {cities.map(city => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowNewCityInput(v => !v)} className="text-blue-600 underline text-xs">{showNewCityInput ? 'Отмена' : 'Добавить город'}</button>
+              </div>
+              {showNewCityInput && (
+                <div className="flex gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newCity}
+                    onChange={e => setNewCity(e.target.value)}
+                    className="p-2 border rounded w-full"
+                    placeholder="Введите новый город"
+                  />
+                  <button type="button" onClick={handleCreateCity} disabled={isCreatingCity} className="bg-blue-600 text-white px-3 py-1 rounded">{isCreatingCity ? 'Добавление...' : 'Добавить'}</button>
+                </div>
+              )}
+              {cityError && <div className="text-red-500 text-xs mt-1">{cityError}</div>}
             </div>
             
             {/* Realtor selection removed as it's no longer needed */}

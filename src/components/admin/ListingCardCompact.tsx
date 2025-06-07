@@ -11,15 +11,15 @@ import { formatDate, formatPrice } from '@/lib/utils';
 
 interface ListingCardCompactProps {
   id: string;
-  propertyType: {
+  propertyType?: {
     name: string;
-  };
+  } | null;
   price: number;
   listingCode: string;
   status: string;
-  category: {
+  category?: {
     name: string;
-  };
+  } | null;
   district: string | { id: string; name: string; slug: string };
   address: string;
   dealType: string;
@@ -28,6 +28,9 @@ interface ListingCardCompactProps {
     path: string;
   }[];
   houseArea?: number;
+  city?: {
+    name: string;
+  } | null;
   onDelete: (id: string) => void;
 }
 
@@ -44,6 +47,7 @@ export default function ListingCardCompact({
   dateAdded,
   images,
   houseArea,
+  city,
   onDelete,
 }: ListingCardCompactProps) {
   const [expanded, setExpanded] = useState(false);
@@ -66,7 +70,7 @@ export default function ListingCardCompact({
           {images && images[0] ? (
             <ClientImage
               src={images[0].path}
-              alt={propertyType.name}
+              alt={propertyType?.name || 'Объект недвижимости'}
               fill
               sizes="70px"
               className="object-cover"
@@ -89,13 +93,14 @@ export default function ListingCardCompact({
                   className="hover:deal-accent-text transition-colors duration-200 cursor-pointer"
                   target="_blank"
                 >
-                  <TruncatedCell text={`${propertyType.name}${houseArea ? ` ${houseArea} м²` : ''}`} maxWidth={280} />
+                  <TruncatedCell text={`${propertyType?.name || 'Объект недвижимости'}${houseArea ? ` ${houseArea} м²` : ''}`} maxWidth={280} />
                 </Link>
               </h3>
               
               <div className="mt-1 flex items-center flex-wrap gap-x-4 gap-y-1 text-sm">
                 <div className="font-medium">{formatPrice(price)}</div>
                 <div className="text-gray-600">{districtName}</div>
+                {city && <div className="text-gray-600">{city.name}</div>}
                 <span className="text-gray-500 text-xs">Код: {listingCode}</span>
               </div>
             </div>
@@ -120,7 +125,7 @@ export default function ListingCardCompact({
         <div className="px-4 pb-4 pt-1 border-t border-gray-100 bg-gray-50">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
-              <span className="text-gray-500">Категория:</span> <span className="text-gray-700">{category.name}</span>
+              <span className="text-gray-500">Категория:</span> <span className="text-gray-700">{category?.name || 'Не указана'}</span>
             </div>
             <div>
               <span className="text-gray-500">Адрес:</span> <span className="text-gray-700">{address}</span>
