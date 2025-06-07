@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Menu, X, Phone } from 'lucide-react';
 import { useDealType } from '@/contexts/DealTypeContext';
-import DealTypeToggle from '@/components/DealTypeToggle';
 import Logo from '@/components/Logo';
-import { useAuth } from '@/hooks/useAuth';
 import { formatPhoneNumber } from '@/lib/utils';
 
 export default function ResponsiveNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname() || '';
-  const { dealType, setDealType } = useDealType();
-  const { isAuthenticated, isLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { dealType } = useDealType();
   
   // Close menu when route changes
   useEffect(() => {
@@ -36,16 +34,14 @@ export default function ResponsiveNav() {
     };
   }, [isMenuOpen]);
   
-  // Function to create category URL with current deal type
-  const getCategoryUrl = (categorySlug: string) => {
-    return dealType === 'rent' 
-      ? `/listing-category/${categorySlug}?deal=rent` 
-      : `/listing-category/${categorySlug}`;
+  // Function to get URL for deal type listings
+  const getDealTypeUrl = (type: 'sale' | 'rent') => {
+    return type === 'rent' ? '/?deal=rent' : '/';
   };
   
-  // For rent, only show apartments and commercial
-  const shouldShowForRent = (categorySlug: string) => {
-    return dealType !== 'rent' || ['apartments', 'commercial'].includes(categorySlug);
+  // Helper to check if current deal type is active
+  const isActiveDealType = (type: 'sale' | 'rent') => {
+    return dealType === type;
   };
   
   return (
@@ -58,65 +54,34 @@ export default function ResponsiveNav() {
             <Logo />
           </div>
           
-          {/* Center section: Deal toggle and navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {/* Deal type toggle */}
-            <DealTypeToggle 
-              current={dealType} 
-              variant="nav" 
-              onChange={setDealType}
-            />
-            
+          {/* Center section: Navigation Links */}
+          <div className="hidden md:flex items-center space-x-8">            
             {/* Navigation Links */}
             <nav className="flex items-center space-x-6">
               <Link 
                 href="/"
                 className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                  pathname === '/' ? 'text-gray-900' : ''
+                  pathname === '/' && !searchParams?.get('deal') ? 'text-gray-900' : ''
                 }`}
               >
                 Главная
               </Link>
-              {shouldShowForRent('apartments') && (
-                <Link 
-                  href={getCategoryUrl('apartments')}
-                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                    pathname === '/listing-category/apartments' ? 'text-gray-900' : ''
-                  }`}
-                >
-                  Квартиры
-                </Link>
-              )}
-              {shouldShowForRent('houses') && (
-                <Link 
-                  href={getCategoryUrl('houses')}
-                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                    pathname === '/listing-category/houses' ? 'text-gray-900' : ''
-                  }`}
-                >
-                  Дома
-                </Link>
-              )}
-              {shouldShowForRent('land') && (
-                <Link 
-                  href={getCategoryUrl('land')}
-                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                    pathname === '/listing-category/land' ? 'text-gray-900' : ''
-                  }`}
-                >
-                  Земельные участки
-                </Link>
-              )}
-              {shouldShowForRent('commercial') && (
-                <Link 
-                  href={getCategoryUrl('commercial')}
-                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                    pathname === '/listing-category/commercial' ? 'text-gray-900' : ''
-                  }`}
-                >
-                  Коммерция
-                </Link>
-              )}
+              <Link 
+                href={getDealTypeUrl('sale')}
+                className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
+                  pathname === '/' && isActiveDealType('sale') ? 'deal-accent-text' : ''
+                }`}
+              >
+                Продажа
+              </Link>
+              <Link 
+                href={getDealTypeUrl('rent')}
+                className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
+                  pathname === '/' && isActiveDealType('rent') ? 'deal-accent-text' : ''
+                }`}
+              >
+                Аренда
+              </Link>
               <Link 
                 href="/map"
                 className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
@@ -125,16 +90,6 @@ export default function ResponsiveNav() {
               >
                 Карта
               </Link>
-              {isAuthenticated && !isLoading && (
-                <Link 
-                  href="/admin"
-                  className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
-                    pathname.startsWith('/admin') ? 'text-gray-900' : ''
-                  }`}
-                >
-                  Админ панель
-                </Link>
-              )}
             </nav>
           </div>
           
@@ -178,15 +133,6 @@ export default function ResponsiveNav() {
         <div className="relative h-[calc(100%-80px)] overflow-hidden">
           {/* Main Mobile Menu */}
           <nav className="mobile-menu-nav flex flex-col py-4 px-6 space-y-4 absolute inset-0">
-            {/* Mobile deal type toggle */}
-            <div className="py-2">
-              <DealTypeToggle 
-                current={dealType} 
-                variant="default" 
-                onChange={setDealType}
-              />
-            </div>
-            
             {/* Phone numbers - mobile */}
             <div className="bg-blue-50 rounded-lg p-4 mb-2">
               <a href="tel:+79624441579" className="flex items-center justify-center py-2 text-[15px] font-semibold deal-accent-text hover:opacity-80 transition-colors">
@@ -209,46 +155,22 @@ export default function ResponsiveNav() {
             >
               Главная
             </Link>
-            {shouldShowForRent('apartments') && (
-              <Link 
-                href={getCategoryUrl('apartments')}
-                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                  pathname === '/listing-category/apartments' ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                Квартиры
-              </Link>
-            )}
-            {shouldShowForRent('houses') && (
-              <Link 
-                href={getCategoryUrl('houses')}
-                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                  pathname === '/listing-category/houses' ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                Дома
-              </Link>
-            )}
-            {shouldShowForRent('land') && (
-              <Link 
-                href={getCategoryUrl('land')}
-                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                  pathname === '/listing-category/land' ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                Земельные участки
-              </Link>
-            )}
-            {shouldShowForRent('commercial') && (
-              <Link 
-                href={getCategoryUrl('commercial')}
-                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                  pathname === '/listing-category/commercial' ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                Коммерция
-              </Link>
-            )}
+            <Link 
+              href={getDealTypeUrl('sale')}
+              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                pathname === '/' && isActiveDealType('sale') ? 'text-gray-900 font-medium' : ''
+              }`}
+            >
+              Продажа
+            </Link>
+            <Link 
+              href={getDealTypeUrl('rent')}
+              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                pathname === '/' && isActiveDealType('rent') ? 'text-gray-900 font-medium' : ''
+              }`}
+            >
+              Аренда
+            </Link>
             
             <Link 
               href="/map"
@@ -258,18 +180,6 @@ export default function ResponsiveNav() {
             >
               Карта
             </Link>
-            
-            {/* Admin panel link - only visible when authenticated */}
-            {isAuthenticated && !isLoading && (
-              <Link
-                href="/admin"
-                className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-                  pathname.startsWith('/admin') ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                Админ панель
-              </Link>
-            )}
           </nav>
         </div>
       </div>

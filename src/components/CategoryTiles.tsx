@@ -12,6 +12,8 @@ const categoryImages = {
   'houses': '/images/houses_placeholder.png',
   'land': '/images/land_placeholder.png',
   'commercial': '/images/commercial_placeholder.png',
+  'international': '/images/international_placeholder.png',
+  'new-construction': '/images/new_construction_placeholder.png',
   // Singular backups
   'apartment': '/images/apartment_placeholder.png',
   'house': '/images/house_placeholder.png',

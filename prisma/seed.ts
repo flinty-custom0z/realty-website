@@ -10,6 +10,8 @@ async function main() {
     { name: 'Дома', slug: 'houses' },
     { name: 'Земельные участки', slug: 'land' },
     { name: 'Коммерция', slug: 'commercial' },
+    { name: 'Недвижимость за рубежом', slug: 'international' },
+    { name: 'Новостройки', slug: 'new-construction' },
   ];
 
   console.log('Seeding categories...');

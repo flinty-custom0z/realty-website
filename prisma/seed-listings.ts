@@ -7,7 +7,9 @@ const categoryImages = {
   'apartments': '/images/apartments_placeholder.png',
   'houses': '/images/houses_placeholder.png',
   'land': '/images/land_placeholder.png',
-  'commercial': '/images/commercial_placeholder.png'
+  'commercial': '/images/commercial_placeholder.png',
+  'international': '/images/international_placeholder.png',
+  'new-construction': '/images/new_construction_placeholder.png'
 };
 
 interface SampleListing {
