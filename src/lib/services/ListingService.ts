@@ -684,6 +684,7 @@ export class ListingService {
     conditions?: string[];
     dealType?: string | null;
     propertyTypes?: string[];
+    cityIds?: string[];
     page?: number;
     limit?: number;
     sort?: string;
@@ -698,6 +699,7 @@ export class ListingService {
       conditions = [], 
       dealType = null,
       propertyTypes = [],
+      cityIds = [],
       page = 1,
       limit = 12,
       sort = 'dateAdded',
@@ -754,6 +756,11 @@ export class ListingService {
       filter.dealType = 'RENT';
     } else if (dealType === 'sale') {
       filter.dealType = 'SALE';
+    }
+    
+    // Add city filter if provided
+    if (cityIds.length > 0) {
+      filter.cityId = { in: cityIds };
     }
     
     // Count total listings with filter

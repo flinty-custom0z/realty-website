@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     const filterParams = FilterService.parseParams(req);
     
     // Get filtered listings with pagination
-    const result = await ListingService.getFilteredListings(filterParams);
+    const result = await ListingService.getFilteredListings({
+      ...filterParams,
+      cityIds: filterParams.cityIds // Ensure cityIds are passed correctly
+    });
     
     return NextResponse.json(result);
   } catch (error) {
