@@ -7,6 +7,7 @@ import {
   ApplyFiltersButton,
   CategoryFilter,
   CategorySearch,
+  CityFilter,
   DealTypeFilter,
   FilterHeader,
   MultiSelectFilter,
@@ -178,6 +179,15 @@ export default function FilterSidebar({
             }}
             onInputChange={handlePriceChange}
             isLoading={state.isLoading}
+          />
+        </div>
+        
+        {/* Cities */}
+        <div className={`transition-opacity duration-300 ${state.isLoading ? 'opacity-50' : 'opacity-100'}`}>
+          <CityFilter
+            cities={state.visibleFilterOptions.cities}
+            selected={state.selectedCities}
+            onChange={(city: string) => dispatch({ type: 'TOGGLE_CITY', payload: city })}
           />
         </div>
         

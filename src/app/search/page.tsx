@@ -85,6 +85,11 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
     const conds = Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition];
     filter.condition = { in: conds };
   }
+  
+  if (searchParams.city) {
+    const cities = Array.isArray(searchParams.city) ? searchParams.city : [searchParams.city];
+    filter.cityId = { in: cities };
+  }
 
   return filter;
 }
@@ -110,6 +115,8 @@ async function getListings(searchParams: Record<string, string | string[] | unde
         category: true,
         images: true,
         districtRef: true,
+        propertyType: true,
+        city: true,
       },
       orderBy: { [sortField]: sortOrder },
       skip: (page - 1) * limit,

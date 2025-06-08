@@ -4,7 +4,12 @@ import { FilterOption } from '@/types/filters';
 
 export interface MultiSelectFilterProps {
   title: string;
-  options: FilterOption[];
+  options: (FilterOption | {
+    value: string;
+    label?: string;
+    count: number;
+    available: boolean;
+  })[];
   selected: string[];
   onChange: (value: string) => void;
   maxHeight?: string;
@@ -42,7 +47,7 @@ export function MultiSelectFilter({
             }`}
             disabled={!option.available && !selected.includes(option.value)}
           >
-            <span>{option.value}</span>
+            <span>{option.label || option.value}</span>
             <span className="ml-1 text-xs opacity-80">({option.count})</span>
           </button>
         )) : (

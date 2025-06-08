@@ -2,6 +2,7 @@
 import { ApplyFiltersButton } from './ApplyFiltersButton';
 import { CategoryFilter } from './CategoryFilter';
 import { CategorySearch } from './CategorySearch';
+import { CityFilter } from './CityFilter';
 import { DealTypeFilter } from './DealTypeFilter';
 import { FilterHeader } from './FilterHeader';
 import { MultiSelectFilter } from './MultiSelectFilter';
@@ -13,6 +14,7 @@ export {
   ApplyFiltersButton,
   CategoryFilter,
   CategorySearch,
+  CityFilter,
   DealTypeFilter,
   FilterHeader,
   MultiSelectFilter,

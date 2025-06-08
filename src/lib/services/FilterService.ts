@@ -15,6 +15,7 @@ export interface FilterParams {
   conditions?: string[];
   dealType?: string | null;
   applyPriceFilter?: boolean;
+  cityIds?: string[];
 }
 
 export interface FilterOptions {
@@ -34,6 +35,13 @@ export interface FilterOptions {
   dealTypes: Array<{
     value: string;
     label: string;
+    count: number;
+    available: boolean;
+  }>;
+  cities: Array<{
+    id: string;
+    name: string;
+    slug: string;
     count: number;
     available: boolean;
   }>;
@@ -75,6 +83,7 @@ export class FilterService {
       conditions: searchParams.getAll('condition'),
       dealType: searchParams.get('deal'),
       applyPriceFilter: searchParams.get('applyPriceFilter') === 'true',
+      cityIds: searchParams.getAll('city'),
     };
   }
 
@@ -91,7 +100,8 @@ export class FilterService {
       districtIds = [],
       conditions = [],
       dealType = null,
-      applyPriceFilter = false
+      applyPriceFilter = false,
+      cityIds = []
     } = params;
 
     // Use categoryQuery if available (for category pages search), otherwise use q (for global search)
@@ -149,10 +159,11 @@ export class FilterService {
       ...(applyPriceFilter ? priceFilter : {}),
       ...(districtIds.length > 0 ? { districtId: { in: districtIds } } : {}),
       ...(conditions.length > 0 ? { condition: { in: conditions } } : {}),
+      ...(cityIds.length > 0 ? { cityId: { in: cityIds } } : {}),
     };
     
     // Check if any filters are applied
-    const hasFiltersApplied = districtIds.length > 0 || conditions.length > 0 ||
+    const hasFiltersApplied = districtIds.length > 0 || conditions.length > 0 || cityIds.length > 0 ||
       (applyPriceFilter && (minPrice !== null || maxPrice !== null));
 
     // For available options, we want to show what's available with the currently selected filters
@@ -176,6 +187,10 @@ export class FilterService {
         filter.condition = { in: conditions };
       }
       
+      if (excludeFilter !== 'city' && cityIds.length > 0) {
+        filter.cityId = { in: cityIds };
+      }
+      
       return filter;
     };
     
@@ -190,6 +205,7 @@ export class FilterService {
       // Get all available options for each filter type (excluding its own filter)
       districtOptions,
       conditionOptions,
+      cityOptions,
       
       // Get categories that match current deal type and other filters
       categoryOptions,
@@ -238,6 +254,25 @@ export class FilterService {
         orderBy: { condition: 'asc' },
       }),
       
+      // City options - exclude city filter
+      prisma.city.findMany({
+        where: {
+          listings: {
+            some: createFilterExcluding('city')
+          }
+        },
+        include: {
+          _count: {
+            select: {
+              listings: {
+                where: createFilterExcluding('city')
+              }
+            }
+          }
+        },
+        orderBy: { name: 'asc' },
+      }),
+      
       // Category options - exclude category filter
       prisma.category.findMany({
         where: {
@@ -282,6 +317,7 @@ export class FilterService {
     const [
       districtsWithFullFilter,
       conditionsWithFullFilter,
+      citiesWithFullFilter,
       categoriesWithFullFilter,
     ] = await Promise.all([
       // Get districts with full filter
@@ -304,6 +340,16 @@ export class FilterService {
         _count: { condition: true },
       }),
 
+      // Get cities with full filter
+      prisma.city.findMany({
+        where: {
+          listings: {
+            some: fullFilter
+          }
+        },
+        select: { id: true }
+      }),
+
       // Get categories with full filter
       prisma.category.findMany({
         where: {
@@ -318,6 +364,7 @@ export class FilterService {
     // Create sets for quick lookup
     const districtWithFullFilterSet = new Set(districtsWithFullFilter.map(d => d.id));
     const conditionWithFullFilterSet = new Set(conditionsWithFullFilter.map(c => c.condition));
+    const cityWithFullFilterSet = new Set(citiesWithFullFilter.map(c => c.id));
     const categoryWithFullFilterSet = new Set(categoriesWithFullFilter.map(c => c.slug));
     
     // Determine which deal types to show based on current selection
@@ -369,13 +416,22 @@ export class FilterService {
       available: !hasFiltersApplied || conditionWithFullFilterSet.has(condition.condition)
     }));
     
-    
+    // Process city options
+    const processedCities = cityOptions.map(city => ({
+      id: city.id,
+      name: city.name,
+      slug: city.slug,
+      value: city.id,
+      count: city._count.listings,
+      available: !hasFiltersApplied || cityWithFullFilterSet.has(city.id)
+    }));
     
     // Return compiled filter options
     return {
       districts: processedDistricts,
       conditions: processedConditions,
       dealTypes,
+      cities: processedCities,
       priceRange: {
         min: priceStats._min.price || 0,
         max: priceStats._max.price || 10000000,

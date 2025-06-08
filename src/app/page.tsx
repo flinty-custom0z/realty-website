@@ -164,6 +164,10 @@ async function getListings(searchParams: Record<string, string | string[] | unde
     const conds = Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition];
     filter.condition = { in: conds };
   }
+  if (searchParams.city) {
+    const cities = Array.isArray(searchParams.city) ? searchParams.city : [searchParams.city];
+    filter.cityId = { in: cities };
+  }
 
   // Pagination
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
@@ -180,6 +184,8 @@ async function getListings(searchParams: Record<string, string | string[] | unde
       include: {
         category: true,
         images: { where: { isFeatured: true }, take: 1 },
+        city: true,
+        propertyType: true,
       },
       orderBy: { [sortField]: sortOrder },
       skip: (page - 1) * limit,

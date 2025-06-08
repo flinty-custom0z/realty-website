@@ -18,6 +18,7 @@ export interface PropertyType {
 
 export interface FilterOption {
   value: string;
+  label?: string;
   count: number;
   available: boolean;
 }
@@ -37,12 +38,43 @@ export interface PriceRange {
 }
 
 export interface FilterOptions {
-  districts: FilterOption[];
-  conditions: FilterOption[];
-  dealTypes: DealTypeOption[];
+  districts: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    value: string;
+    count: number;
+    available: boolean;
+  }>;
+  conditions: Array<{
+    value: string;
+    count: number;
+    available: boolean;
+  }>;
+  dealTypes: Array<{
+    value: string;
+    label: string;
+    count: number;
+    available: boolean;
+  }>;
   propertyTypes: PropertyType[];
+  cities: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    value: string;
+    count: number;
+    available: boolean;
+  }>;
   priceRange: PriceRange;
-  categories: Category[];
+  categories: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    count: number;
+    available: boolean;
+  }>;
   totalCount: number;
   hasFiltersApplied: boolean;
 }
@@ -55,6 +87,7 @@ export interface FilterState {
   selectedDistricts: string[];
   selectedConditions: string[];
   selectedPropertyTypes: string[];
+  selectedCities: string[];
   selectedDealType: string;
   searchInputValue: string;
   
@@ -75,6 +108,7 @@ export type FilterAction =
   | { type: 'TOGGLE_DISTRICT'; payload: string }
   | { type: 'TOGGLE_CONDITION'; payload: string }
   | { type: 'TOGGLE_PROPERTY_TYPE'; payload: string }
+  | { type: 'TOGGLE_CITY'; payload: string }
   | { type: 'SET_PRICE'; payload: { type: 'min' | 'max'; value: string } }
   | { type: 'SET_PRICE_RANGE'; payload: { min: string; max: string } }
   | { type: 'SET_DEAL_TYPE'; payload: string }
@@ -88,6 +122,7 @@ export interface FilterParams {
   selectedDistricts: string[];
   selectedConditions: string[];
   selectedPropertyTypes: string[];
+  selectedCities: string[];
   selectedDealType: string;
   minPrice: string;
   maxPrice: string;
