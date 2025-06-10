@@ -98,7 +98,6 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 {districtName && <p className="mb-2"><span className="text-gray-600">Район:</span> {districtName}</p>}
-                {listing.city?.name && <p className="mb-2"><span className="text-gray-600">Город:</span> {listing.city.name}</p>}
                 {listing.address && <p className="mb-2"><span className="text-gray-600">Адрес:</span> {listing.address}</p>}
                 {listing.floor && listing.totalFloors && 
                   <p className="mb-2"><span className="text-gray-600">Этаж:</span> {listing.floor}/{listing.totalFloors}</p>
