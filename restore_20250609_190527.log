@@ -1,0 +1,102 @@
+Starting restoration from: /Users/qraymo/realty-backups/20250609_183116
+Restoring database from: /Users/qraymo/realty-backups/20250609_183116/realty_db_20250609_183116.sql
+Creating backup of current database before restoration...
+Dropping and recreating database...
+psql: error: invalid sslmode value: "requirepostgres"
+psql: error: invalid sslmode value: "requirepostgres"
+Restoring database content...
+ERROR:  type "BalconyType" already exists
+ERROR:  type "BathroomType" already exists
+ERROR:  type "BuildingType" already exists
+ERROR:  type "DealType" already exists
+ERROR:  type "WindowsView" already exists
+ERROR:  relation "Category" already exists
+ERROR:  relation "City" already exists
+ERROR:  relation "Comment" already exists
+ERROR:  relation "District" already exists
+ERROR:  relation "Image" already exists
+ERROR:  relation "Listing" already exists
+ERROR:  relation "ListingHistory" already exists
+ERROR:  relation "PropertyType" already exists
+ERROR:  relation "User" already exists
+ERROR:  relation "_prisma_migrations" already exists
+ERROR:  duplicate key value violates unique constraint "Category_pkey"
+DETAIL:  Key (id)=(cma17xhoj0000n97c1me6gvu7) already exists.
+CONTEXT:  COPY Category, line 1
+ERROR:  duplicate key value violates unique constraint "City_slug_key"
+DETAIL:  Key (slug)=(krasnodar) already exists.
+CONTEXT:  COPY City, line 1
+ERROR:  duplicate key value violates unique constraint "District_pkey"
+DETAIL:  Key (id)=(cmaianwry0000n9hb03zlv221) already exists.
+CONTEXT:  COPY District, line 1
+ERROR:  insert or update on table "Image" violates foreign key constraint "Image_listingId_fkey"
+DETAIL:  Key (listingId)=(cmbgnbzur0003n9svtri8yo3g) is not present in table "Listing".
+ERROR:  insert or update on table "Listing" violates foreign key constraint "Listing_cityId_fkey"
+DETAIL:  Key (cityId)=(a7e29ffb-6960-4c3c-9ed6-c0010c139850) is not present in table "City".
+ERROR:  insert or update on table "ListingHistory" violates foreign key constraint "ListingHistory_listingId_fkey"
+DETAIL:  Key (listingId)=(cma5owz1a0001jt04yad0ssg9) is not present in table "Listing".
+ERROR:  duplicate key value violates unique constraint "PropertyType_pkey"
+DETAIL:  Key (id)=(6bec98df-22c4-4d2f-9c10-fc9a3fe3fe98) already exists.
+CONTEXT:  COPY PropertyType, line 1
+ERROR:  duplicate key value violates unique constraint "User_pkey"
+DETAIL:  Key (id)=(cma2nicl30000jo04dsn1zx6i) already exists.
+CONTEXT:  COPY User, line 1
+ERROR:  duplicate key value violates unique constraint "_prisma_migrations_pkey"
+DETAIL:  Key (id)=(5b3092de-db12-4d8f-8537-6f213c70597d) already exists.
+CONTEXT:  COPY _prisma_migrations, line 1
+ERROR:  multiple primary keys for table "Category" are not allowed
+ERROR:  multiple primary keys for table "City" are not allowed
+ERROR:  multiple primary keys for table "Comment" are not allowed
+ERROR:  multiple primary keys for table "District" are not allowed
+ERROR:  multiple primary keys for table "Image" are not allowed
+ERROR:  multiple primary keys for table "ListingHistory" are not allowed
+ERROR:  multiple primary keys for table "Listing" are not allowed
+ERROR:  multiple primary keys for table "PropertyType" are not allowed
+ERROR:  multiple primary keys for table "User" are not allowed
+ERROR:  multiple primary keys for table "_prisma_migrations" are not allowed
+ERROR:  relation "Category_slug_key" already exists
+ERROR:  relation "City_slug_key" already exists
+ERROR:  relation "District_slug_key" already exists
+ERROR:  relation "Listing_listingCode_key" already exists
+ERROR:  relation "PropertyType_slug_key" already exists
+ERROR:  relation "User_username_key" already exists
+ERROR:  constraint "Comment_listingId_fkey" for relation "Comment" already exists
+ERROR:  constraint "Image_listingId_fkey" for relation "Image" already exists
+ERROR:  constraint "ListingHistory_listingId_fkey" for relation "ListingHistory" already exists
+ERROR:  constraint "ListingHistory_userId_fkey" for relation "ListingHistory" already exists
+ERROR:  constraint "Listing_categoryId_fkey" for relation "Listing" already exists
+ERROR:  constraint "Listing_cityId_fkey" for relation "Listing" already exists
+ERROR:  constraint "Listing_districtId_fkey" for relation "Listing" already exists
+ERROR:  constraint "Listing_typeId_fkey" for relation "Listing" already exists
+ERROR:  constraint "Listing_userId_fkey" for relation "Listing" already exists
+ERROR:  constraint "PropertyType_categoryId_fkey" for relation "PropertyType" already exists
+ERROR:  permission denied to change default privileges
+ERROR:  permission denied to change default privileges
+Restoring images using manifest: /Users/qraymo/realty-backups/20250609_183116/manifest.json
+Executing image restoration script...
+Failed to restore 6747ef0f-aef3-4970-b36e-b33a5b5c294d.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 1acf8971-d55d-4dc2-b555-d211a5e3dd01.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 843ec1a4-8b8a-4156-870d-cf4e99861d81.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore a7785b1d-13d6-43e2-a882-2a3273c02984.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 749c7aa6-1f51-44ab-8d2b-b6c7e5eacf9e.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 21c5e28c-2ae1-49a0-8385-58609e4ea9a2.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 11cf558d-64ad-41c2-86e9-912b1b677794.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 1ffadbc3-3430-4afe-8cfa-a347bbcd9241.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore dadf48b7-915f-4516-904a-82b220421405.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore a0701dd7-9e77-4c8d-b57b-09ca1e6fc2f9.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore f3984afb-a3ee-4a0a-835c-0c213ceb7938.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 54ada0e5-4f36-4b91-8161-e856ee531750.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 75486927-17a6-4984-8cd4-41b476bac9d2.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 642e151e-4474-4bf0-bd5e-38ebb732f2c2.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 2ad2c360-4cc2-4e78-9f11-c34782167b78.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 76346e64-f4c7-4c7c-b1fc-810298ded7ac.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 96dc098a-e052-4f99-af6c-b84e7e7debce.jpg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Failed to restore 34211a3d-f7cc-4d22-8dab-145e1379389b.jpeg: Vercel Blob: No token found. Either configure the `BLOB_READ_WRITE_TOKEN` environment variable, or pass a `token` option to your calls.
+Running Prisma migrations to ensure schema is up to date...
+[1m[31mError: [39m[22m[31mP3009
+
+[39m[31mmigrate found failed migrations in the target database, new migrations will not be applied. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve
+The `undo_property_types` migration started at 2025-05-16 22:22:34.277496 UTC failed
+[39m
+
+Restoration completed successfully!

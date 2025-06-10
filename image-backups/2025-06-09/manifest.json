@@ -1,0 +1,149 @@
+{
+  "backupDate": "2025-06-09T15:31:45.016Z",
+  "images": [
+    {
+      "id": "cmbhxq8f10001n9vn50xg8zrv",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/6747ef0f-aef3-4970-b36e-b33a5b5c294d.jpg",
+      "backupFilename": "6747ef0f-aef3-4970-b36e-b33a5b5c294d.jpg",
+      "isFeatured": true
+    },
+    {
+      "id": "cmbhy2zpj0007n9vnsv0va7qu",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/1acf8971-d55d-4dc2-b555-d211a5e3dd01.jpg",
+      "backupFilename": "1acf8971-d55d-4dc2-b555-d211a5e3dd01.jpg",
+      "isFeatured": true
+    },
+    {
+      "id": "cmbhy2zug0009n9vnd43j6r66",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/843ec1a4-8b8a-4156-870d-cf4e99861d81.jpg",
+      "backupFilename": "843ec1a4-8b8a-4156-870d-cf4e99861d81.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy301k000fn9vnit4zijdx",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/a7785b1d-13d6-43e2-a882-2a3273c02984.jpg",
+      "backupFilename": "a7785b1d-13d6-43e2-a882-2a3273c02984.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy304a000hn9vnr4cdpk3o",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/749c7aa6-1f51-44ab-8d2b-b6c7e5eacf9e.jpg",
+      "backupFilename": "749c7aa6-1f51-44ab-8d2b-b6c7e5eacf9e.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy306h000jn9vnv7qy1c7n",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/21c5e28c-2ae1-49a0-8385-58609e4ea9a2.jpg",
+      "backupFilename": "21c5e28c-2ae1-49a0-8385-58609e4ea9a2.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox6wf0005jt04594l520n",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/11cf558d-64ad-41c2-86e9-912b1b677794.jpg",
+      "backupFilename": "11cf558d-64ad-41c2-86e9-912b1b677794.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox71p0007jt04lxrblwmd",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/1ffadbc3-3430-4afe-8cfa-a347bbcd9241.jpg",
+      "backupFilename": "1ffadbc3-3430-4afe-8cfa-a347bbcd9241.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy308z000ln9vntxhevdgz",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/dadf48b7-915f-4516-904a-82b220421405.jpg",
+      "backupFilename": "dadf48b7-915f-4516-904a-82b220421405.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox74b0009jt04w0iwpqe8",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/a0701dd7-9e77-4c8d-b57b-09ca1e6fc2f9.jpg",
+      "backupFilename": "a0701dd7-9e77-4c8d-b57b-09ca1e6fc2f9.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox76x000bjt04mm975adw",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/f3984afb-a3ee-4a0a-835c-0c213ceb7938.jpg",
+      "backupFilename": "f3984afb-a3ee-4a0a-835c-0c213ceb7938.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox79i000djt045ewvf2rj",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/54ada0e5-4f36-4b91-8161-e856ee531750.jpg",
+      "backupFilename": "54ada0e5-4f36-4b91-8161-e856ee531750.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy30b6000nn9vne3g0mmut",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/75486927-17a6-4984-8cd4-41b476bac9d2.jpg",
+      "backupFilename": "75486927-17a6-4984-8cd4-41b476bac9d2.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox7c4000fjt04oboow8fd",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/642e151e-4474-4bf0-bd5e-38ebb732f2c2.jpg",
+      "backupFilename": "642e151e-4474-4bf0-bd5e-38ebb732f2c2.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox7eq000hjt0408ilkxus",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/2ad2c360-4cc2-4e78-9f11-c34782167b78.jpg",
+      "backupFilename": "2ad2c360-4cc2-4e78-9f11-c34782167b78.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cmbhy30dj000pn9vn5prs3zch",
+      "listingId": "cmbgnbzur0003n9svtri8yo3g",
+      "listingCode": "К-1764",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/76346e64-f4c7-4c7c-b1fc-810298ded7ac.jpg",
+      "backupFilename": "76346e64-f4c7-4c7c-b1fc-810298ded7ac.jpg",
+      "isFeatured": false
+    },
+    {
+      "id": "cma5ox7hc000jjt04njtpe0g5",
+      "listingId": "cma5owz1a0001jt04yad0ssg9",
+      "listingCode": "К-5744",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/96dc098a-e052-4f99-af6c-b84e7e7debce.jpg",
+      "backupFilename": "96dc098a-e052-4f99-af6c-b84e7e7debce.jpg",
+      "isFeatured": true
+    },
+    {
+      "id": "cmawe1z3j0001jv04rglvi1om",
+      "listingId": "cmawdytyr0001jv04sw80ogdt",
+      "listingCode": "К-5420",
+      "originalPath": "https://81ipzxotpmf8rssh.public.blob.vercel-storage.com/34211a3d-f7cc-4d22-8dab-145e1379389b.jpeg",
+      "backupFilename": "34211a3d-f7cc-4d22-8dab-145e1379389b.jpeg",
+      "isFeatured": true
+    }
+  ]
+}
