@@ -6,7 +6,13 @@ npx prisma migrate reset --force
 
 ---
 
-DATABASE_URL="postgresql://neondb_owner:npg_GqERPDthux54@ep-white-poetry-a2mjwfkd.eu-central-1.aws.neon.tech/neondb?sslmode=require" 
+DATABASE_URL="postgresql://neondb_owner:npg_GqERPDthux54@ep-white-poetry-a2mjwfkd.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+
+---
+
+psql "postgresql://neondb_owner:npg_GqERPDthux54@ep-white-poetry-a2mjwfkd.eu-central-1.aws.neon.tech/neondb?sslmode=require" < "$BACKUP_SQL"
+
+---
 
 npx prisma migrate resolve --applied 20250510134606_add_district_model
 
