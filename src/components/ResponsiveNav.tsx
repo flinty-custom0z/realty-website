@@ -103,11 +103,11 @@ export default function ResponsiveNav() {
               {formatPhoneNumber('+79624441579')}
             </a>
             <a
-              href="tel:+79097725578"
+              href="tel:+79298510395"
               className="flex items-center text-[14px] font-medium deal-accent-text hover:opacity-80 transition-colors"
             >
               <Phone className="w-5 h-5 mr-2 deal-accent-text" />
-              {formatPhoneNumber('+79097725578')}
+              {formatPhoneNumber('+79298510395')}
             </a>
           </div>
         </div>
