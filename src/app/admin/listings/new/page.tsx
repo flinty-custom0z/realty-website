@@ -7,6 +7,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createLogger } from '@/lib/logging';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import PriceInput from '@/components/ui/PriceInput';
 
 interface FormData {
   publicDescription: string;
@@ -236,6 +237,14 @@ export default function NewListingPage() {
         [name]: value
       }));
     }
+  };
+  
+  // Handle direct value changes from custom components
+  const handleValueChange = (name: string, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleImageChange = (newFiles: File[]) => {
@@ -511,20 +520,15 @@ export default function NewListingPage() {
               </div>
             )}
             
-            <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                Цена {formData.dealType === 'RENT' ? '(₽/месяц)' : '(₽)'} *
-              </label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
-                required
-              />
-            </div>
+            <PriceInput
+              id="price"
+              name="price"
+              value={formData.price}
+              onChange={handleValueChange}
+              required
+              label="Цена"
+              suffix={formData.dealType === 'RENT' ? '₽/месяц' : '₽'}
+            />
             
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">

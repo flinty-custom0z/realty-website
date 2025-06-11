@@ -10,6 +10,7 @@ import ImageUpload from '@/components/ImageUpload';
 import Button from '@/components/Button';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { createLogger } from '@/lib/logging';
+import PriceInput from '@/components/ui/PriceInput';
 
 interface ListingFormData {
   publicDescription: string,
@@ -385,6 +386,14 @@ export default function EditListingPage() {
         [name]: value
       }));
     }
+  };
+  
+  // Handle direct value changes from custom components
+  const handleValueChange = (name: string, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
   const handleCreateDistrict = async () => {
@@ -777,20 +786,15 @@ export default function EditListingPage() {
               </div>
             )}
             
-            <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                Цена {formData.dealType === 'RENT' ? '(₽/месяц)' : '(₽)'} *
-              </label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:border-blue-500 focus:ring focus:ring-blue-100 transition-all duration-200"
-                required
-              />
-            </div>
+            <PriceInput
+              id="price"
+              name="price"
+              value={formData.price}
+              onChange={handleValueChange}
+              required
+              label="Цена"
+              suffix={formData.dealType === 'RENT' ? '₽/месяц' : '₽'}
+            />
             
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">

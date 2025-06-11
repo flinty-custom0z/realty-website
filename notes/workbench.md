@@ -2,7 +2,6 @@
 
 ### NOW
 
-- add space between 3 number chars when entering prices for better understanding of what price you enter
 - Тип недвижимости not selecting house (also make it gray when not avaliable)
 - add * signs on required fields
 - add autofill in editing listing
