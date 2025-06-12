@@ -11,6 +11,8 @@ import Button from '@/components/Button';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { createLogger } from '@/lib/logging';
 import PriceInput from '@/components/ui/PriceInput';
+import MarkdownToolbar from '@/components/admin/MarkdownToolbar';
+import MarkdownPreview from '@/components/admin/MarkdownPreview';
 
 interface ListingFormData {
   publicDescription: string,
@@ -1157,6 +1159,7 @@ export default function EditListingPage() {
             <label htmlFor="publicDescription" className="block text-sm font-medium text-gray-700 mb-1">
               Описание (публичное)
             </label>
+            <MarkdownToolbar textareaId="publicDescription" />
             <textarea
               id="publicDescription"
               name="publicDescription"
@@ -1165,10 +1168,15 @@ export default function EditListingPage() {
               rows={6}
               className="w-full p-2 border rounded"
             />
+            <MarkdownPreview content={formData.publicDescription || ''} />
+            <p className="text-xs text-gray-500 mt-1">
+              Поддерживает форматирование Markdown: **жирный**, *курсив*, [ссылки](url), - списки, # заголовки
+            </p>
 
             <label htmlFor="adminComment" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
               Комментарий администратора (не виден пользователям)
             </label>
+            <MarkdownToolbar textareaId="adminComment" />
             <textarea
               id="adminComment"
               name="adminComment"
@@ -1177,6 +1185,10 @@ export default function EditListingPage() {
               rows={6}
               className="w-full p-2 border rounded"
             />
+            <MarkdownPreview content={formData.adminComment || ''} />
+            <p className="text-xs text-gray-500 mt-1">
+              Поддерживает форматирование Markdown: **жирный**, *курсив*, [ссылки](url), - списки, # заголовки
+            </p>
           </div>
           
           <div className="mt-8">

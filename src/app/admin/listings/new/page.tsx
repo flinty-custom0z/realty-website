@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { createLogger } from '@/lib/logging';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import PriceInput from '@/components/ui/PriceInput';
+import MarkdownToolbar from '@/components/admin/MarkdownToolbar';
+import MarkdownPreview from '@/components/admin/MarkdownPreview';
 
 interface FormData {
   publicDescription: string;
@@ -895,6 +897,7 @@ export default function NewListingPage() {
             <label htmlFor="publicDescription" className="block text-sm font-medium text-gray-700 mb-1">
               Описание (публичное)
             </label>
+            <MarkdownToolbar textareaId="publicDescription" />
             <textarea
               id="publicDescription"
               name="publicDescription"
@@ -903,10 +906,15 @@ export default function NewListingPage() {
               rows={6}
               className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
             />
+            <MarkdownPreview content={formData.publicDescription || ''} />
+            <p className="text-xs text-gray-500 mt-1">
+              Поддерживает форматирование Markdown: **жирный**, *курсив*, [ссылки](url), - списки, # заголовки
+            </p>
 
             <label htmlFor="adminComment" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
               Комментарий администратора (не виден пользователям)
             </label>
+            <MarkdownToolbar textareaId="adminComment" />
             <textarea
               id="adminComment"
               name="adminComment"
@@ -915,6 +923,10 @@ export default function NewListingPage() {
               rows={6}
               className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
             />
+            <MarkdownPreview content={formData.adminComment || ''} />
+            <p className="text-xs text-gray-500 mt-1">
+              Поддерживает форматирование Markdown: **жирный**, *курсив*, [ссылки](url), - списки, # заголовки
+            </p>
           </div>
         </div>
         

@@ -5,6 +5,7 @@ import { formatDate, formatPrice } from '@/lib/utils';
 import ListingInteractiveClient from './ListingInteractiveClient';
 import ImageGallery from '@/components/ImageGallery';
 import ListingMapClient from '@/components/ListingMapClient';
+import ReactMarkdown from 'react-markdown';
 
 interface ListingImage {
   path: string;
@@ -131,9 +132,9 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
             <section className="bg-white shadow rounded-md p-6 mb-6">
               <h2 className="text-xl font-bold mb-4">Описание</h2>
               <div className="prose max-w-none text-gray-800">
-                {listing.publicDescription.split('\n').map((p: string, i: number) => (
-                  <p key={i}>{p}</p>
-                ))}
+                <ReactMarkdown>
+                  {listing.publicDescription}
+                </ReactMarkdown>
               </div>
             </section>
           )}
@@ -149,11 +150,9 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
                 <h2 className="text-xl font-bold">Комментарий администратора</h2>
               </div>
               <div className="prose max-w-none text-gray-700">
-                {listing.adminComment.split('\n').map((p: string, i: number) => (
-                  <p key={i} className="mb-4">
-                    {p}
-                  </p>
-                ))}
+                <ReactMarkdown>
+                  {listing.adminComment}
+                </ReactMarkdown>
               </div>
               <p className="admin-comment-notice">
                 Этот комментарий виден только администраторам
