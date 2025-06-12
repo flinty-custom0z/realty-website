@@ -3,7 +3,6 @@
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import ClientImage from '@/components/ClientImage';
 import { Loader2, Eye, X, Upload } from 'lucide-react';
-import Button from './Button';
 import React from 'react';
 
 interface ImagePreview {
@@ -275,11 +274,6 @@ export default function ImageUpload({
                     className="object-cover rounded"
                     showLoadingIndicator={true}
                   />
-                  {index === 0 && (
-                    <div className="absolute top-2 left-2 bg-[#11535F] text-white text-xs py-1 px-2 rounded-md z-10">
-                      Главное фото
-                    </div>
-                  )}
                   {isCurrentlyUploading && (
                     <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
                       <Loader2 className="animate-spin text-white" size={24} />
