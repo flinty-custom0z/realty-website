@@ -10,6 +10,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import PriceInput from '@/components/ui/PriceInput';
 import MarkdownToolbar from '@/components/admin/MarkdownToolbar';
 import MarkdownPreview from '@/components/admin/MarkdownPreview';
+import { compressImage, CompressionOptions } from '@/lib/utils/imageOptimization';
 
 interface FormData {
   publicDescription: string;
@@ -40,6 +41,14 @@ interface FormData {
 
 // Create a logger instance
 const logger = createLogger('AdminListingNewPage');
+
+const COMPRESSION_CONFIG: CompressionOptions = {
+  maxWidth: 2048,
+  maxHeight: 2048,
+  quality: 0.8,
+  maxSizeKB: 1024,
+  outputFormat: 'jpeg',
+};
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -94,6 +103,7 @@ export default function NewListingPage() {
   const [newCity, setNewCity] = useState('');
   const [isCreatingCity, setIsCreatingCity] = useState(false);
   const [cityError, setCityError] = useState('');
+  const [compressionProgress, setCompressionProgress] = useState<number>(0);
 
   // Fetch categories, districts, and users when the component mounts
   useEffect(() => {
@@ -249,16 +259,30 @@ export default function NewListingPage() {
     }));
   };
 
-  const handleImageChange = (newFiles: File[]) => {
-    setImageFiles(prev => [...prev, ...newFiles]);
-    
-    // Create preview URLs
-    const newPreviews = newFiles.map(file => ({
-      file,
-      url: URL.createObjectURL(file),
-    }));
-    
-    setImagePreviews(prev => [...prev, ...newPreviews]);
+  const handleImageChange = async (newFiles: File[]) => {
+    setCompressionProgress(0);
+    try {
+      const compressedFiles: File[] = [];
+      for (let i = 0; i < newFiles.length; i++) {
+        setCompressionProgress(Math.round(((i + 1) / newFiles.length) * 100));
+        try {
+          const compressed = await compressImage(newFiles[i], COMPRESSION_CONFIG);
+          compressedFiles.push(compressed);
+        } catch {
+          // Fallback to original if compression fails
+          compressedFiles.push(newFiles[i]);
+        }
+      }
+      setImageFiles(prev => [...prev, ...compressedFiles]);
+      // Create preview URLs
+      const newPreviews = compressedFiles.map(file => ({
+        file,
+        url: URL.createObjectURL(file),
+      }));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+    } finally {
+      setCompressionProgress(0);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -935,10 +959,16 @@ export default function NewListingPage() {
             <h2 className="text-lg font-medium">Фотографии</h2>
           </div>
           
+          {compressionProgress > 0 && compressionProgress < 100 && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+              <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${compressionProgress}%` }}></div>
+            </div>
+          )}
+          
           <ImageUpload 
             onImagesSelected={handleImageChange}
             onImageRemoved={removeImage}
-            isUploading={isLoading}
+            isUploading={Object.keys(uploadingImages).length > 0}
             uploadingImages={uploadingImages}
             resetKey={resetKey}
           />

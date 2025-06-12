@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ClientImage from '@/components/ClientImage';
 import AdminNavMenuClient from '@/components/AdminNavMenuClient';
+import { compressImage, CompressionOptions } from '@/lib/utils/imageOptimization';
 
 interface User {
   id: string;
@@ -24,6 +25,14 @@ export default function AdminUsersPage() {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const COMPRESSION_CONFIG: CompressionOptions = {
+    maxWidth: 2048,
+    maxHeight: 2048,
+    quality: 0.85,
+    maxSizeKB: 1024,
+    outputFormat: 'jpeg',
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -78,8 +87,14 @@ export default function AdminUsersPage() {
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    let compressedFile = file;
+    try {
+      compressedFile = await compressImage(file, COMPRESSION_CONFIG);
+    } catch (err) {
+      // Fallback to original if compression fails
+    }
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', compressedFile);
     try {
       const res = await fetch('/api/admin/users/upload-photo', {
         method: 'POST',

@@ -11,10 +11,6 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const ACCEPTED_IMAGE_TYPES = [
   'image/jpeg',
   'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-  'image/heif'
 ];
 
 /**
@@ -33,7 +29,7 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     return { 
       valid: false, 
-      error: `Invalid file type. Accepted types are: ${ACCEPTED_IMAGE_TYPES.join(', ')}` 
+      error: `Invalid file type. Accepted type is: image/jpeg` 
     };
   }
   

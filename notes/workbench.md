@@ -1,11 +1,9 @@
-## Backlog
+# Backlog
 
-### NOW
-
+## NOW
 
 - Проценты загрузки фото
 - Убрать главная с новой фотки
-
 
 - Remove autofill popup when not necceriy - should dissapear after first selection, now it pops up when loading when address is entered and pops up again after entering and confirming it
 
@@ -25,10 +23,12 @@
 
 - Fix layout when not small enough for mobile
 
-### Next
+## Next
 
 - improve mobile version
 - Add roles (Me - admin, other users - agents)
+
+- Сделать сайт более ярким
 
 - steal from https://www.ayax.ru/
 - steal from https://krasnodar.etagi.com/
@@ -47,7 +47,7 @@
   - Instagram
   - Ok.ru
 
-### Later
+## Later
 
 - Заполнение договоров
 - Поиск с ИИ
@@ -57,13 +57,12 @@
 - банеры
 - рассылки
 
-### Nice to
+## Nice to
 
 - implement a feature based organization
   - Visualize current structure
     - Summarize things that belong to each feature
   - Move features to each folder, one by one
-
 
 ## Summary Table
 

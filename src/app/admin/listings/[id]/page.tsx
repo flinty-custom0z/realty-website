@@ -13,6 +13,7 @@ import { createLogger } from '@/lib/logging';
 import PriceInput from '@/components/ui/PriceInput';
 import MarkdownToolbar from '@/components/admin/MarkdownToolbar';
 import MarkdownPreview from '@/components/admin/MarkdownPreview';
+import { compressImage, CompressionOptions } from '@/lib/utils/imageOptimization';
 
 interface ListingFormData {
   publicDescription: string,
@@ -81,6 +82,14 @@ import { useParams } from 'next/navigation';
 
 // Create a logger instance
 const logger = createLogger('AdminListingEditPage');
+
+const COMPRESSION_CONFIG: CompressionOptions = {
+  maxWidth: 2048,
+  maxHeight: 2048,
+  quality: 0.8,
+  maxSizeKB: 1024,
+  outputFormat: 'jpeg',
+};
 
 export default function EditListingPage() {
   const params = useParams();
@@ -160,6 +169,9 @@ export default function EditListingPage() {
   const [newCity, setNewCity] = useState('');
   const [isCreatingCity, setIsCreatingCity] = useState(false);
   const [cityError, setCityError] = useState('');
+  
+  // Add compression progress state
+  const [compressionProgress, setCompressionProgress] = useState<number>(0);
   
   // Fetch users (realtors) and listing data
   useEffect(() => {
@@ -452,16 +464,30 @@ export default function EditListingPage() {
     setDistrictError('');
   };
   
-  const handleImageChange = (newFiles: File[]) => {
-    setImageFiles(prev => [...prev, ...newFiles]);
-    
-    // Create preview URLs
-    const newPreviews = newFiles.map(file => ({
-      file,
-      url: URL.createObjectURL(file),
-    }));
-    
-    setImagePreviews(prev => [...prev, ...newPreviews]);
+  const handleImageChange = async (newFiles: File[]) => {
+    setCompressionProgress(0);
+    try {
+      const compressedFiles: File[] = [];
+      for (let i = 0; i < newFiles.length; i++) {
+        setCompressionProgress(Math.round(((i + 1) / newFiles.length) * 100));
+        try {
+          const compressed = await compressImage(newFiles[i], COMPRESSION_CONFIG);
+          compressedFiles.push(compressed);
+        } catch {
+          // Fallback to original if compression fails
+          compressedFiles.push(newFiles[i]);
+        }
+      }
+      setImageFiles(prev => [...prev, ...compressedFiles]);
+      // Create preview URLs
+      const newPreviews = compressedFiles.map(file => ({
+        file,
+        url: URL.createObjectURL(file),
+      }));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+    } finally {
+      setCompressionProgress(0);
+    }
   };
   
   const removeImagePreview = (index: number) => {
@@ -1221,7 +1247,7 @@ export default function EditListingPage() {
                 <ImageUpload 
                   onImagesSelected={handleImageChange}
                   onImageRemoved={removeImagePreview}
-                  isUploading={isSaving}
+                  isUploading={Object.keys(uploadingImages).length > 0}
                   uploadingImages={uploadingImages}
                   previewModalHandler={openPreviewModal}
                   resetKey={resetKey}
@@ -1229,6 +1255,12 @@ export default function EditListingPage() {
               </div>
             </div>
           </div>
+          
+          {compressionProgress > 0 && compressionProgress < 100 && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+              <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${compressionProgress}%` }}></div>
+            </div>
+          )}
           
           <div className="col-span-1 md:col-span-2 mt-8 flex justify-between items-center">
             <Button
