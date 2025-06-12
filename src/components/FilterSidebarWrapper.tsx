@@ -78,7 +78,6 @@ export default function FilterSidebarWrapper({
               categorySlug={categorySlug}
               searchQuery={currentSearchQuery}
               categories={categories}
-              filters={initialFilters}
               filteredCount={filteredCount}
             />
           </Suspense>

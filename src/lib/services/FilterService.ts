@@ -59,6 +59,14 @@ export interface FilterOptions {
     count: number;
     available: boolean;
   }>;
+  propertyTypes: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    categoryId: string;
+    count: number;
+    available: boolean;
+  }>;
   totalCount: number;
   hasFiltersApplied: boolean;
 }
@@ -426,11 +434,58 @@ export class FilterService {
       available: !hasFiltersApplied || cityWithFullFilterSet.has(city.id)
     }));
     
+    // Fetch property types filtered by selected categories (if any), otherwise all
+    let propertyTypes: any[] = [];
+    if (categoryParams.length > 0) {
+      // Get category IDs
+      const cats = await prisma.category.findMany({
+        where: { slug: { in: categoryParams } },
+        select: { id: true }
+      });
+      const categoryIds = cats.map(c => c.id);
+      propertyTypes = await prisma.propertyType.findMany({
+        where: { categoryId: { in: categoryIds } },
+        include: {
+          _count: {
+            select: {
+              listings: {
+                where: fullFilter
+              }
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+    } else {
+      propertyTypes = await prisma.propertyType.findMany({
+        include: {
+          _count: {
+            select: {
+              listings: {
+                where: fullFilter
+              }
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+    }
+    // Mark property types as available if they have listings with the current filter
+    const processedPropertyTypes = propertyTypes.map(type => ({
+      id: type.id,
+      name: type.name,
+      slug: type.slug,
+      categoryId: type.categoryId,
+      count: type._count.listings,
+      available: type._count.listings > 0
+    }));
+    
     // Return compiled filter options
     return {
       districts: processedDistricts,
       conditions: processedConditions,
       dealTypes,
+      propertyTypes: processedPropertyTypes,
       cities: processedCities,
       priceRange: {
         min: priceStats._min.price || 0,
