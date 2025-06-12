@@ -254,7 +254,7 @@ export default async function CategoryPage({
                 address={listing.address || undefined}
                 area={listing.houseArea || undefined}
                 imagePaths={listing.images
-                  ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
+                  ?.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
                   .map(img => img.path) ?? []}
                 listingCode={listing.listingCode}
               />

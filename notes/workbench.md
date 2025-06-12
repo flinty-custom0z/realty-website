@@ -3,7 +3,6 @@
 ## NOW
 
 - Проценты загрузки фото
-- Убрать главная с новой фотки
 
 - Remove autofill popup when not necceriy - should dissapear after first selection, now it pops up when loading when address is entered and pops up again after entering and confirming it
 

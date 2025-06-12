@@ -294,7 +294,7 @@ export default async function SearchPage({
                 address={l.address || undefined}
                 area={l.houseArea || undefined}
                 imagePaths={l.images
-                  ?.sort((a, b) => (a.isFeatured ? -1 : b.isFeatured ? 1 : 0))
+                  ?.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
                   .map(img => img.path) ?? []}
                 listingCode={l.listingCode}
               />
