@@ -1,12 +1,7 @@
 ## Backlog
 
 ### NOW
-
-- Тип недвижимости not selecting house (also make it gray when not avaliable)
-- add * signs on required fields
-- add autofill in editing listing
-
-- add contact form (on main page & in each listing page)
+§- add contact form (on main page & in each listing page)
   - Chat
   - Whatsapp
 

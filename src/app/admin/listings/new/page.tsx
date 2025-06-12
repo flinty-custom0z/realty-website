@@ -724,6 +724,7 @@ export default function NewListingPage() {
                 <option value="Требуется ремонт">Требуется ремонт</option>
                 <option value="Частичный ремонт">Частичный ремонт</option>
                 <option value="Ремонт под ключ">Ремонт под ключ</option>
+                <option value="Ремонт от застройщика">Ремонт от застройщика</option>
                 <option value="Хорошее">Хорошее</option>
                 <option value="Евроремонт">Евроремонт</option>
               </select>
