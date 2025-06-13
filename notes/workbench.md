@@ -2,8 +2,6 @@
 
 ## NOW
 
-- Remove autofill popup when not necceriy - should dissapear after first selection, now it pops up when loading when address is entered and pops up again after entering and confirming it
-
 - Тип недвижимости not selecting house (also make it gray when not avaliable)
 - add * signs on required fields
 - add autofill in editing listing
