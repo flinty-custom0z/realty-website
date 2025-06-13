@@ -36,6 +36,7 @@ export default function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedAddress, setSelectedAddress] = useState(value);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -44,6 +45,12 @@ export default function AddressAutocomplete({
   // Fetch suggestions
   useEffect(() => {
     const fetchSuggestions = async () => {
+      if (debouncedValue === selectedAddress) {
+        setSuggestions([]);
+        setIsOpen(false);
+        return;
+      }
+
       if (!debouncedValue || debouncedValue.length < 3) {
         setSuggestions([]);
         setIsOpen(false);
@@ -66,7 +73,11 @@ export default function AddressAutocomplete({
         if (response.ok) {
           const data = await response.json();
           setSuggestions(data.suggestions || []);
-          setIsOpen(data.suggestions?.length > 0);
+
+          const shouldOpen =
+            document.activeElement === inputRef.current &&
+            (data.suggestions?.length ?? 0) > 0;
+          setIsOpen(shouldOpen);
         }
       } catch (error) {
         console.error('Error fetching suggestions:', error);
@@ -77,7 +88,7 @@ export default function AddressAutocomplete({
     };
 
     fetchSuggestions();
-  }, [debouncedValue]);
+  }, [debouncedValue, selectedAddress]);
 
   // Handle click outside
   useEffect(() => {
@@ -123,6 +134,7 @@ export default function AddressAutocomplete({
 
   const handleSelect = async (suggestion: Suggestion) => {
     onChange(suggestion.fullAddress);
+    setSelectedAddress(suggestion.fullAddress);
     setIsOpen(false);
     setSelectedIndex(-1);
     
