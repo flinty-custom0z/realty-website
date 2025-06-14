@@ -227,6 +227,20 @@ export default function NewListingPage() {
         }));
       }
     }
+    // Special handling for district selection
+    else if (name === 'districtId') {
+      if (value === 'new') {
+        // Show new district input form
+        setShowNewDistrictInput(true);
+        // Don't update the districtId in formData
+      } else {
+        // Normal district selection
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    }
     // Special handling for numeric inputs
     else if (type === 'number') {
       setFormData(prev => ({
@@ -574,38 +588,41 @@ export default function NewListingPage() {
             </div>
             
             <div>
-              <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="districtId" className="block text-sm font-medium text-gray-700 mb-1">
                 Район
               </label>
-              {!showNewDistrictInput ? (
+              <div className="flex gap-2 items-center">
                 <select
                   id="districtId"
                   name="districtId"
                   value={formData.districtId}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                  onChange={e => setFormData(prev => ({ ...prev, districtId: e.target.value }))}
+                  className="w-full p-2 border rounded"
                 >
                   <option value="">Выберите район</option>
                   {districts.map(district => (
-                    <option key={district.id} value={district.id}>
-                      {district.name}
-                    </option>
+                    <option key={district.id} value={district.id}>{district.name}</option>
                   ))}
-                  <option value="new">+ Добавить новый район</option>
                 </select>
-              ) : (
-                <div className="space-y-2">
-              <input
-                type="text"
+                <button
+                  type="button"
+                  onClick={() => (showNewDistrictInput ? cancelNewDistrict() : setShowNewDistrictInput(true))}
+                  className="text-blue-600 underline text-xs"
+                >
+                  {showNewDistrictInput ? 'Отмена' : 'Добавить район'}
+                </button>
+              </div>
+              {showNewDistrictInput && (
+                <div className="space-y-2 mt-2">
+                  <input
+                    type="text"
                     value={newDistrict}
-                    onChange={(e) => setNewDistrict(e.target.value)}
+                    onChange={e => setNewDistrict(e.target.value)}
                     placeholder="Введите название района"
-                className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
+                    className="w-full p-2 border rounded-md focus:border-[#11535F] focus:ring focus:ring-[rgba(17,83,95,0.2)] transition-all duration-200"
                     disabled={isCreatingDistrict}
-              />
-                  {districtError && (
-                    <p className="text-sm text-red-600">{districtError}</p>
-                  )}
+                  />
+                  {districtError && <p className="text-sm text-red-600">{districtError}</p>}
                   <div className="flex space-x-2">
                     <button
                       type="button"

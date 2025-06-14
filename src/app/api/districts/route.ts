@@ -4,6 +4,30 @@ import { handleApiError } from '@/lib/validators/errorHandler';
 import { withAuth } from '@/lib/auth';
 import { z } from 'zod';
 
+// Function to transliterate Cyrillic to Latin characters
+function transliterate(text: string): string {
+  return text.toLowerCase()
+    // Replace Cyrillic characters with Latin equivalents
+    .replace(/а/g, 'a').replace(/б/g, 'b').replace(/в/g, 'v').replace(/г/g, 'g')
+    .replace(/д/g, 'd').replace(/е/g, 'e').replace(/ё/g, 'yo').replace(/ж/g, 'zh')
+    .replace(/з/g, 'z').replace(/и/g, 'i').replace(/й/g, 'y').replace(/к/g, 'k')
+    .replace(/л/g, 'l').replace(/м/g, 'm').replace(/н/g, 'n').replace(/о/g, 'o')
+    .replace(/п/g, 'p').replace(/р/g, 'r').replace(/с/g, 's').replace(/т/g, 't')
+    .replace(/у/g, 'u').replace(/ф/g, 'f').replace(/х/g, 'kh').replace(/ц/g, 'ts')
+    .replace(/ч/g, 'ch').replace(/ш/g, 'sh').replace(/щ/g, 'sch').replace(/ъ/g, '')
+    .replace(/ы/g, 'y').replace(/ь/g, '').replace(/э/g, 'e').replace(/ю/g, 'yu')
+    .replace(/я/g, 'ya')
+    // Replace spaces with hyphens
+    .replace(/\s+/g, '-')
+    // Remove any remaining non-alphanumeric characters except hyphens
+    .replace(/[^a-z0-9\-]+/g, '')
+    // Replace multiple consecutive hyphens with single hyphen
+    .replace(/\-\-+/g, '-')
+    // Remove leading and trailing hyphens
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -69,12 +93,12 @@ async function handleCreateDistrict(req: NextRequest) {
     const { name } = validation.data;
     
     // Create slug from name
-    const slug = name.toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-')
-      .replace(/^-+/, '')
-      .replace(/-+$/, '');
+    let slug = transliterate(name);
+    
+    // If slug is empty (e.g., for names with only special characters), use a fallback
+    if (!slug) {
+      slug = `district-${Date.now()}`;
+    }
     
     // Check if district with this name already exists
     const existing = await prisma.district.findFirst({
@@ -87,10 +111,24 @@ async function handleCreateDistrict(req: NextRequest) {
     });
     
     if (existing) {
-      return NextResponse.json(
-        { error: 'District already exists', district: existing },
-        { status: 409 }
-      );
+      // If it's the same name, return the existing district
+      if (existing.name.toLowerCase() === name.toLowerCase()) {
+        return NextResponse.json(
+          { error: 'District already exists', district: existing },
+          { status: 409 }
+        );
+      }
+      
+      // If it's just a slug conflict, generate a unique slug
+      let counter = 1;
+      let uniqueSlug = `${slug}-${counter}`;
+      
+      while (await prisma.district.findUnique({ where: { slug: uniqueSlug } })) {
+        counter++;
+        uniqueSlug = `${slug}-${counter}`;
+      }
+      
+      slug = uniqueSlug;
     }
     
     // Create new district
