@@ -57,3 +57,14 @@ npx prisma migrate resolve --rolled-back <migration_name>
 OR
 
 npx prisma migrate resolve --applied <migration_name>
+
+
+---
+
+## To solve
+
+npx prisma migrate resolve --applied 20250510134606_add_district_model
+
+npx prisma migrate status
+
+npx prisma migrate deploy

@@ -787,6 +787,7 @@ export default function NewListingPage() {
                 <option value="BRICK">Кирпичный</option>
                 <option value="PANEL">Панельный</option>
                 <option value="MONOLITH">Монолитный</option>
+                <option value="MONOLITH_BRICK">Монолит-кирпич</option>
                 <option value="OTHER">Другой</option>
               </select>
             </div>

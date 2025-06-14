@@ -23,7 +23,7 @@ export const listingSchema = z.object({
   landArea: z.number().nonnegative().nullable().optional(),
   condition: z.string().optional().nullable(),
   yearBuilt: z.number().int().positive().nullable().optional(),
-  buildingType: z.enum(["BRICK", "PANEL", "MONOLITH", "OTHER"]).nullable().optional(),
+  buildingType: z.enum(["BRICK", "PANEL", "MONOLITH", "MONOLITH_BRICK", "OTHER"]).nullable().optional(),
   balconyType: z.enum(["BALCONY", "LOGGIA", "BOTH", "NONE"]).nullable().optional(),
   bathroomType: z.enum(["COMBINED", "SEPARATE", "MULTIPLE"]).nullable().optional(),
   windowsView: z.enum(["COURTYARD", "STREET", "BOTH"]).nullable().optional(),

@@ -133,6 +133,7 @@ enum BuildingType {
   BRICK
   PANEL
   MONOLITH
+  MONOLITH_BRICK
   OTHER
 }
 

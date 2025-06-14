@@ -26,7 +26,7 @@ export interface ListingData {
   landArea?: number | null;
   condition?: string | null;
   yearBuilt?: number | null;
-  buildingType?: 'BRICK' | 'PANEL' | 'MONOLITH' | 'OTHER' | null;
+  buildingType?: 'BRICK' | 'PANEL' | 'MONOLITH' | 'MONOLITH_BRICK' | 'OTHER' | null;
   balconyType?: 'BALCONY' | 'LOGGIA' | 'BOTH' | 'NONE' | null;
   bathroomType?: 'COMBINED' | 'SEPARATE' | 'MULTIPLE' | null;
   windowsView?: 'COURTYARD' | 'STREET' | 'BOTH' | null;
