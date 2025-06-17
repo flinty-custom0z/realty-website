@@ -12,10 +12,10 @@ export async function GET(req: NextRequest) {
     const maxPrice = searchParams.get('maxPrice');
     const minArea = searchParams.get('minArea');
     const maxArea = searchParams.get('maxArea');
-    const page = searchParams.get('page') || '1';
+    const page = parseInt(searchParams.get('page') || '1');
     const sort = searchParams.get('sort') || 'dateAdded';
     const order = searchParams.get('order') || 'desc';
-    const limit = searchParams.get('limit') || '12';
+    const limit = parseInt(searchParams.get('limit') || '12');
     
     // Parse filter parameters
     const filterParams = FilterService.parseParams(req);
@@ -23,7 +23,11 @@ export async function GET(req: NextRequest) {
     // Get filtered listings with pagination
     const result = await ListingService.getFilteredListings({
       ...filterParams,
-      cityIds: filterParams.cityIds // Ensure cityIds are passed correctly
+      cityIds: filterParams.cityIds, // Ensure cityIds are passed correctly
+      page,
+      limit,
+      sort,
+      order: order as 'asc' | 'desc'
     });
     
     return NextResponse.json(result);

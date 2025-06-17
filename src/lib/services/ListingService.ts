@@ -629,7 +629,7 @@ export class ListingService {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        pages: Math.ceil(total / limit),
       },
     };
   }
@@ -785,7 +785,7 @@ export class ListingService {
         total,
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit))
+        pages: Math.ceil(total / Number(limit))
       }
     };
   }

@@ -106,6 +106,14 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
     setFilters(newFilters);
   };
 
+  // Handler for pagination
+  const handlePageChange = (page: number) => {
+    const newFilters = { ...filters, page };
+    setFilters(newFilters);
+    // Scroll to top of listings section
+    document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Sidebar */}
@@ -167,7 +175,28 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
             <p className="text-gray-500">Попробуйте изменить параметры поиска</p>
           </div>
         )}
-        {/* Pagination, etc. */}
+        
+        {/* Pagination */}
+        {data?.pagination && data.pagination.pages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <nav className="flex flex-wrap justify-center space-x-2">
+              {Array.from({ length: data.pagination.pages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`pagination-btn ${
+                    pageNum === data.pagination.page
+                      ? 'pagination-btn-active'
+                      : 'pagination-btn-inactive'
+                  }`}
+                  disabled={isValidating}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </div>
   );
