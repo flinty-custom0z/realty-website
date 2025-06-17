@@ -43,6 +43,7 @@ export interface FilterOptions {
     name: string;
     slug: string;
     value: string;
+    label?: string;
     count: number;
     available: boolean;
   }>;
@@ -63,6 +64,7 @@ export interface FilterOptions {
     name: string;
     slug: string;
     value: string;
+    label?: string;
     count: number;
     available: boolean;
   }>;

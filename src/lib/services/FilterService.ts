@@ -24,6 +24,7 @@ export interface FilterOptions {
     name: string;
     slug: string;
     value: string;
+    label?: string;
     count: number;
     available: boolean;
   }>;
@@ -42,6 +43,8 @@ export interface FilterOptions {
     id: string;
     name: string;
     slug: string;
+    value: string;
+    label?: string;
     count: number;
     available: boolean;
   }>;
@@ -408,7 +411,8 @@ export class FilterService {
       id: district.id,
       name: district.name,
       slug: district.slug,
-      value: district.name,
+      value: district.id,
+      label: district.name,
       count: district._count.listings,
       // A district is available if it appears in the full filter results
       // or if no filters are applied
@@ -430,6 +434,7 @@ export class FilterService {
       name: city.name,
       slug: city.slug,
       value: city.id,
+      label: city.name,
       count: city._count.listings,
       available: !hasFiltersApplied || cityWithFullFilterSet.has(city.id)
     }));

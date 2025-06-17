@@ -19,11 +19,14 @@ export async function GET(req: NextRequest) {
     
     // Parse filter parameters
     const filterParams = FilterService.parseParams(req);
-    
+
+    // Map districtIds from filterParams to the property expected by ListingService
+    const { districtIds, ...restParams } = filterParams;
+
     // Get filtered listings with pagination
     const result = await ListingService.getFilteredListings({
-      ...filterParams,
-      cityIds: filterParams.cityIds, // Ensure cityIds are passed correctly
+      ...restParams,
+      districts: districtIds,
       page,
       limit,
       sort,
