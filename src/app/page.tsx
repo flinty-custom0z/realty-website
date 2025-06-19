@@ -171,7 +171,7 @@ async function getListings(searchParams: Record<string, string | string[] | unde
 
   // Pagination
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
-  const limit = 30;
+  const limit = 12;
 
   // Sorting
   const sortField = (searchParams.sort as string) || 'dateAdded';

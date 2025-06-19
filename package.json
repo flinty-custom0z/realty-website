@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
     "backup-db": "node scripts/backup-db.js",
     "restore-db": "node scripts/restore-db.js",
     "prebuild": "npm run backup-db && node scripts/export-code.js",

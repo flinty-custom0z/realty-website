@@ -20,7 +20,9 @@
 
 ## Next
 
+
 - improve mobile version
+  - Collapsible filter on mobile
 - Add roles (Me - admin, other users - agents)
 
 - Сделать сайт более ярким
@@ -38,6 +40,7 @@
 
 - Social Media
   - VK
+  - YT
   - Telegram
   - Instagram
   - Ok.ru

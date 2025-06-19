@@ -108,7 +108,7 @@ async function getListings(
   
   // Get page number
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
-  const limit = 30;
+  const limit = 12;
   
   // Determine sort order
   const sortField = searchParams.sort || 'dateAdded';

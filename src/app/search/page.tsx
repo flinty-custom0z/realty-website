@@ -101,7 +101,7 @@ async function getListings(searchParams: Record<string, string | string[] | unde
   const filter = await buildFilter(searchParams);
 
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
-  const limit = 30;
+  const limit = 12;
   
   // simple sort implementation (extend as required)
   const sortField = (searchParams.sort as string) || 'dateAdded';

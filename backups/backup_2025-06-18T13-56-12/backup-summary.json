@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-06-18T13-56-12",
+  "backupDate": "2025-06-18T13:57:06.135Z",
+  "databaseBackup": "database_2025-06-18T13-56-12.sql",
+  "imageBackup": {
+    "manifestFile": "manifest.json",
+    "imageCount": 58,
+    "imageDirectory": "images"
+  },
+  "backupDirectory": "/Users/qraymo/workspace/real-estate-website/realty-website/backups/backup_2025-06-18T13-56-12"
+}

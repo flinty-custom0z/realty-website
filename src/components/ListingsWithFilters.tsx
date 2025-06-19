@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import FilterSidebar from './FilterSidebar';
 import ListingCard from './ListingCard';
@@ -81,6 +81,9 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
 }) => {
   const { dealType } = useDealType();
   const [filters, setFilters] = useState(initialFilters);
+  
+  // Keep track of the last loaded pagination to prevent flickering
+  const lastLoadedPaginationRef = useRef(initialPagination);
 
   // Update filters when dealType changes from context
   useEffect(() => {
@@ -100,6 +103,16 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
       revalidateOnFocus: false
     }
   );
+
+  // Update the ref when new data is loaded (not validating)
+  useEffect(() => {
+    if (!isValidating && data?.pagination) {
+      lastLoadedPaginationRef.current = data.pagination;
+    }
+  }, [data?.pagination, isValidating]);
+
+  // Use the last loaded pagination during loading states to prevent flickering
+  const displayPagination = isValidating ? lastLoadedPaginationRef.current : data?.pagination;
 
   // Handler to update filters
   const handleFilterChange = (newFilters: Record<string, any>) => {
@@ -177,15 +190,15 @@ const ListingsWithFilters: FC<ListingsWithFiltersProps> = ({
         )}
         
         {/* Pagination */}
-        {data?.pagination && data.pagination.pages > 1 && (
+        {displayPagination && displayPagination.pages > 1 && (
           <div className="mt-8 flex justify-center">
             <nav className="flex flex-wrap justify-center space-x-2">
-              {Array.from({ length: data.pagination.pages }, (_, i) => i + 1).map((pageNum) => (
+              {Array.from({ length: displayPagination.pages }, (_, i) => i + 1).map((pageNum) => (
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
                   className={`pagination-btn ${
-                    pageNum === data.pagination.page
+                    pageNum === (filters.page || displayPagination.page)
                       ? 'pagination-btn-active'
                       : 'pagination-btn-inactive'
                   }`}
