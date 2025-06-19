@@ -57,8 +57,30 @@ export class ListingService {
   static async generateListingCode(categoryId: string): Promise<string> {
     const category = await prisma.category.findUnique({ where: { id: categoryId } });
     const prefix = category ? category.name.charAt(0).toUpperCase() : 'X';
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `${prefix}-${randomNum}`;
+    
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const listingCode = `${prefix}-${randomNum}`;
+      
+      // Check if this code already exists
+      const existingListing = await prisma.listing.findUnique({
+        where: { listingCode }
+      });
+      
+      if (!existingListing) {
+        return listingCode;
+      }
+      
+      attempts++;
+    }
+    
+    // If we couldn't generate a unique code after maxAttempts, 
+    // fall back to using timestamp to ensure uniqueness
+    const timestamp = Date.now().toString().slice(-4);
+    return `${prefix}-${timestamp}`;
   }
 
   /**

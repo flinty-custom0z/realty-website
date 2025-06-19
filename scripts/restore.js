@@ -4,7 +4,6 @@ const { execSync } = require('child_process');
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
-const { put } = require('@vercel/blob');
 
 const prisma = new PrismaClient();
 
@@ -175,46 +174,47 @@ async function restoreImages(backupDir) {
       console.log(`[${i+1}/${manifest.images.length}] Restoring ${image.backupFilename}`);
       
       try {
-        // Read the image file
-        const fileBuffer = fs.readFileSync(imagePath);
-        
         // Determine the subdirectory based on the original path
-        let subdirectory = '';
+        let subdirectory = 'listings';
         if (image.originalPath.includes('/realtors/')) {
           subdirectory = 'realtors';
         }
         
-        // Upload to Vercel Blob
-        const blobFilename = subdirectory 
-          ? `${subdirectory}/${image.backupFilename}` 
-          : image.backupFilename;
-          
-        const { url } = await put(blobFilename, fileBuffer, { access: 'public' });
-        
-        // Update the database record if the URL changed
-        if (url !== image.originalPath) {
-          await prisma.image.update({
-            where: { id: image.id },
-            data: { path: url }
-          });
-          console.log(`Updated image path in database: ${image.id}`);
+        // Ensure upload directory exists
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', subdirectory);
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
         }
         
+        // Copy the image to local storage
+        const targetPath = path.join(uploadDir, image.backupFilename);
+        fs.copyFileSync(imagePath, targetPath);
+        
+        // Create the public URL path
+        const publicUrl = `/uploads/${subdirectory}/${image.backupFilename}`;
+        
+        // Update the database record with the new local path
+        await prisma.image.update({
+          where: { id: image.id },
+          data: { path: publicUrl }
+        });
+        
+        console.log(`✅ Restored image: ${image.backupFilename} -> ${publicUrl}`);
         restoredCount++;
         
-      } catch (err) {
-        console.error(`Failed to restore ${image.backupFilename}: ${err.message}`);
+      } catch (error) {
+        console.log(`❌ Failed to restore ${image.backupFilename}:`, error.message);
         errorCount++;
       }
     }
     
-    console.log(`✅ Image restoration complete!`);
-    console.log(`📊 Summary: ${restoredCount} restored, ${errorCount} errors`);
-    
-    return { restoredCount, errorCount };
+    console.log(`\n📊 Image restoration summary:`);
+    console.log(`   ✅ Restored: ${restoredCount}`);
+    console.log(`   ❌ Failed: ${errorCount}`);
+    console.log(`   📋 Total: ${manifest.images.length}`);
     
   } catch (error) {
-    console.error('❌ Image restore failed:', error.message);
+    console.error('❌ Image restoration failed:', error.message);
     throw error;
   }
 }

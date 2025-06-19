@@ -48,3 +48,6 @@ next-env.d.ts
 exports/
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Local uploads directory
+# /public/uploads/

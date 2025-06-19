@@ -10,12 +10,7 @@ First, set up your environment variables:
    openssl rand -base64 32
    ```
 3. Add this value to your `.env` file as `JWT_SECRET`
-4. For image storage with Vercel Blob:
-   - Get your `VERCEL_BLOB_READ_WRITE_TOKEN` from Dashboard → Storage → Settings
-   - Add this token to your `.env` file:
-   ```
-   VERCEL_BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
-   ```
+4. Image storage is now handled locally in the `/public/uploads/` directory
 
 The application will not start without a properly configured JWT_SECRET.
 

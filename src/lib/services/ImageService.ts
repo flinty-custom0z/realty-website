@@ -4,7 +4,8 @@ import prisma from '@/lib/prisma';
 import sharp from 'sharp';
 import { validateImageFile } from '@/lib/validators/imageValidators';
 import { createLogger } from '@/lib/logging';
-import { put, del } from '@vercel/blob';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Create a logger instance
 const logger = createLogger('ImageService');
@@ -15,6 +16,17 @@ const THUMBNAIL_SIZES = [
   { width: 600, height: undefined, suffix: 'medium' }, // Medium size for gallery previews
   { width: 1200, height: undefined, suffix: 'large' }, // Large size for full-screen views
 ];
+
+// Helper function to ensure upload directory exists
+async function ensureUploadDirectory(subdirectory: string = ''): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', subdirectory);
+  try {
+    await fs.access(uploadDir);
+  } catch {
+    await fs.mkdir(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+}
 
 export class ImageService {
   /**
@@ -29,9 +41,9 @@ export class ImageService {
   }
 
   /**
-   * Saves an image file to Vercel Blob storage and returns the URL
+   * Saves an image file to local storage and returns the URL path
    */
-  static async saveImage(file: File, subdirectory: string = ''): Promise<string> {
+  static async saveImage(file: File, subdirectory: string = 'listings'): Promise<string> {
     try {
       // Validate the image before processing
       this.validateImage(file);
@@ -44,27 +56,29 @@ export class ImageService {
       const uuid = uuidv4();
       const filename = `${uuid}.${ext}`;
       
-      // Include subdirectory in filename for Vercel Blob if provided
-      const blobFilename = subdirectory ? `${subdirectory}/${filename}` : filename;
+      // Ensure upload directory exists
+      const uploadDir = await ensureUploadDirectory(subdirectory);
+      const filePath = path.join(uploadDir, filename);
       
-      // Upload to Vercel Blob
-      const { url } = await put(blobFilename, buffer, { access: 'public' });
+      // Save the original file to local storage
+      await fs.writeFile(filePath, buffer);
       
-      logger.info(`Saved image to Vercel Blob: ${url}`);
+      // Create the public URL path
+      const publicUrl = `/uploads/${subdirectory}/${filename}`;
       
-      // For processable formats, generate and upload thumbnails
+      logger.info(`Saved image to local storage: ${publicUrl}`);
+      
+      // For processable formats, generate and save thumbnails
       const isProcessableFormat = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(ext);
       
       if (isProcessableFormat) {
         const sharpInstance = sharp(buffer);
         
-        // Generate and upload thumbnails
+        // Generate and save thumbnails
         for (const size of THUMBNAIL_SIZES) {
           try {
             const thumbnailFilename = `${uuid}-${size.suffix}.webp`; // Always save thumbnails as WebP
-            const blobThumbnailFilename = subdirectory 
-              ? `${subdirectory}/${thumbnailFilename}` 
-              : thumbnailFilename;
+            const thumbnailPath = path.join(uploadDir, thumbnailFilename);
             
             const resizeOptions: sharp.ResizeOptions = {
               width: size.width,
@@ -79,7 +93,7 @@ export class ImageService {
               .webp({ quality: 80 })
               .toBuffer();
               
-            await put(blobThumbnailFilename, thumbnailBuffer, { access: 'public' });
+            await fs.writeFile(thumbnailPath, thumbnailBuffer);
           } catch (thumbError) {
             logger.error(`Error generating thumbnail for ${filename}:`, { thumbError });
             // Continue with next thumbnail
@@ -87,8 +101,8 @@ export class ImageService {
         }
       }
       
-      // Return the URL from Vercel Blob
-      return url;
+      // Return the public URL path
+      return publicUrl;
     } catch (error) {
       logger.error("Error saving image:", { error });
       throw new Error(`Failed to save image: ${error instanceof Error ? error.message : String(error)}`);
@@ -103,17 +117,23 @@ export class ImageService {
     
     // Parse the URL to extract components
     try {
-      const url = new URL(originalUrl);
-      const pathname = url.pathname;
+      // Handle both full URLs and path-only URLs
+      let pathname: string;
+      if (originalUrl.startsWith('http')) {
+        const url = new URL(originalUrl);
+        pathname = url.pathname;
+      } else {
+        pathname = originalUrl;
+      }
+      
       const lastDotIndex = pathname.lastIndexOf('.');
       
       if (lastDotIndex === -1) return originalUrl;
       
       const filenameWithoutExt = pathname.substring(0, lastDotIndex);
-      const origin = url.origin;
       
       // Construct the variant URL
-      return `${origin}${filenameWithoutExt}-${size}.webp`;
+      return `${filenameWithoutExt}-${size}.webp`;
     } catch (error) {
       logger.error(`Error generating variant path for ${originalUrl}:`, { error });
       return originalUrl;
@@ -121,36 +141,54 @@ export class ImageService {
   }
 
   /**
-   * Deletes an image file and its variants from Vercel Blob
+   * Deletes an image file and its variants from local storage
    */
   static async deleteImage(imageUrl: string): Promise<boolean> {
     try {
       if (!imageUrl) return false;
       
+      // Convert URL to file path
+      let filePath: string;
+      if (imageUrl.startsWith('/uploads/')) {
+        filePath = path.join(process.cwd(), 'public', imageUrl);
+      } else if (imageUrl.startsWith('http')) {
+        // Handle full URLs by extracting the path
+        const url = new URL(imageUrl);
+        if (url.pathname.startsWith('/uploads/')) {
+          filePath = path.join(process.cwd(), 'public', url.pathname);
+        } else {
+          logger.warn(`Cannot delete external URL: ${imageUrl}`);
+          return false;
+        }
+      } else {
+        logger.warn(`Invalid image URL format: ${imageUrl}`);
+        return false;
+      }
+      
       // Delete the original image
       try {
-        await del(imageUrl);
-        logger.info(`Successfully deleted image from Vercel Blob: ${imageUrl}`);
+        await fs.unlink(filePath);
+        logger.info(`Successfully deleted image from local storage: ${imageUrl}`);
         
         // Try to delete thumbnail variants
         try {
-          // Parse the URL to extract components for thumbnail variants
-          const url = new URL(imageUrl);
-          const pathname = url.pathname;
-          const lastDotIndex = pathname.lastIndexOf('.');
+          // Extract filename without extension for thumbnail variants
+          const dir = path.dirname(filePath);
+          const filename = path.basename(filePath);
+          const lastDotIndex = filename.lastIndexOf('.');
           
           if (lastDotIndex !== -1) {
-            const filenameWithoutExt = pathname.substring(0, lastDotIndex);
-            const origin = url.origin;
+            const filenameWithoutExt = filename.substring(0, lastDotIndex);
             
             // Delete each thumbnail variant
             for (const size of THUMBNAIL_SIZES) {
-              const thumbnailUrl = `${origin}${filenameWithoutExt}-${size.suffix}.webp`;
+              const thumbnailFilename = `${filenameWithoutExt}-${size.suffix}.webp`;
+              const thumbnailPath = path.join(dir, thumbnailFilename);
               try {
-                await del(thumbnailUrl);
+                await fs.unlink(thumbnailPath);
               } catch (err) {
                 // Log but don't fail if thumbnail deletion fails
-                logger.warn(`Failed to delete thumbnail: ${thumbnailUrl}`, { err });
+                logger.warn(`Failed to delete thumbnail: ${thumbnailPath}`, { err });
               }
             }
           }
@@ -161,7 +199,7 @@ export class ImageService {
         
         return true;
       } catch (delError) {
-        logger.error(`Failed to delete image from Vercel Blob: ${imageUrl}`, { delError });
+        logger.error(`Failed to delete image from local storage: ${imageUrl}`, { delError });
         return false;
       }
       
