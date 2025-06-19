@@ -106,37 +106,94 @@ async function backupImages() {
       images: []
     };
     
-    // Download each image
+    const publicDir = path.join(__dirname, '..', 'public');
+    let copiedFiles = 0;
+    
+    // Copy each image from local storage
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
-      const url = image.path;
+      const imagePath = image.path;
       
-      // Skip if not a URL
-      if (!url.startsWith('http')) {
-        console.log(`Skipping non-URL path: ${url}`);
-        continue;
-      }
+      console.log(`[${i+1}/${images.length}] Processing ${imagePath}`);
       
-      // Extract filename from URL or create one
-      const filename = url.split('/').pop() || `${image.id}.jpg`;
-      const outputPath = path.join(imageBackupDir, filename);
-      
-      console.log(`[${i+1}/${images.length}] Downloading ${url}`);
-      
-      try {
-        await downloadFile(url, outputPath);
+      // Handle local file paths (starts with /uploads/)
+      if (imagePath.startsWith('/uploads/')) {
+        const sourcePath = path.join(publicDir, imagePath);
         
-        // Add to manifest
-        manifest.images.push({
-          id: image.id,
-          listingId: image.listingId,
-          listingCode: image.listing.listingCode,
-          originalPath: url,
-          backupFilename: filename,
-          isFeatured: image.isFeatured
-        });
-      } catch (err) {
-        console.error(`Failed to download ${url}: ${err.message}`);
+        // Check if source file exists
+        if (!fs.existsSync(sourcePath)) {
+          console.warn(`⚠️  Source file not found: ${sourcePath}`);
+          continue;
+        }
+        
+        // Extract filename
+        const filename = path.basename(imagePath);
+        const outputPath = path.join(imageBackupDir, filename);
+        
+        try {
+          // Copy the main image file
+          fs.copyFileSync(sourcePath, outputPath);
+          copiedFiles++;
+          
+          // Also copy thumbnail variants if they exist
+          const baseFilename = filename.replace(/\.(jpg|jpeg|png|webp)$/i, '');
+          const extension = path.extname(filename);
+          const thumbnailSuffixes = ['-thumb', '-medium', '-large'];
+          
+          thumbnailSuffixes.forEach(suffix => {
+            const thumbFilename = `${baseFilename}${suffix}.webp`;
+            const thumbSourcePath = path.join(path.dirname(sourcePath), thumbFilename);
+            const thumbOutputPath = path.join(imageBackupDir, thumbFilename);
+            
+            if (fs.existsSync(thumbSourcePath)) {
+              fs.copyFileSync(thumbSourcePath, thumbOutputPath);
+              console.log(`   📎 Copied thumbnail: ${thumbFilename}`);
+            }
+          });
+          
+          // Add to manifest
+          manifest.images.push({
+            id: image.id,
+            listingId: image.listingId,
+            listingCode: image.listing?.listingCode || 'Unknown',
+            originalPath: imagePath,
+            backupFilename: filename,
+            isFeatured: image.isFeatured,
+            sourceType: 'local'
+          });
+          
+        } catch (err) {
+          console.error(`Failed to copy ${sourcePath}: ${err.message}`);
+        }
+        
+      } 
+      // Handle legacy URL paths (for backward compatibility)
+      else if (imagePath.startsWith('http')) {
+        const filename = imagePath.split('/').pop() || `${image.id}.jpg`;
+        const outputPath = path.join(imageBackupDir, filename);
+        
+        try {
+          await downloadFile(imagePath, outputPath);
+          copiedFiles++;
+          
+          // Add to manifest
+          manifest.images.push({
+            id: image.id,
+            listingId: image.listingId,
+            listingCode: image.listing?.listingCode || 'Unknown',
+            originalPath: imagePath,
+            backupFilename: filename,
+            isFeatured: image.isFeatured,
+            sourceType: 'url'
+          });
+          
+        } catch (err) {
+          console.error(`Failed to download ${imagePath}: ${err.message}`);
+        }
+      }
+      // Skip other path types
+      else {
+        console.log(`   ⏩ Skipping unsupported path format: ${imagePath}`);
       }
     }
     
@@ -144,7 +201,9 @@ async function backupImages() {
     const manifestPath = path.join(backupDir, 'manifest.json');
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
     
-    console.log(`✅ Image backup complete! ${manifest.images.length} images saved`);
+    console.log(`✅ Image backup complete!`);
+    console.log(`   📁 ${copiedFiles} images copied`);
+    console.log(`   📋 ${manifest.images.length} entries in manifest`);
     return { manifestPath, imageCount: manifest.images.length };
     
   } catch (error) {

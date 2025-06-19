@@ -16,13 +16,7 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
-    "seed-listings": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-listings.ts",
-    "migrate-to-local": "node scripts/migrate-to-local-storage.js",
-    "migrate-images": "node scripts/migrate-existing-images.js",
-    "clean-sql": "node scripts/clean-sql-for-vps.js",
-    "restore-clean-db": "node scripts/restore-clean-db.js",
-    "restore-db-simple": "node scripts/restore-clean-db-simple.js",
-    "fix-sql-local": "node scripts/fix-sql-for-local.js"
+    "seed-listings": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-listings.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
