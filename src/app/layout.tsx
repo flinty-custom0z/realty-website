@@ -58,6 +58,54 @@ export default function RootLayout({
             <img src="https://mc.yandex.ru/watch/102977994" style={{position:'absolute', left:'-9999px'}} alt="" />
           </div>
         </noscript>
+        
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "ОпораДом",
+              "description": "Краснодарская недвижимость - продажа и аренда квартир, домов, земельных участков и коммерческой недвижимости",
+              "url": "https://opora-dom.ru",
+              "telephone": ["+79624441579", "+79298510395"],
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Краснодар",
+                "addressCountry": "RU"
+              },
+              "areaServed": {
+                "@type": "City",
+                "name": "Краснодар"
+              },
+              "knowsAbout": ["недвижимость", "квартиры", "дома", "земельные участки", "коммерческая недвижимость", "аренда", "продажа"],
+              "serviceType": ["Продажа недвижимости", "Аренда недвижимости", "Консультации по недвижимости"]
+            })
+          }}
+        />
+        
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "ОпораДом - Краснодарская недвижимость",
+              "description": "Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.",
+              "url": "https://opora-dom.ru",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://opora-dom.ru/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "ОпораДом"
+              }
+            })
+          }}
+        />
       </head>
       <body className={`${inter.className} antialiased`}>
         <Suspense fallback={<></>}>

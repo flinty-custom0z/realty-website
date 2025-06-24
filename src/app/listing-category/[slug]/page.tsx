@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import SortSelector from '@/components/SortSelector';
 import { Metadata } from 'next';
+import Script from 'next/script';
+import StructuredDataBreadcrumb from '@/components/StructuredDataBreadcrumb';
 
 // Wrap the SortSelector in a client component to avoid hydration issues
 function SortSelectorWrapper() {
@@ -193,6 +195,38 @@ export default async function CategoryPage({
     total: listings.length
   };
 
+  // Create breadcrumb data
+  const breadcrumbItems = [
+    { name: "Главная", url: "https://opora-dom.ru/" },
+    { name: category.name, url: `https://opora-dom.ru/listing-category/${category.slug}` }
+  ];
+
+  // Create ItemList structured data for the category page
+  const itemListStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `${category.name} ${isRent ? '- аренда' : '- продажа'} в Краснодаре`,
+    "description": category.description || `${category.name} в Краснодаре. Выгодные предложения.`,
+    "url": `https://opora-dom.ru/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
+    "numberOfItems": listings.length,
+    "itemListElement": listings.slice(0, 10).map((listing, index) => ({
+      "@type": "RealEstateListing",
+      "position": index + 1,
+      "name": listing.title,
+      "url": `https://opora-dom.ru/listing/${listing.id}`,
+      "offers": {
+        "@type": "Offer",
+        "price": listing.price,
+        "priceCurrency": "RUB"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Краснодар",
+        "addressCountry": "RU"
+      }
+    }))
+  };
+
   // Get search query if exists (prioritize categoryQuery, fallback to q for backwards compatibility)
   const categorySearchQuery = resolvedSearchParams.categoryQuery as string || '';
   const globalSearchQuery = resolvedSearchParams.q as string || '';
@@ -204,8 +238,17 @@ export default async function CategoryPage({
   const showBackLink = await shouldShowBackLink(resolvedSearchParams);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+    <>
+      <StructuredDataBreadcrumb items={breadcrumbItems} />
+      <Script
+        id="category-itemlist-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(itemListStructuredData)
+        }}
+      />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
       {isDealTypeRent && (
         <h2 className="text-xl text-gray-600 mb-4">Аренда</h2>
       )}
@@ -307,5 +350,6 @@ export default async function CategoryPage({
         </div>
       </div>
     </div>
+    </>
   );
 }
