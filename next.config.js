@@ -3,7 +3,6 @@ const nextConfig = {
   // Images configuration
   images: {
     unoptimized: false,
-    domains: ['localhost', '81ipzxotpmf8rssh.public.blob.vercel-storage.com'],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 200, 256, 384],
@@ -13,10 +12,6 @@ const nextConfig = {
         hostname: 'localhost',
         port: '3000',
         pathname: '/api/image/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
       },
     ],
   },
