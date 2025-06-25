@@ -299,7 +299,7 @@ export default async function ListingDetailPage({
               __html: JSON.stringify(structuredData)
             }}
           />
-          <ListingDetail listing={publicData} isAdmin={isAdmin} />
+          <ListingDetail listing={publicData as any} isAdmin={isAdmin} />
         </>
       );
     }
@@ -315,7 +315,7 @@ export default async function ListingDetailPage({
             __html: JSON.stringify(structuredData)
           }}
         />
-        <ListingDetail listing={listing} isAdmin={isAdmin} />
+        <ListingDetail listing={listing as any} isAdmin={isAdmin} />
       </>
     );
   } catch (error) {
