@@ -6,6 +6,7 @@ import ListingDetail from './ListingDetail';
 import { JWT_SECRET } from '@/lib/env';
 import Script from 'next/script';
 import StructuredDataBreadcrumb from '@/components/StructuredDataBreadcrumb';
+import { Metadata } from 'next/types';
 
 // Remove the hardcoded fallback
 // const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -17,22 +18,153 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
-}) {
+}): Promise<Metadata> {
   try {
     const { id } = await params;
     const listing = await prisma.listing.findUnique({
       where: { id: id },
-      select: { title: true }
+      include: {
+        category: true,
+        images: true,
+        districtRef: true,
+        propertyType: {
+          select: { name: true }
+        },
+        city: {
+          select: { name: true }
+        }
+      }
     });
     
+    if (!listing) {
+      return {
+        title: 'Объявление не найдено | ОпораДом',
+        description: 'Информация о объекте недвижимости не найдена'
+      };
+    }
+
+    // Build dynamic Russian title
+    const dealTypeText = listing.dealType === 'RENT' ? 'аренда' : 'продажа';
+    const areaText = listing.houseArea ? `, ${listing.houseArea} м²` : '';
+    const districtText = listing.districtRef?.name ? `, ${listing.districtRef.name}` : '';
+    const cityText = listing.city?.name || 'Краснодар';
+    
+    const title = `${listing.title} — ${dealTypeText} ${listing.price.toLocaleString('ru-RU')} ₽${areaText} | ОпораДом`;
+    
+    // Build comprehensive description with property details
+    let description = '';
+    if (listing.dealType === 'RENT') {
+      description = `Сдается ${listing.propertyType?.name || 'недвижимость'} в ${cityText}${districtText}`;
+    } else {
+      description = `Продается ${listing.propertyType?.name || 'недвижимость'} в ${cityText}${districtText}`;
+    }
+    
+    if (listing.houseArea) {
+      description += `. Площадь ${listing.houseArea} м²`;
+    }
+    
+    if (listing.floor && listing.totalFloors) {
+      description += `. ${listing.floor}/${listing.totalFloors} этаж`;
+    }
+    
+    if (listing.yearBuilt) {
+      description += `. Год постройки ${listing.yearBuilt}`;
+    }
+    
+    if (listing.publicDescription) {
+      const shortDesc = listing.publicDescription.substring(0, 100);
+      description += `. ${shortDesc}${listing.publicDescription.length > 100 ? '...' : ''}`;
+    }
+    
+    description += '. Звоните: +7(962)444-15-79';
+
+    // Generate keywords for Russian SEO
+    const keywords = [];
+    
+    // Base keywords
+    if (listing.dealType === 'RENT') {
+      keywords.push(`снять ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+      keywords.push(`аренда ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+    } else {
+      keywords.push(`купить ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+      keywords.push(`продажа ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+    }
+    
+    // District-specific keywords
+    if (listing.districtRef?.name) {
+      keywords.push(`недвижимость ${listing.districtRef.name}`);
+      keywords.push(`${listing.propertyType?.name || 'недвижимость'} ${listing.districtRef.name}`);
+    }
+    
+    // Category-specific keywords
+    if (listing.category?.name) {
+      keywords.push(listing.category.name);
+    }
+    
+    // Area-specific keywords
+    if (listing.houseArea) {
+      keywords.push(`${listing.houseArea} м²`);
+    }
+    
+    // Property type
+    if (listing.propertyType?.name) {
+      keywords.push(listing.propertyType.name);
+    }
+
+    // Build Open Graph images
+    const ogImages = listing.images?.slice(0, 4).map(img => ({
+      url: `https://opora-dom.ru/api/image/${img.path}`,
+      width: 1200,
+      height: 630,
+      alt: `${listing.title} - ${listing.address || listing.fullAddress || cityText}`
+    })) || [];
+
     return {
-      title: listing ? `${listing.title} | Realty Website` : 'Объявление не найдено',
-      description: listing ? `Подробная информация о недвижимости: ${listing.title}` : 'Информация о объекте недвижимости'
+      title,
+      description,
+      keywords: keywords.join(', '),
+      openGraph: {
+        title,
+        description,
+        url: `https://opora-dom.ru/listing/${id}`,
+        locale: 'ru_RU',
+        type: 'article',
+        siteName: 'ОпораДом',
+        images: ogImages,
+        // Additional OG tags for real estate
+        ...(listing.price && {
+          'article:tag': `цена ${listing.price.toLocaleString('ru-RU')} ₽`
+        } as Record<string, string>)
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description: description.length > 200 ? description.substring(0, 200) + '...' : description,
+        images: ogImages.length > 0 ? [ogImages[0].url] : undefined
+      },
+      // Yandex-specific meta tags
+      other: {
+        'yandex-verification': process.env.YANDEX_VERIFICATION || '',
+        'format-detection': 'telephone=yes',
+        'geo.region': 'RU-KDA',
+        'geo.placename': cityText,
+        ...(listing.latitude && listing.longitude && {
+          'geo.position': `${listing.latitude};${listing.longitude}`
+        }),
+        'og:price:amount': listing.price.toString(),
+        'og:price:currency': 'RUB',
+        'product:price:amount': listing.price.toString(),
+        'product:price:currency': 'RUB'
+      },
+      // Canonical URL
+      alternates: {
+        canonical: `https://opora-dom.ru/listing/${id}`
+      }
     };
-  } catch (_error) {
-    // Error handling, specifics not needed
+  } catch (error) {
+    console.error('Error generating metadata:', error);
     return {
-      title: 'Просмотр объявления | Realty Website',
+      title: 'Просмотр объявления | ОпораДом',
       description: 'Информация о объекте недвижимости'
     };
   }
@@ -68,7 +200,7 @@ export default async function ListingDetailPage({
     }
     
     // Create structured data for the listing
-    const structuredData = {
+    const structuredData: Record<string, unknown> = {
       "@context": "https://schema.org",
       "@type": "RealEstateListing",
       "name": listing.title,
@@ -98,7 +230,7 @@ export default async function ListingDetailPage({
 
     // Add property-specific details
     if (listing.houseArea) {
-      (structuredData as any).floorSize = {
+      structuredData.floorSize = {
         "@type": "QuantitativeValue",
         "value": listing.houseArea,
         "unitCode": "MTK" // Square meter
@@ -106,7 +238,7 @@ export default async function ListingDetailPage({
     }
 
     if (listing.landArea) {
-      (structuredData as any).lotSize = {
+      structuredData.lotSize = {
         "@type": "QuantitativeValue", 
         "value": listing.landArea,
         "unitText": "соток"
@@ -114,23 +246,23 @@ export default async function ListingDetailPage({
     }
 
     if (listing.yearBuilt) {
-      (structuredData as any).yearBuilt = listing.yearBuilt;
+      structuredData.yearBuilt = listing.yearBuilt;
     }
 
     if (listing.floor && listing.totalFloors) {
-      (structuredData as any).numberOfRooms = `${listing.floor}/${listing.totalFloors} этаж`;
+      structuredData.numberOfRooms = `${listing.floor}/${listing.totalFloors} этаж`;
     }
 
     // Add images
     if (listing.images && listing.images.length > 0) {
-      (structuredData as any).image = listing.images.map(img => 
+      structuredData.image = listing.images.map(img => 
         `https://opora-dom.ru/api/image/${img.path}`
       );
     }
 
     // Add geo coordinates if available
     if (listing.latitude && listing.longitude) {
-      (structuredData as any).geo = {
+      structuredData.geo = {
         "@type": "GeoCoordinates",
         "latitude": listing.latitude,
         "longitude": listing.longitude
@@ -139,11 +271,11 @@ export default async function ListingDetailPage({
 
     // Add property type and category
     if (listing.propertyType?.name) {
-      (structuredData as any).additionalType = listing.propertyType.name;
+      structuredData.additionalType = listing.propertyType.name;
     }
 
     if (listing.category?.name) {
-      (structuredData as any).category = listing.category.name;
+      structuredData.category = listing.category.name;
     }
 
     // Create breadcrumb data
@@ -167,7 +299,7 @@ export default async function ListingDetailPage({
               __html: JSON.stringify(structuredData)
             }}
           />
-          <ListingDetail listing={publicData as any} isAdmin={isAdmin} />
+          <ListingDetail listing={publicData} isAdmin={isAdmin} />
         </>
       );
     }
@@ -183,7 +315,7 @@ export default async function ListingDetailPage({
             __html: JSON.stringify(structuredData)
           }}
         />
-        <ListingDetail listing={listing as any} isAdmin={isAdmin} />
+        <ListingDetail listing={listing} isAdmin={isAdmin} />
       </>
     );
   } catch (error) {

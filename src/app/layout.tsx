@@ -32,6 +32,9 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning={true} className={inter.variable}>
       <head>
+        {/* Yandex Webmaster verification */}
+        <meta name="yandex-verification" content="251b6ab8ece55464" />
+        
         {/* Yandex.Metrika counter */}
         <Script
           id="yandex-metrika"
