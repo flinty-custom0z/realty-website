@@ -200,24 +200,50 @@ export default async function ListingDetailPage({
     }
     
     // Create structured data for the listing
-    const structuredData: Record<string, unknown> = {
+    const structuredData = {
       "@context": "https://schema.org",
       "@type": "RealEstateListing",
-      "name": listing.title,
+      "name": `${listing.address || listing.title} - ${listing.price.toLocaleString('ru-RU')} ₽`,
       "description": listing.publicDescription || listing.title,
       "url": `https://opora-dom.ru/listing/${listing.id}`,
       "datePosted": listing.dateAdded.toISOString(),
+      "mainEntity": {
+        "@type": listing.category?.slug === 'apartments' || listing.category?.slug === 'apartment' ? "Apartment" : 
+                listing.category?.slug === 'houses' || listing.category?.slug === 'house' ? "House" : "Residence",
+        "name": listing.address || listing.title,
+        "numberOfRooms": listing.floor && listing.totalFloors ? `${listing.floor}/${listing.totalFloors} этаж` : undefined,
+        "floorSize": listing.houseArea ? {
+          "@type": "QuantitativeValue",
+          "value": listing.houseArea,
+          "unitText": "м²"
+        } : undefined,
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": listing.address || listing.fullAddress,
+          "addressLocality": listing.city?.name || "Краснодар",
+          "addressRegion": "Краснодарский край",
+          "addressCountry": "RU"
+        }
+      } as Record<string, unknown>,
       "listingAgent": {
-        "@type": "Organization",
+        "@type": "RealEstateAgent",
         "name": "ОпораДом",
-        "telephone": ["+79624441579", "+79298510395"]
+        "telephone": ["+79624441579", "+79298510395"],
+        "email": "oporadom@gmail.com"
       },
       "offers": {
         "@type": "Offer",
         "price": listing.price,
         "priceCurrency": "RUB",
+        "businessFunction": listing.dealType === 'RENT' ? "https://schema.org/LeaseOut" : "https://schema.org/Sell",
         "availability": "https://schema.org/InStock",
-        "validFrom": listing.dateAdded.toISOString()
+        "validFrom": listing.dateAdded.toISOString(),
+        "seller": {
+          "@type": "RealEstateAgent",
+          "name": "ОпораДом",
+          "telephone": ["+79624441579", "+79298510395"],
+          "email": "info@opora-dom.ru"
+        }
       },
       "address": {
         "@type": "PostalAddress",
@@ -226,19 +252,13 @@ export default async function ListingDetailPage({
         "addressRegion": "Краснодарский край",
         "addressCountry": "RU"
       }
-    };
+    } as Record<string, unknown>;
 
-    // Add property-specific details
-    if (listing.houseArea) {
-      structuredData.floorSize = {
-        "@type": "QuantitativeValue",
-        "value": listing.houseArea,
-        "unitCode": "MTK" // Square meter
-      };
-    }
-
+    // Add property-specific details to mainEntity
+    const mainEntity = structuredData.mainEntity as Record<string, unknown>;
+    
     if (listing.landArea) {
-      structuredData.lotSize = {
+      mainEntity.lotSize = {
         "@type": "QuantitativeValue", 
         "value": listing.landArea,
         "unitText": "соток"
@@ -246,32 +266,33 @@ export default async function ListingDetailPage({
     }
 
     if (listing.yearBuilt) {
-      structuredData.yearBuilt = listing.yearBuilt;
-    }
-
-    if (listing.floor && listing.totalFloors) {
-      structuredData.numberOfRooms = `${listing.floor}/${listing.totalFloors} этаж`;
+      mainEntity.yearBuilt = listing.yearBuilt;
     }
 
     // Add images
     if (listing.images && listing.images.length > 0) {
-      structuredData.image = listing.images.map(img => 
+      const imageUrls = listing.images.map(img => 
         `https://opora-dom.ru/api/image/${img.path}`
       );
+      structuredData.image = imageUrls;
+      mainEntity.image = imageUrls;
     }
 
     // Add geo coordinates if available
     if (listing.latitude && listing.longitude) {
-      structuredData.geo = {
+      const geoData = {
         "@type": "GeoCoordinates",
         "latitude": listing.latitude,
         "longitude": listing.longitude
       };
+      structuredData.geo = geoData;
+      mainEntity.geo = geoData;
     }
 
     // Add property type and category
     if (listing.propertyType?.name) {
       structuredData.additionalType = listing.propertyType.name;
+      mainEntity.additionalType = listing.propertyType.name;
     }
 
     if (listing.category?.name) {
@@ -288,7 +309,8 @@ export default async function ListingDetailPage({
     // If user is not admin, strip out adminComment
     if (!isAdmin) {
       // Use spread to create a new object without adminComment
-      const { adminComment: _, ...publicData } = listing;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { adminComment, ...publicData } = listing;
       return (
         <>
           <StructuredDataBreadcrumb items={breadcrumbItems} />
