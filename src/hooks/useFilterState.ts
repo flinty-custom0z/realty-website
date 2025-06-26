@@ -267,7 +267,11 @@ export function useFilterState({
       const params = new URLSearchParams();
       
       // Add category filter
-      if (state.selectedCategories.length > 0) {
+      if (categorySlug) {
+        // For category pages, always include the current category
+        params.append('category', categorySlug);
+      } else if (state.selectedCategories.length > 0) {
+        // For global search, include selected categories
         state.selectedCategories.forEach(category => params.append('category', category));
       }
       
@@ -593,7 +597,98 @@ export function useFilterState({
     }
     
     // In uncontrolled mode, update the URL
-    // ... existing code ...
+    try {
+      const params = new URLSearchParams();
+      
+      // Add category search query for category pages
+      if (categorySlug && state.searchInputValue) {
+        params.append('categoryQuery', state.searchInputValue);
+      } else if (!categorySlug && state.searchInputValue) {
+        // Global search on search page
+        params.append('q', state.searchInputValue);
+      }
+      
+      // Add district filters
+      if (state.selectedDistricts.length > 0) {
+        state.selectedDistricts.forEach(district => params.append('district', district));
+      }
+      
+      // Add condition filters
+      if (state.selectedConditions.length > 0) {
+        state.selectedConditions.forEach(condition => params.append('condition', condition));
+      }
+      
+      // Add city filters
+      if (state.selectedCities.length > 0) {
+        state.selectedCities.forEach(city => params.append('city', city));
+      }
+      
+      // Add property type filters
+      if (state.selectedPropertyTypes.length > 0) {
+        state.selectedPropertyTypes.forEach(type => params.append('propertyType', type));
+      }
+      
+      // Add price filters
+      if (state.minPrice) {
+        params.append('minPrice', state.minPrice);
+      }
+      
+      if (state.maxPrice) {
+        params.append('maxPrice', state.maxPrice);
+      }
+      
+      // Add deal type (only if rent, sale is default)
+      if (state.selectedDealType === 'RENT') {
+        params.append('deal', 'rent');
+      }
+      
+      // Add category filters (only for non-category pages)
+      if (!categorySlug && state.selectedCategories.length > 0) {
+        state.selectedCategories.forEach(category => params.append('category', category));
+      }
+      
+      // Preserve navigation parameters
+      const returnUrl = searchParams?.get('returnUrl');
+      if (returnUrl) params.append('returnUrl', returnUrl);
+      
+      const fromParam = searchParams?.get('from');
+      if (fromParam) params.append('from', fromParam);
+      
+      // Determine target URL
+      let targetUrl;
+      if (categorySlug) {
+        // Category page
+        targetUrl = `/listing-category/${categorySlug}`;
+      } else if (pathname === '/') {
+        // Home page
+        targetUrl = '/';
+      } else {
+        // Search page
+        targetUrl = '/search';
+      }
+      
+      // Construct final URL
+      const finalUrl = `${targetUrl}${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      // Navigate to the URL
+      router.push(finalUrl);
+      
+      // Scroll to listings section on home page
+      if (pathname === '/') {
+        setTimeout(() => {
+          const el = document.getElementById('listings-section');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 200);
+      }
+      
+    } catch (error) {
+      console.error('Error applying filters:', error);
+    } finally {
+      // Reset applying flag
+      isApplyingRef.current = false;
+    }
   }, [
     isControlled,
     state.searchInputValue,
@@ -601,11 +696,14 @@ export function useFilterState({
     state.selectedDistricts,
     state.selectedConditions,
     state.selectedCities,
+    state.selectedPropertyTypes,
     state.minPrice,
     state.maxPrice,
     state.selectedDealType,
-    router,
-    pathname
+    categorySlug,
+    searchParams,
+    pathname,
+    router
   ]);
   
   // Reset filters handler

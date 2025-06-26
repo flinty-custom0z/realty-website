@@ -105,6 +105,22 @@ async function getListings(
     filter.condition = { in: conditions };
   }
   
+  if (searchParams.city) {
+    const cities = Array.isArray(searchParams.city) 
+      ? searchParams.city 
+      : [searchParams.city as string];
+    
+    filter.cityId = { in: cities };
+  }
+  
+  if (searchParams.propertyType) {
+    const propertyTypes = Array.isArray(searchParams.propertyType) 
+      ? searchParams.propertyType 
+      : [searchParams.propertyType as string];
+    
+    filter.typeId = { in: propertyTypes };
+  }
+  
   // Get page number
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 12;
@@ -123,6 +139,8 @@ async function getListings(
       category: true,  // Include category for reference
       images: true,
       districtRef: true,
+      city: true,
+      propertyType: true,
     },
     orderBy: {
       [sortField as string]: sortOrder as 'asc' | 'desc',
