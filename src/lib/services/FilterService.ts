@@ -414,18 +414,18 @@ export class FilterService {
       value: district.id,
       label: district.name,
       count: district._count.listings,
-      // A district is available if it appears in the full filter results
-      // or if no filters are applied
-      available: !hasFiltersApplied || districtWithFullFilterSet.has(district.id)
+      // Districts should be available if they have listings, regardless of other district selections
+      // Only apply restrictive availability for non-district filters
+      available: district._count.listings > 0
     }));
     
     // Process condition options
     const processedConditions = conditionOptions.map(condition => ({
       value: condition.condition!,
       count: condition._count.condition,
-      // A condition is available if it appears in the full filter results
-      // or if no filters are applied
-      available: !hasFiltersApplied || conditionWithFullFilterSet.has(condition.condition)
+      // Conditions should be available if they have listings, regardless of other condition selections
+      // Only apply restrictive availability for non-condition filters
+      available: condition._count.condition > 0
     }));
     
     // Process city options
@@ -436,7 +436,9 @@ export class FilterService {
       value: city.id,
       label: city.name,
       count: city._count.listings,
-      available: !hasFiltersApplied || cityWithFullFilterSet.has(city.id)
+      // Cities should be available if they have listings, regardless of other city selections
+      // Only apply restrictive availability for non-city filters
+      available: city._count.listings > 0
     }));
     
     // Fetch property types filtered by selected categories (if any), otherwise all
