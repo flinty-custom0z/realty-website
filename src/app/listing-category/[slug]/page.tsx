@@ -32,18 +32,15 @@ export async function generateMetadata(
 
   // 1. unwrap both promises
   const { slug }            = await params;
-  const { deal }            = await searchParams;
+  await searchParams; // no longer needed, but await to comply with function signature
 
   // 2. fetch category
   const category = await prisma.category.findUnique({ where: { slug } });
   if (!category) return { title: 'Категория не найдена' };
 
-  // 3. tailor title by deal type
-  const isRent = deal === 'rent';
+  // 3. build title (no deal-type suffix)
   return {
-    title: isRent
-      ? `${category.name} — аренда в Краснодаре`
-      : `${category.name} — продажа в Краснодаре`,
+    title: `${category.name} в Краснодаре`,
     description:
       category.description
         ?? `${category.name} в Краснодаре. Выгодные предложения.`,
@@ -205,7 +202,7 @@ export default async function CategoryPage({
   const itemListStructuredData = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": `${category.name} ${isRent ? '- аренда' : '- продажа'} в Краснодаре`,
+    "name": `${category.name} в Краснодаре`,
     "description": category.description || `${category.name} в Краснодаре. Выгодные предложения.`,
     "url": `https://opora-dom.ru/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
     "numberOfItems": listings.length,

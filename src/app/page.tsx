@@ -31,10 +31,9 @@ export async function generateMetadata({
 
   const isRent = deal === 'rent';
 
+  // Base site title without deal-type suffix (SEO: avoid ", продажа/аренда" in SERP)
   return {
-    title: isRent
-      ? 'Недвижимость в Краснодаре — аренда'
-      : 'Недвижимость в Краснодаре',
+    title: 'Недвижимость в Краснодаре',
     description:
       'Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.',
   };

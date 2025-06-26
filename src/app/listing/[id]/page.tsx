@@ -44,12 +44,11 @@ export async function generateMetadata({
     }
 
     // Build dynamic Russian title
-    const dealTypeText = listing.dealType === 'RENT' ? 'аренда' : 'продажа';
     const areaText = listing.houseArea ? `, ${listing.houseArea} м²` : '';
     const districtText = listing.districtRef?.name ? `, ${listing.districtRef.name}` : '';
     const cityText = listing.city?.name || 'Краснодар';
     
-    const title = `${listing.title} — ${dealTypeText} ${listing.price.toLocaleString('ru-RU')} ₽${areaText} | ОпораДом`;
+    const title = `${listing.title} — ${listing.price.toLocaleString('ru-RU')} ₽${areaText} | ОпораДом`;
     
     // Build comprehensive description with property details
     let description = '';
@@ -321,6 +320,7 @@ export default async function ListingDetailPage({
               __html: JSON.stringify(structuredData)
             }}
           />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <ListingDetail listing={publicData as any} isAdmin={isAdmin} />
         </>
       );
@@ -337,6 +337,7 @@ export default async function ListingDetailPage({
             __html: JSON.stringify(structuredData)
           }}
         />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <ListingDetail listing={listing as any} isAdmin={isAdmin} />
       </>
     );

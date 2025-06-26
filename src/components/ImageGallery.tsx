@@ -98,7 +98,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             className="object-contain max-h-[70vh] w-auto h-auto mx-auto"
             sizes={getOptimizedImageSizes(userConfig)}
             quality={getOptimizedQuality(userConfig)}
-            priority={shouldPrioritizeImage(selectedImageIndex, images[selectedImageIndex].isFeatured, userConfig)}
+            priority={shouldPrioritizeImage(selectedImageIndex, images[selectedImageIndex].isFeatured ?? false, userConfig)}
             fallbackSrc="/images/placeholder.png"
             sizeVariant={userConfig.isMobile ? 'medium' : 'large'}
             enableBlur={true}
