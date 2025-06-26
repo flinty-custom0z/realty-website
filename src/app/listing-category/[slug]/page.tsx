@@ -168,7 +168,6 @@ export default async function CategoryPage({
   
   // Set deal type from simplified parameter
   const isRent = resolvedSearchParams.deal === 'rent';
-  const dealType = isRent ? 'RENT' : 'SALE';
   
   // Add dealType to metadata for proper page title
   const isDealTypeRent = isRent;
@@ -179,18 +178,11 @@ export default async function CategoryPage({
     notFound();
   }
   
-  const { listings: unfilteredListings, pagination } = await getListings(category.id, resolvedSearchParams);
+  const { listings, pagination } = await getListings(category.id, resolvedSearchParams);
 
-  // Additional client-side filtering to ensure correct deal type
-  const listings = unfilteredListings.filter((listing) => 
-    listing.dealType === dealType
-  );
-
-  // Update pagination total if we filtered listings
-  const adjustedPagination = {
-    ...pagination,
-    total: listings.length
-  };
+  // No need for client-side filtering since database query already filters by deal type
+  // Use original pagination data from database query
+  const adjustedPagination = pagination;
 
   // Create breadcrumb data
   const breadcrumbItems = [
@@ -304,7 +296,7 @@ export default async function CategoryPage({
           {/* Pagination */}
           {adjustedPagination.pages > 1 && (
             <div className="mt-8 flex justify-center">
-              <nav className="inline-flex">
+              <nav className="flex flex-wrap justify-center space-x-2">
                 {Array.from({ length: adjustedPagination.pages }, (_, i) => i + 1).map((page) => {
                   // Create a new URLSearchParams with all current parameters
                   const params = new URLSearchParams();
@@ -323,10 +315,10 @@ export default async function CategoryPage({
                     <a
                       key={page}
                       href={`/listing-category/${slug}?${params.toString()}`}
-                      className={`px-4 py-2 text-sm border ${
+                      className={`pagination-btn ${
                         page === adjustedPagination.page
-                          ? 'bg-blue-500 text-white border-blue-500'
-                          : 'border-gray-300 hover:bg-gray-50'
+                          ? 'pagination-btn-active'
+                          : 'pagination-btn-inactive'
                       }`}
                     >
                       {page}
