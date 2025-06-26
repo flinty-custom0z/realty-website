@@ -44,29 +44,29 @@ export default function PropertyTypeFilter({
           style={{ maxHeight }}
         >
           {propertyTypes.map((type) => (
-            <div key={type.id} className="mb-1.5 flex items-center">
+            <label
+              key={type.id}
+              htmlFor={`property-type-${type.id}`}
+              className={`custom-checkbox mb-2 ${(
+                !type.available || type.count === 0) && !selectedPropertyTypes.includes(type.id)
+                  ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
               <input
                 type="checkbox"
                 id={`property-type-${type.id}`}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
                 checked={selectedPropertyTypes.includes(type.id)}
                 onChange={() => onChange(type.id)}
-                disabled={type.count === 0 || !type.available}
+                disabled={(!type.available || type.count === 0) && !selectedPropertyTypes.includes(type.id)}
               />
-              <label
-                htmlFor={`property-type-${type.id}`}
-                className={`ml-2 text-sm cursor-pointer ${
-                  type.count === 0 || !type.available
-                    ? 'text-gray-400'
-                    : 'text-gray-700'
-                }`}
+              <span className="checkbox-icon"></span>
+              <span className={`text-sm ${selectedPropertyTypes.includes(type.id) ? 'font-medium text-gray-900' : 'text-gray-700'}`}
               >
                 {type.name}
                 {type.count !== undefined && (
                   <span className="ml-1 text-gray-400">({type.count})</span>
                 )}
-              </label>
-            </div>
+              </span>
+            </label>
           ))}
         </div>
       )}

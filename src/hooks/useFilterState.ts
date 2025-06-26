@@ -106,6 +106,13 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
           ? state.selectedCities.filter(c => c !== action.payload)
           : [...state.selectedCities, action.payload]
       };
+    case 'TOGGLE_PROPERTY_TYPE':
+      return {
+        ...state,
+        selectedPropertyTypes: state.selectedPropertyTypes.includes(action.payload)
+          ? state.selectedPropertyTypes.filter(pt => pt !== action.payload)
+          : [...state.selectedPropertyTypes, action.payload]
+      };
     case 'SET_PRICE':
       return {
         ...state,
