@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import ClientImage from '@/components/ClientImage';
+import { useState, useEffect } from 'react';
+import OptimizedPropertyImage from '@/components/OptimizedPropertyImage';
 import { ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
+import { 
+  detectUserContext, 
+  getOptimizedImageSizes, 
+  getOptimizedQuality, 
+  shouldPrioritizeImage,
+  optimizeAltText,
+  preloadCriticalImages
+} from '@/lib/utils/webVitals';
 
 interface Image {
   id: string;
@@ -18,6 +26,25 @@ interface ImageGalleryProps {
 export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userConfig, setUserConfig] = useState(() => detectUserContext());
+
+  // Update user context on resize and connection changes
+  useEffect(() => {
+    const handleResize = () => {
+      setUserConfig(detectUserContext());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Preload all gallery images for better UX
+  useEffect(() => {
+    if (images.length > 0) {
+      const imagePaths = images.map(img => img.path);
+      preloadCriticalImages(imagePaths, userConfig);
+    }
+  }, [images, userConfig]);
   
   // Navigate to previous image
   const prevImage = () => {
@@ -65,14 +92,17 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
       
         {/* Main image */}
         <div className="relative w-full flex justify-center items-center cursor-pointer" style={{ maxHeight: '70vh' }} onClick={() => setIsModalOpen(true)}>
-          <ClientImage
+          <OptimizedPropertyImage
             src={images[selectedImageIndex].path}
-            alt={`${title} - фото ${selectedImageIndex + 1}`}
+            alt={optimizeAltText(`${title} - фото ${selectedImageIndex + 1}`)}
             className="object-contain max-h-[70vh] w-auto h-auto mx-auto"
-            sizes="(max-width: 1200px) 100vw, 1200px"
-            priority={true}
+            sizes={getOptimizedImageSizes(userConfig)}
+            quality={getOptimizedQuality(userConfig)}
+            priority={shouldPrioritizeImage(selectedImageIndex, images[selectedImageIndex].isFeatured, userConfig)}
             fallbackSrc="/images/placeholder.png"
-            sizeVariant="medium"
+            sizeVariant={userConfig.isMobile ? 'medium' : 'large'}
+            enableBlur={true}
+            showLoadingIndicator={true}
           />
           
           {/* Zoom icon overlay */}
@@ -102,15 +132,16 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
               }`}
               onClick={() => setSelectedImageIndex(index)}
             >
-              <ClientImage
+              <OptimizedPropertyImage
                 src={image.path}
-                alt={`${title} - миниатюра ${index + 1}`}
+                alt={optimizeAltText(`${title} - миниатюра ${index + 1}`)}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 16vw, 100px"
                 fallbackSrc="/images/placeholder.png"
                 sizeVariant="thumb"
-                quality={75}
+                quality={70}
+                enableBlur={false}
               />
             </div>
           ))}
@@ -148,15 +179,18 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
           )}
           
           <div className="relative max-h-[90vh] max-w-[90vw]">
-            <ClientImage
+            <OptimizedPropertyImage
               src={images[selectedImageIndex].path}
-              alt={`${title} - фото ${selectedImageIndex + 1}`}
+              alt={optimizeAltText(`${title} - фото ${selectedImageIndex + 1}`)}
               width={1200}
               height={800}
               className="object-contain max-h-[90vh]"
               fallbackSrc="/images/placeholder.png"
               sizeVariant="large"
               priority={true}
+              quality={90}
+              enableBlur={false}
+              showLoadingIndicator={true}
             />
           </div>
           

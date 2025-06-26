@@ -180,6 +180,51 @@ export default function RootLayout({
                 }
               });
             }
+
+            // Core Web Vitals monitoring for Russian mobile users
+            if (typeof PerformanceObserver !== 'undefined') {
+              const isRussian = navigator.language?.startsWith('ru') || false;
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              
+              // Report Web Vitals to Yandex Metrica for Russian users
+              function reportMetric(metric) {
+                if (window.ym && isRussian) {
+                  window.ym(102977994, 'reachGoal', 'web-vitals-' + metric.name, {
+                    value: metric.value,
+                    isMobile: isMobile,
+                    timestamp: Date.now()
+                  });
+                }
+              }
+
+              // Measure LCP
+              new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                const lastEntry = entries[entries.length - 1];
+                if (lastEntry) {
+                  reportMetric({ name: 'LCP', value: lastEntry.startTime });
+                }
+              }).observe({ entryTypes: ['largest-contentful-paint'] });
+
+              // Measure FID
+              new PerformanceObserver((list) => {
+                list.getEntries().forEach((entry) => {
+                  const fid = entry.processingStart - entry.startTime;
+                  reportMetric({ name: 'FID', value: fid });
+                });
+              }).observe({ entryTypes: ['first-input'] });
+
+              // Measure CLS
+              let clsValue = 0;
+              new PerformanceObserver((list) => {
+                list.getEntries().forEach((entry) => {
+                  if (!entry.hadRecentInput) {
+                    clsValue += entry.value;
+                    reportMetric({ name: 'CLS', value: clsValue });
+                  }
+                });
+              }).observe({ entryTypes: ['layout-shift'] });
+            }
           });
         `}} />
       </body>

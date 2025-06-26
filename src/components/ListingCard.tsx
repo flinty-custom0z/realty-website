@@ -1,11 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import ClientImage from '@/components/ClientImage';
+import OptimizedPropertyImage from '@/components/OptimizedPropertyImage';
 import { formatPrice } from '@/lib/utils';
 import { useDealType } from '@/contexts/DealTypeContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useRef, TouchEvent } from 'react';
+import { useState, useRef, TouchEvent, useEffect } from 'react';
+import { 
+  detectUserContext, 
+  getOptimizedImageSizes, 
+  getOptimizedQuality, 
+  shouldPrioritizeImage,
+  optimizeAltText,
+  preloadCriticalImages
+} from '@/lib/utils/webVitals';
 
 interface ListingCardProps {
   id: string;
@@ -55,8 +63,27 @@ export default function ListingCard({
   const pricePerSquareMeter = area ? Math.round(price / area) : null;
   
   const [idx, setIdx] = useState(0);
+  const [userConfig, setUserConfig] = useState(() => detectUserContext());
+  
   const next = () => setIdx(i => (i + 1) % imagePaths.length);
   const prev = () => setIdx(i => (i - 1 + imagePaths.length) % imagePaths.length);
+
+  // Update user context on resize and connection changes
+  useEffect(() => {
+    const handleResize = () => {
+      setUserConfig(detectUserContext());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Preload critical images for better performance
+  useEffect(() => {
+    if (imagePaths.length > 0) {
+      preloadCriticalImages(imagePaths.slice(0, 2), userConfig);
+    }
+  }, [imagePaths, userConfig]);
 
   // Touch swipe handling
   const touchStartX = useRef<number | null>(null);
@@ -103,12 +130,21 @@ export default function ListingCard({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <ClientImage
+        <OptimizedPropertyImage
           src={imagePaths[idx] || '/placeholder.jpg'}
-          alt={propertyType?.name ?? 'Listing'}
+          alt={optimizeAltText(
+            propertyType?.name ?? 'Недвижимость',
+            propertyType?.name,
+            districtName,
+            price
+          )}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width:768px) 100vw, 33vw"
+          sizes={getOptimizedImageSizes(userConfig)}
+          quality={getOptimizedQuality(userConfig)}
+          priority={shouldPrioritizeImage(idx, false, userConfig)}
+          sizeVariant={userConfig.isMobile ? 'medium' : 'large'}
+          enableBlur={true}
         />
         
         {/* Arrows - only visible on hover */}
