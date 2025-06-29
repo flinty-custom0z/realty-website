@@ -51,3 +51,7 @@ exports/
 
 # Local uploads directory
 # /public/uploads/
+
+
+# Images 
+/public/uploads/

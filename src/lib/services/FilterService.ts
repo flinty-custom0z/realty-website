@@ -16,6 +16,7 @@ export interface FilterParams {
   dealType?: string | null;
   applyPriceFilter?: boolean;
   cityIds?: string[];
+  propertyTypeIds?: string[];
 }
 
 export interface FilterOptions {
@@ -95,6 +96,7 @@ export class FilterService {
       dealType: searchParams.get('deal'),
       applyPriceFilter: searchParams.get('applyPriceFilter') === 'true',
       cityIds: searchParams.getAll('city'),
+      propertyTypeIds: searchParams.getAll('propertyType'),
     };
   }
 
@@ -112,7 +114,8 @@ export class FilterService {
       conditions = [],
       dealType = null,
       applyPriceFilter = false,
-      cityIds = []
+      cityIds = [],
+      propertyTypeIds = []
     } = params;
 
     // Use categoryQuery if available (for category pages search), otherwise use q (for global search)
@@ -175,6 +178,7 @@ export class FilterService {
     
     // Check if any filters are applied
     const hasFiltersApplied = districtIds.length > 0 || conditions.length > 0 || cityIds.length > 0 ||
+      propertyTypeIds.length > 0 ||
       (applyPriceFilter && (minPrice !== null || maxPrice !== null));
 
     // For available options, we want to show what's available with the currently selected filters
@@ -200,6 +204,10 @@ export class FilterService {
       
       if (excludeFilter !== 'city' && cityIds.length > 0) {
         filter.cityId = { in: cityIds };
+      }
+      
+      if (excludeFilter !== 'propertyType' && propertyTypeIds.length > 0) {
+        filter.typeId = { in: propertyTypeIds };
       }
       
       return filter;
@@ -456,7 +464,7 @@ export class FilterService {
           _count: {
             select: {
               listings: {
-                where: fullFilter
+                where: createFilterExcluding('propertyType')
               }
             }
           }
@@ -469,7 +477,7 @@ export class FilterService {
           _count: {
             select: {
               listings: {
-                where: fullFilter
+                where: createFilterExcluding('propertyType')
               }
             }
           }

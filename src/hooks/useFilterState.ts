@@ -297,6 +297,11 @@ export function useFilterState({
         state.selectedCities.forEach(city => params.append('city', city));
       }
       
+      // Add property type filter
+      if (state.selectedPropertyTypes.length > 0) {
+        state.selectedPropertyTypes.forEach(propertyType => params.append('propertyType', propertyType));
+      }
+      
       // Add price filters (always include in params)
       if (state.minPrice) {
         params.append('minPrice', state.minPrice);
@@ -378,6 +383,7 @@ export function useFilterState({
     state.selectedDistricts, 
     state.selectedConditions,
     state.selectedCities,
+    state.selectedPropertyTypes,
     state.selectedDealType,
     state.minPrice,
     state.maxPrice,
@@ -413,6 +419,7 @@ export function useFilterState({
             selectedDistricts: initialFilters.district || [],
             selectedConditions: initialFilters.condition || [],
             selectedCities: initialFilters.city || [],
+            selectedPropertyTypes: initialFilters.propertyType || [],
             selectedDealType: initialFilters.deal === 'rent' ? 'RENT' : 'SALE',
             searchInputValue: initialFilters.q || searchQuery || '',
             userEditedPrice: {
@@ -431,6 +438,7 @@ export function useFilterState({
         const urlDistricts = searchParams?.getAll('district') || [];
         const urlConditions = searchParams?.getAll('condition') || [];
         const urlCities = searchParams?.getAll('city') || [];
+        const urlPropertyTypes = searchParams?.getAll('propertyType') || [];
         const urlMinPrice = searchParams?.get('minPrice') || '';
         const urlMaxPrice = searchParams?.get('maxPrice') || '';
         const urlQuery = searchParams?.get('q') || searchQuery || '';
@@ -445,6 +453,7 @@ export function useFilterState({
             selectedDistricts: urlDistricts,
             selectedConditions: urlConditions,
             selectedCities: urlCities,
+            selectedPropertyTypes: urlPropertyTypes,
             selectedDealType: initialDealType,
             searchInputValue: urlQuery,
             userEditedPrice: {
@@ -468,6 +477,8 @@ export function useFilterState({
     categories: state.selectedCategories,
     districts: state.selectedDistricts, 
     conditions: state.selectedConditions,
+    cities: state.selectedCities,
+    propertyTypes: state.selectedPropertyTypes,
     dealType: state.selectedDealType,
   }, 300);
   
@@ -492,6 +503,8 @@ export function useFilterState({
     debouncedSelections.categories,
     debouncedSelections.districts,
     debouncedSelections.conditions,
+    debouncedSelections.cities,
+    debouncedSelections.propertyTypes,
     debouncedSelections.dealType,
     fetchFilterOptions
   ]);
