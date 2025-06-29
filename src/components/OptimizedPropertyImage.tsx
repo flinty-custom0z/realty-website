@@ -61,9 +61,12 @@ export default function OptimizedPropertyImage({
   enableBlur = true,
 }: PropertyImageProps) {
   const [imgSrc, setImgSrc] = useState<string>(() => {
-    // Process image source on mount
-    if (src.startsWith('/images/')) {
-      const imagePath = src.substring(8);
+    // Process image source on mount - handle both /images/ and /uploads/ paths
+    if (src.startsWith('/images/') || src.startsWith('/uploads/')) {
+      // Remove the leading directory prefix to get the relative path
+      const imagePath = src.startsWith('/images/') 
+        ? src.substring(8)  // Remove "/images/" prefix
+        : src.substring(9); // Remove "/uploads/" prefix
       
       if (sizeVariant !== 'original') {
         // Use optimized variants for better performance
@@ -81,8 +84,12 @@ export default function OptimizedPropertyImage({
   const [error, setError] = useState(false);
 
   const handleError = () => {
+    // Handle both /images/ and /uploads/ paths for fallback
     if (fallbackSrc.startsWith('/images/')) {
       const fallbackPath = fallbackSrc.substring(8);
+      setImgSrc(`/api/image/${fallbackPath}`);
+    } else if (fallbackSrc.startsWith('/uploads/')) {
+      const fallbackPath = fallbackSrc.substring(9);
       setImgSrc(`/api/image/${fallbackPath}`);
     } else {
       setImgSrc(fallbackSrc);

@@ -49,9 +49,12 @@ export default function ClientImage({
   const [error, setError] = useState(false);
   
   useEffect(() => {
-    // If the path starts with /images/, convert it to use our API route
-    if (src.startsWith('/images/')) {
-      const imagePath = src.substring(8); // Remove "/images/" prefix
+    // Handle both /images/ and /uploads/ paths by routing them through the API
+    if (src.startsWith('/images/') || src.startsWith('/uploads/')) {
+      // Remove the leading directory prefix to get the relative path
+      const imagePath = src.startsWith('/images/') 
+        ? src.substring(8)  // Remove "/images/" prefix
+        : src.substring(9); // Remove "/uploads/" prefix
       
       // Check if we need a specific size variant
       if (sizeVariant !== 'original') {
@@ -63,7 +66,13 @@ export default function ClientImage({
         if (filenameParts.length > 1 && /^[a-f0-9-]{36}\.[a-z]{3,4}$/i.test(originalFilename)) {
           // Use the pregenerated thumbnail variant if available
           const variantPath = getImageVariantPath(src, sizeVariant);
-          setImgSrc(variantPath);
+          // Route the variant through the API as well
+          const variantImagePath = variantPath.startsWith('/images/') 
+            ? variantPath.substring(8)
+            : variantPath.startsWith('/uploads/')
+            ? variantPath.substring(9)
+            : variantPath;
+          setImgSrc(`/api/image/${variantImagePath}`);
         } else {
           // For non-standard image paths or older uploads, use the dynamic API with params
           const maxWidth = sizeVariant === 'thumb' ? 200 : sizeVariant === 'medium' ? 600 : 1200;
@@ -86,9 +95,12 @@ export default function ClientImage({
   }, [src, sizeVariant, quality]);
   
   const handleError = () => {
-    // If fallback also starts with /images/, convert it
+    // If fallback also starts with /images/ or /uploads/, convert it
     if (fallbackSrc.startsWith('/images/')) {
       const fallbackPath = fallbackSrc.substring(8);
+      setImgSrc(`/api/image/${fallbackPath}`);
+    } else if (fallbackSrc.startsWith('/uploads/')) {
+      const fallbackPath = fallbackSrc.substring(9);
       setImgSrc(`/api/image/${fallbackPath}`);
     } else {
       setImgSrc(fallbackSrc);

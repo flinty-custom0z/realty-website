@@ -36,10 +36,11 @@ function isPathSafe(imagePath: string): boolean {
   return true;
 }
 
-// Verify the resolved path is within the public images directory
-function isWithinImageDirectory(resolvedPath: string): boolean {
+// Verify the resolved path is within allowed directories (images or uploads)
+function isWithinAllowedDirectory(resolvedPath: string): boolean {
   const imagesDir = path.resolve(process.cwd(), 'public', 'images');
-  return resolvedPath.startsWith(imagesDir);
+  const uploadsDir = path.resolve(process.cwd(), 'public', 'uploads');
+  return resolvedPath.startsWith(imagesDir) || resolvedPath.startsWith(uploadsDir);
 }
 
 export async function GET(
@@ -65,13 +66,23 @@ export async function GET(
     // Construct the image path
     const imagePath = pathSegments.join('/');
     
-    // Build the full path to the image
-    const fullPath = path.join(process.cwd(), 'public', 'images', imagePath);
-    const resolvedPath = path.resolve(fullPath);
+    // Try both images and uploads directories
+    let fullPath: string;
+    let resolvedPath: string;
     
-    // Secondary validation: ensure the path is within the images directory
-    if (!isWithinImageDirectory(resolvedPath)) {
-      console.error('Path traversal attempt detected: trying to access outside of images directory');
+    // First try the images directory (for static assets and placeholders)
+    fullPath = path.join(process.cwd(), 'public', 'images', imagePath);
+    resolvedPath = path.resolve(fullPath);
+    
+    // If not found in images, try uploads directory (for user-uploaded content)
+    if (!existsSync(resolvedPath)) {
+      fullPath = path.join(process.cwd(), 'public', 'uploads', imagePath);
+      resolvedPath = path.resolve(fullPath);
+    }
+    
+    // Secondary validation: ensure the path is within allowed directories
+    if (!isWithinAllowedDirectory(resolvedPath)) {
+      console.error('Path traversal attempt detected: trying to access outside of allowed directories');
       return NextResponse.json({ error: 'Invalid image path' }, { status: 403 });
     }
     
