@@ -617,8 +617,28 @@ export default function EditListingPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update listing');
+        // Attempt to extract an error message regardless of response format
+        let message = 'Failed to update listing';
+        const contentType = response.headers.get('content-type') || '';
+        try {
+          if (contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+              const details = errorData.validationErrors
+                .map((v: { path: string; message: string }) => `${v.path}: ${v.message}`)
+                .join('\n');
+              message = `${errorData.error || 'Validation error'}\n${details}`;
+            } else {
+              message = errorData.error || message;
+            }
+          } else {
+            const text = await response.text();
+            message = text.replace(/<[^>]*>/g, '').trim().split('\n')[0] || message;
+          }
+        } catch {
+          /* ignore parse failures */
+        }
+        throw new Error(message);
       }
       
       // Reset the image upload tracking  

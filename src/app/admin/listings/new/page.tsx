@@ -429,8 +429,30 @@ export default function NewListingPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create listing');
+        // Try to extract a useful message whatever the response format is
+        let message = 'Failed to create listing';
+        const contentType = response.headers.get('content-type') || '';
+        try {
+          if (contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+              // Build a readable list of field errors
+              const details = errorData.validationErrors
+                .map((v: { path: string; message: string }) => `${v.path}: ${v.message}`)
+                .join('\n');
+              message = `${errorData.error || 'Validation error'}\n${details}`;
+            } else {
+              message = errorData.error || message;
+            }
+          } else {
+            // Fallback to plain text (could be HTML) – strip tags to keep it readable
+            const text = await response.text();
+            message = text.replace(/<[^>]*>/g, '').trim().split('\n')[0] || message;
+          }
+        } catch {
+          /* ignore parse failures – we'll use the generic message */
+        }
+        throw new Error(message);
       }
       
       const data = await response.json();
