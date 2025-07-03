@@ -82,37 +82,72 @@ export async function generateMetadata({
       description = description.substring(0, 157) + '...';
     }
 
-    // Generate keywords for Russian SEO
+    // Generate comprehensive keywords for Russian SEO
     const keywords = [];
     
-    // Base keywords
+    // Base keywords with deal type
+    const propertyTypeName = listing.propertyType?.name || 'недвижимость';
     if (listing.dealType === 'RENT') {
-      keywords.push(`снять ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
-      keywords.push(`аренда ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+      keywords.push(`снять ${propertyTypeName} ${cityText}`);
+      keywords.push(`аренда ${propertyTypeName} ${cityText}`);
+      keywords.push(`сдается ${propertyTypeName}`);
     } else {
-      keywords.push(`купить ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
-      keywords.push(`продажа ${listing.propertyType?.name || 'недвижимость'} ${cityText}`);
+      keywords.push(`купить ${propertyTypeName} ${cityText}`);
+      keywords.push(`продажа ${propertyTypeName} ${cityText}`);
+      keywords.push(`продается ${propertyTypeName}`);
     }
     
-    // District-specific keywords
+    // Location-specific keywords
     if (listing.districtRef?.name) {
       keywords.push(`недвижимость ${listing.districtRef.name}`);
-      keywords.push(`${listing.propertyType?.name || 'недвижимость'} ${listing.districtRef.name}`);
+      keywords.push(`${propertyTypeName} ${listing.districtRef.name}`);
+      keywords.push(`${listing.districtRef.name} ${cityText}`);
     }
     
-    // Category-specific keywords
+    // Category and property type
     if (listing.category?.name) {
       keywords.push(listing.category.name);
+      keywords.push(`${listing.category.name} ${cityText}`);
     }
-    
-    // Area-specific keywords
-    if (listing.houseArea) {
-      keywords.push(`${listing.houseArea} м²`);
-    }
-    
-    // Property type
     if (listing.propertyType?.name) {
       keywords.push(listing.propertyType.name);
+    }
+    
+    // Property characteristics
+    if (listing.houseArea) {
+      keywords.push(`${listing.houseArea} м²`);
+      keywords.push(`площадь ${listing.houseArea} м²`);
+    }
+    
+    if (listing.floor && listing.totalFloors) {
+      keywords.push(`${listing.floor} этаж`);
+      keywords.push(`${listing.floor}/${listing.totalFloors} этаж`);
+    }
+    
+    if (listing.yearBuilt) {
+      keywords.push(`год постройки ${listing.yearBuilt}`);
+      keywords.push(`новостройка ${listing.yearBuilt}`);
+    }
+    
+    if (listing.condition) {
+      keywords.push(`состояние ${listing.condition}`);
+      keywords.push(listing.condition);
+    }
+    
+    // Price-related keywords
+    const priceRange = listing.price;
+    if (priceRange < 3000000) {
+      keywords.push('недорого');
+      keywords.push('бюджетная недвижимость');
+    } else if (priceRange > 10000000) {
+      keywords.push('элитная недвижимость');
+      keywords.push('премиум');
+    }
+    
+    // Land area for houses
+    if (listing.landArea) {
+      keywords.push(`участок ${listing.landArea} соток`);
+      keywords.push(`${listing.landArea} соток`);
     }
 
     // Build Open Graph images
@@ -146,7 +181,7 @@ export async function generateMetadata({
         description: description.length > 200 ? description.substring(0, 200) + '...' : description,
         images: ogImages.length > 0 ? [ogImages[0].url] : undefined
       },
-      // Yandex-specific meta tags
+      // Extended meta tags for better SEO
       other: {
         'yandex-verification': process.env.YANDEX_VERIFICATION || '',
         'format-detection': 'telephone=yes',
@@ -155,10 +190,41 @@ export async function generateMetadata({
         ...(listing.latitude && listing.longitude && {
           'geo.position': `${listing.latitude};${listing.longitude}`
         }),
+        // Price metadata
         'og:price:amount': listing.price.toString(),
         'og:price:currency': 'RUB',
         'product:price:amount': listing.price.toString(),
-        'product:price:currency': 'RUB'
+        'product:price:currency': 'RUB',
+        // Property-specific metadata
+        ...(listing.houseArea && {
+          'property:area': listing.houseArea.toString(),
+          'property:area:units': 'square_meters'
+        }),
+        ...(listing.floor && listing.totalFloors && {
+          'property:floor': listing.floor.toString(),
+          'property:floors:total': listing.totalFloors.toString()
+        }),
+        ...(listing.yearBuilt && {
+          'property:year_built': listing.yearBuilt.toString()
+        }),
+        ...(listing.condition && {
+          'property:condition': listing.condition
+        }),
+        ...(listing.landArea && {
+          'property:land_area': listing.landArea.toString(),
+          'property:land_area:units': 'sotka'
+        }),
+        // Location metadata
+        ...(listing.districtRef?.name && {
+          'property:district': listing.districtRef.name
+        }),
+        'property:city': cityText,
+        'property:deal_type': listing.dealType.toLowerCase(),
+        'property:type': listing.propertyType?.name || 'недвижимость',
+        'property:category': listing.category?.name || '',
+        // Contact info for rich snippets
+        'business:contact_data:phone_number': '+79624441579',
+        'business:contact_data:website': 'https://oporadom.ru'
       },
       // Canonical URL
       alternates: {
@@ -258,9 +324,10 @@ export default async function ListingDetailPage({
       }
     } as Record<string, unknown>;
 
-    // Add property-specific details to mainEntity
+    // Add comprehensive property details to mainEntity
     const mainEntity = structuredData.mainEntity as Record<string, unknown>;
     
+    // Physical characteristics
     if (listing.landArea) {
       mainEntity.lotSize = {
         "@type": "QuantitativeValue", 
@@ -271,6 +338,50 @@ export default async function ListingDetailPage({
 
     if (listing.yearBuilt) {
       mainEntity.yearBuilt = listing.yearBuilt;
+    }
+
+    if (listing.floor) {
+      mainEntity.floorLevel = listing.floor;
+    }
+
+    if (listing.totalFloors) {
+      mainEntity.numberOfFloorsInBuilding = listing.totalFloors;
+    }
+
+    if (listing.condition) {
+      mainEntity.propertyCondition = listing.condition;
+    }
+
+    // Kitchen area for apartments
+    if (listing.kitchenArea) {
+      mainEntity.kitchenArea = {
+        "@type": "QuantitativeValue",
+        "value": listing.kitchenArea,
+        "unitText": "м²"
+      };
+    }
+
+    // Additional amenities
+    const amenities = [];
+    if (listing.balconyType) amenities.push(`Балкон: ${listing.balconyType}`);
+    if (listing.bathroomType) amenities.push(`Санузел: ${listing.bathroomType}`);
+    if (listing.windowsView) amenities.push(`Вид из окон: ${listing.windowsView}`);
+    if (listing.buildingType) amenities.push(`Тип дома: ${listing.buildingType}`);
+    
+    if (amenities.length > 0) {
+      mainEntity.amenityFeature = amenities.map(amenity => ({
+        "@type": "LocationFeatureSpecification",
+        "name": amenity
+      }));
+    }
+
+    // Legal status
+    if (listing.noEncumbrances || listing.noShares) {
+      const legalFeatures = [];
+      if (listing.noEncumbrances) legalFeatures.push("Без обременений");
+      if (listing.noShares) legalFeatures.push("Без долей");
+      
+      mainEntity.legalStatus = legalFeatures.join(", ");
     }
 
     // Add images
