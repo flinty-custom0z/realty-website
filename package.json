@@ -9,7 +9,7 @@
     "backup-db": "node scripts/backup-db.js",
     "restore-db": "node scripts/restore-db.js",
     "prebuild": "npm run backup-db && node scripts/export-code.js",
-    "build": "next build --no-lint",
+    "build": "NODE_OPTIONS=--max-old-space-size=2048 next build --no-lint",
     "build:fast": "NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS='--max_old_space_size=4096' SKIP_EXAMPLE_PAGES=true next build --no-lint",
     "build:prod": "NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production EXPORT_CODE=true npm run prebuild && next build --no-lint",
     "vercel-build": "npm run backup-db && prisma generate && next build --no-lint",
