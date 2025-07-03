@@ -46,13 +46,15 @@ export async function generateMetadata(
     description = description.substring(0, 157) + '...';
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
+
   return {
     title: `${category.name} в Краснодаре`,
     description,
     // Add canonical URL to prevent duplicate content from filters
     alternates: {
-      canonical: `https://oporadom.ru/listing-category/${slug}`
-    }
+      canonical: `${baseUrl}/listing-category/${slug}`,
+    },
   };
 }
 
@@ -211,10 +213,13 @@ export default async function CategoryPage({
   // Use original pagination data from database query
   const adjustedPagination = pagination;
 
+  // Base URL for constructing absolute links
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
+
   // Create breadcrumb data
   const breadcrumbItems = [
-    { name: "Главная", url: "https://oporadom.ru/" },
-    { name: category.name, url: `https://oporadom.ru/listing-category/${category.slug}` }
+    { name: 'Главная', url: `${baseUrl}/` },
+    { name: category.name, url: `${baseUrl}/listing-category/${category.slug}` },
   ];
 
   // Create ItemList structured data for the category page
@@ -223,13 +228,13 @@ export default async function CategoryPage({
     "@type": "ItemList",
     "name": `${category.name} в Краснодаре`,
     "description": category.description || `${category.name} в Краснодаре. Выгодные предложения.`,
-    "url": `https://oporadom.ru/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
+    "url": `${baseUrl}/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
     "numberOfItems": listings.length,
     "itemListElement": listings.slice(0, 10).map((listing, index) => ({
       "@type": "RealEstateListing",
       "position": index + 1,
       "name": listing.title,
-      "url": `https://oporadom.ru/listing/${listing.id}`,
+      "url": `${baseUrl}/listing/${listing.id}`,
       "offers": {
         "@type": "Offer",
         "price": listing.price,

@@ -7,7 +7,7 @@ import { JWT_SECRET } from '@/lib/env';
 import Script from 'next/script';
 import StructuredDataBreadcrumb from '@/components/StructuredDataBreadcrumb';
 import { Metadata } from 'next/types';
-import { buildListingMetadata } from '@/lib/seo/buildListingMetadata';
+import { buildListingMetadata, ListingWithRelations } from '@/lib/seo/buildListingMetadata';
 
 // Remove the hardcoded fallback
 // const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -22,11 +22,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const { id } = await params;
-    const listing = await prisma.listUniqueListing(id);
+    const listing = await prisma.listing.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        images: true,
+        districtRef: true,
+        propertyType: { select: { name: true } },
+        city: { select: { name: true } },
+      },
+    });
     if (!listing) return { title: 'Объявление не найдено' };
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
-    const { metadata } = buildListingMetadata(listing as any, baseUrl);
+    const { metadata } = buildListingMetadata(listing as ListingWithRelations, baseUrl);
     return metadata;
   } catch (error) {
     console.error('Error generating metadata:', error);
@@ -45,7 +54,7 @@ export default async function ListingDetailPage({
     const isAdmin = await checkIfUserIsAdmin();
     
     const listing = await prisma.listing.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
         category: true,
         images: true,
@@ -64,13 +73,13 @@ export default async function ListingDetailPage({
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
-    const { jsonLd: structuredData } = buildListingMetadata(listing as any, baseUrl);
+    const { jsonLd: structuredData } = buildListingMetadata(listing as ListingWithRelations, baseUrl);
 
     // Create breadcrumb data
     const breadcrumbItems = [
-      { name: "Главная", url: "https://oporadom.ru/" },
-      { name: listing.category?.name || "Недвижимость", url: `https://oporadom.ru/listing-category/${listing.category?.slug || ''}` },
-      { name: listing.title, url: `https://oporadom.ru/listing/${listing.id}` }
+      { name: 'Главная', url: `${baseUrl}/` },
+      { name: listing.category?.name || 'Недвижимость', url: `${baseUrl}/listing-category/${listing.category?.slug || ''}` },
+      { name: listing.title, url: `${baseUrl}/listing/${listing.id}` },
     ];
 
     // If user is not admin, strip out adminComment

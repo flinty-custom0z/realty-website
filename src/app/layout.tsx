@@ -63,30 +63,35 @@ export default function RootLayout({
         </noscript>
         
         {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "ОпораДом",
-              "description": "Краснодарская недвижимость - продажа и аренда квартир, домов, земельных участков и коммерческой недвижимости",
-              "url": "https://oporadom.ru",
-              "telephone": ["+79624441579", "+79298510395"],
-              "address": {
-                "@type": "PostalAddress",
-                "addressLocality": "Краснодар",
-                "addressCountry": "RU"
-              },
-              "areaServed": {
-                "@type": "City",
-                "name": "Краснодар"
-              },
-              "knowsAbout": ["недвижимость", "квартиры", "дома", "земельные участки", "коммерческая недвижимость", "аренда", "продажа"],
-              "serviceType": ["Продажа недвижимости", "Аренда недвижимости", "Консультации по недвижимости"]
-            })
-          }}
-        />
+        {(() => {
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
+          return (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "Organization",
+                  "name": "ОпораДом",
+                  "description": "Краснодарская недвижимость - продажа и аренда квартир, домов, земельных участков и коммерческой недвижимости",
+                  "url": baseUrl,
+                  "telephone": ["+79624441579", "+79298510395"],
+                  "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Краснодар",
+                    "addressCountry": "RU"
+                  },
+                  "areaServed": {
+                    "@type": "City",
+                    "name": "Краснодар"
+                  },
+                  "knowsAbout": ["недвижимость", "квартиры", "дома", "земельные участки", "коммерческая недвижимость", "аренда", "продажа"],
+                  "serviceType": ["Продажа недвижимости", "Аренда недвижимости", "Консультации по недвижимости"]
+                })
+              }}
+            />
+          );
+        })()}
         
         <script
           type="application/ld+json"

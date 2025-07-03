@@ -2,6 +2,10 @@
  * SEO utilities for debugging and verifying metadata
  */
 
+import type { Metadata } from 'next';
+import type { Listing } from '@prisma/client';
+import type { ListingWithRelations } from '@/lib/seo/buildListingMetadata';
+
 export interface SEOAuditResult {
   title: {
     length: number;
@@ -30,10 +34,10 @@ export interface SEOAuditResult {
   };
 }
 
-export function auditListingSEO(metadata: any, structuredData: any): SEOAuditResult {
+export function auditListingSEO(metadata: Metadata, structuredData: Record<string, unknown> | null): SEOAuditResult {
   const result: SEOAuditResult = {
     title: {
-      length: metadata.title?.length || 0,
+      length: String(metadata.title ?? '').length,
       isOptimal: false
     },
     description: {
@@ -41,11 +45,13 @@ export function auditListingSEO(metadata: any, structuredData: any): SEOAuditRes
       isOptimal: false
     },
     keywords: {
-      count: metadata.keywords?.split(',').length || 0,
+      count: (Array.isArray(metadata.keywords)
+        ? metadata.keywords.join(',')
+        : (metadata.keywords ?? '')).split(',').filter(Boolean).length,
       isOptimal: false
     },
     images: {
-      count: metadata.openGraph?.images?.length || 0,
+      count: (Array.isArray(metadata.openGraph?.images) ? metadata.openGraph?.images.length : 0) || 0,
       hasOgImage: false
     },
     structured: {
@@ -107,8 +113,8 @@ export function auditListingSEO(metadata: any, structuredData: any): SEOAuditRes
 }
 
 export function generateSEOReport(auditResult: SEOAuditResult): string {
-  const warnings = [];
-  const successes = [];
+  const warnings: string[] = [];
+  const successes: string[] = [];
 
   if (auditResult.title.isOptimal) {
     successes.push('✅ Заголовок оптимизирован');
@@ -146,11 +152,11 @@ export function generateSEOReport(auditResult: SEOAuditResult): string {
 /**
  * Extract key SEO metrics from a listing for quick overview
  */
-export function getListingSEOMetrics(listing: any) {
+export function getListingSEOMetrics(listing: Partial<Listing> & Partial<ListingWithRelations>) {
   return {
     hasTitle: !!listing.title,
     hasDescription: !!listing.publicDescription,
-    hasImages: listing.images?.length > 0,
+    hasImages: (listing.images?.length ?? 0) > 0,
     hasLocation: !!(listing.city || listing.districtRef),
     hasPrice: !!listing.price,
     hasArea: !!(listing.houseArea || listing.landArea),
@@ -158,11 +164,11 @@ export function getListingSEOMetrics(listing: any) {
   };
 }
 
-function calculateSEOCompleteness(listing: any): number {
+function calculateSEOCompleteness(listing: Partial<Listing> & Partial<ListingWithRelations>): number {
   const factors = [
     !!listing.title,
     !!listing.publicDescription,
-    listing.images?.length > 0,
+    (listing.images?.length ?? 0) > 0,
     !!(listing.city || listing.districtRef),
     !!listing.price,
     !!(listing.houseArea || listing.landArea),
