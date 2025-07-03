@@ -3,7 +3,7 @@ import { createLogger } from '@/lib/logging';
 const logger = createLogger('SearchEngineService');
 
 export class SearchEngineService {
-  private static baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://opora-dom.ru';
+  private static baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
 
   /**
    * Ping Google to reindex the sitemap

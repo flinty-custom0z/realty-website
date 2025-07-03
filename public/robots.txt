@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://oporadom.ru/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1 
