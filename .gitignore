@@ -55,3 +55,7 @@ exports/
 
 # Images 
 /public/uploads/
+
+temp/
+
+sql_backup/*

@@ -38,12 +38,21 @@ export async function generateMetadata(
   const category = await prisma.category.findUnique({ where: { slug } });
   if (!category) return { title: 'Категория не найдена' };
 
-  // 3. build title (no deal-type suffix)
+  // 3. build title and description
+  let description = category.description ?? `${category.name} в Краснодаре. Выгодные предложения недвижимости от агентства ОпораДом. Звоните: +7(962)444-15-79`;
+  
+  // Trim description to 160 characters for SEO
+  if (description.length > 160) {
+    description = description.substring(0, 157) + '...';
+  }
+
   return {
     title: `${category.name} в Краснодаре`,
-    description:
-      category.description
-        ?? `${category.name} в Краснодаре. Выгодные предложения.`,
+    description,
+    // Add canonical URL to prevent duplicate content from filters
+    alternates: {
+      canonical: `https://oporadom.ru/listing-category/${slug}`
+    }
   };
 }
 
@@ -204,8 +213,8 @@ export default async function CategoryPage({
 
   // Create breadcrumb data
   const breadcrumbItems = [
-    { name: "Главная", url: "https://opora-dom.ru/" },
-    { name: category.name, url: `https://opora-dom.ru/listing-category/${category.slug}` }
+    { name: "Главная", url: "https://oporadom.ru/" },
+    { name: category.name, url: `https://oporadom.ru/listing-category/${category.slug}` }
   ];
 
   // Create ItemList structured data for the category page
@@ -214,13 +223,13 @@ export default async function CategoryPage({
     "@type": "ItemList",
     "name": `${category.name} в Краснодаре`,
     "description": category.description || `${category.name} в Краснодаре. Выгодные предложения.`,
-    "url": `https://opora-dom.ru/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
+    "url": `https://oporadom.ru/listing-category/${category.slug}${isRent ? '?deal=rent' : ''}`,
     "numberOfItems": listings.length,
     "itemListElement": listings.slice(0, 10).map((listing, index) => ({
       "@type": "RealEstateListing",
       "position": index + 1,
       "name": listing.title,
-      "url": `https://opora-dom.ru/listing/${listing.id}`,
+      "url": `https://oporadom.ru/listing/${listing.id}`,
       "offers": {
         "@type": "Offer",
         "price": listing.price,

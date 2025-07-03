@@ -76,6 +76,11 @@ export async function generateMetadata({
     }
     
     description += '. Звоните: +7(962)444-15-79';
+    
+    // Trim description to 160 characters for SEO
+    if (description.length > 160) {
+      description = description.substring(0, 157) + '...';
+    }
 
     // Generate keywords for Russian SEO
     const keywords = [];
@@ -112,7 +117,7 @@ export async function generateMetadata({
 
     // Build Open Graph images
     const ogImages = listing.images?.slice(0, 4).map(img => ({
-      url: `https://opora-dom.ru/api/image/${img.path}`,
+      url: `https://oporadom.ru/api/image/${img.path}`,
       width: 1200,
       height: 630,
       alt: `${listing.title} - ${listing.address || listing.fullAddress || cityText}`
@@ -125,7 +130,7 @@ export async function generateMetadata({
       openGraph: {
         title,
         description,
-        url: `https://opora-dom.ru/listing/${id}`,
+        url: `https://oporadom.ru/listing/${id}`,
         locale: 'ru_RU',
         type: 'article',
         siteName: 'ОпораДом',
@@ -157,7 +162,7 @@ export async function generateMetadata({
       },
       // Canonical URL
       alternates: {
-        canonical: `https://opora-dom.ru/listing/${id}`
+        canonical: `https://oporadom.ru/listing/${id}`
       }
     };
   } catch (error) {
@@ -204,7 +209,7 @@ export default async function ListingDetailPage({
       "@type": "RealEstateListing",
       "name": `${listing.address || listing.title} - ${listing.price.toLocaleString('ru-RU')} ₽`,
       "description": listing.publicDescription || listing.title,
-      "url": `https://opora-dom.ru/listing/${listing.id}`,
+      "url": `https://oporadom.ru/listing/${listing.id}`,
       "datePosted": listing.dateAdded.toISOString(),
       "mainEntity": {
         "@type": listing.category?.slug === 'apartments' || listing.category?.slug === 'apartment' ? "Apartment" : 
@@ -241,7 +246,7 @@ export default async function ListingDetailPage({
           "@type": "RealEstateAgent",
           "name": "ОпораДом",
           "telephone": ["+79624441579", "+79298510395"],
-          "email": "info@opora-dom.ru"
+          "email": "info@oporadom.ru"
         }
       },
       "address": {
@@ -271,7 +276,7 @@ export default async function ListingDetailPage({
     // Add images
     if (listing.images && listing.images.length > 0) {
       const imageUrls = listing.images.map(img => 
-        `https://opora-dom.ru/api/image/${img.path}`
+        `https://oporadom.ru/api/image/${img.path}`
       );
       structuredData.image = imageUrls;
       mainEntity.image = imageUrls;
@@ -300,9 +305,9 @@ export default async function ListingDetailPage({
 
     // Create breadcrumb data
     const breadcrumbItems = [
-      { name: "Главная", url: "https://opora-dom.ru/" },
-      { name: listing.category?.name || "Недвижимость", url: `https://opora-dom.ru/listing-category/${listing.category?.slug || ''}` },
-      { name: listing.title, url: `https://opora-dom.ru/listing/${listing.id}` }
+      { name: "Главная", url: "https://oporadom.ru/" },
+      { name: listing.category?.name || "Недвижимость", url: `https://oporadom.ru/listing-category/${listing.category?.slug || ''}` },
+      { name: listing.title, url: `https://oporadom.ru/listing/${listing.id}` }
     ];
 
     // If user is not admin, strip out adminComment

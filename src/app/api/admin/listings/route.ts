@@ -6,6 +6,7 @@ import { parseListingFormData } from '@/lib/validators/listingValidators';
 import { handleApiError } from '@/lib/validators/errorHandler';
 import prisma from '@/lib/prisma';
 import { createLogger } from '@/lib/logging';
+import { SearchEngineService } from '@/lib/services/SearchEngineService';
 
 // Create a logger instance
 const logger = createLogger('AdminListingsAPI');
@@ -48,12 +49,18 @@ async function handleCreateListing(req: NextRequest) {
       // If no images were uploaded, use a placeholder
       logger.info("No images uploaded, using placeholder");
       const category = await prisma.category.findUnique({ where: { id: listingData.categoryId } });
-      let placeholderPath = `/images/${category?.slug || 'placeholder'}_placeholder.png`;
+      const placeholderPath = `/images/${category?.slug || 'placeholder'}_placeholder.png`;
       
       await ImageService.createImageRecord(newListing.id, placeholderPath, true);
     }
 
     logger.info("Listing creation complete, returning response");
+    
+    // Notify search engines about the new listing (fire and forget)
+    SearchEngineService.notifySearchEngines(newListing.id).catch(error => {
+      logger.error("Failed to notify search engines about new listing", { error, listingId: newListing.id });
+    });
+    
     return NextResponse.json(newListing, { 
       status: 201,
       headers: {

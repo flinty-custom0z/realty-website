@@ -71,7 +71,7 @@ export default function RootLayout({
               "@type": "Organization",
               "name": "ОпораДом",
               "description": "Краснодарская недвижимость - продажа и аренда квартир, домов, земельных участков и коммерческой недвижимости",
-              "url": "https://opora-dom.ru",
+              "url": "https://oporadom.ru",
               "telephone": ["+79624441579", "+79298510395"],
               "address": {
                 "@type": "PostalAddress",
@@ -96,10 +96,10 @@ export default function RootLayout({
               "@type": "WebSite",
               "name": "ОпораДом - Краснодарская недвижимость",
               "description": "Найдите идеальную недвижимость для жизни, инвестиций или бизнеса. Большой выбор объектов во всех районах города.",
-              "url": "https://opora-dom.ru",
+              "url": "https://oporadom.ru",
               "potentialAction": {
                 "@type": "SearchAction",
-                "target": "https://opora-dom.ru/search?q={search_term_string}",
+                "target": "https://oporadom.ru/search?q={search_term_string}",
                 "query-input": "required name=search_term_string"
               },
               "publisher": {

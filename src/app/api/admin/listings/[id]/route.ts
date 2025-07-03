@@ -4,6 +4,10 @@ import { ListingService } from '@/lib/services/ListingService';
 import { ImageService } from '@/lib/services/ImageService';
 import { parseListingFormData } from '@/lib/validators/listingValidators';
 import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
+import { SearchEngineService } from '@/lib/services/SearchEngineService';
+import { createLogger } from '@/lib/logging';
+
+const logger = createLogger('AdminListingUpdateAPI');
 
 // GET method
 export async function GET(
@@ -80,6 +84,11 @@ export const PUT = withAuth(async (req: NextRequest, { params }: { params: Promi
 
     // Get updated listing with all relationships
     const updatedListingWithRelations = await ListingService.getListingByIdWithRelations(listingId);
+
+    // Notify search engines about the updated listing (fire and forget)
+    SearchEngineService.notifySearchEngines(listingId).catch(error => {
+      logger.error("Failed to notify search engines about updated listing", { error, listingId });
+    });
 
     return NextResponse.json(updatedListingWithRelations);
   } catch (error) {
