@@ -90,6 +90,14 @@ export default function ResponsiveNav() {
               >
                 Карта
               </Link>
+              <Link 
+                href="/contact"
+                className={`text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium ${
+                  pathname === '/contact' ? 'text-gray-900' : ''
+                }`}
+              >
+                Контакты
+              </Link>
             </nav>
           </div>
           
@@ -179,6 +187,14 @@ export default function ResponsiveNav() {
               }`}
             >
               Карта
+            </Link>
+            <Link 
+              href="/contact"
+              className={`py-2 text-gray-600 hover:text-gray-900 transition-colors ${
+                pathname === '/contact' ? 'text-gray-900 font-medium' : ''
+              }`}
+            >
+              Контакты
             </Link>
           </nav>
         </div>
