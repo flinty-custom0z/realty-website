@@ -4,8 +4,8 @@ import YandexMap from '@/components/YandexMap';
 import YandexMapProvider from '@/components/YandexMapProvider';
 
 export const metadata = {
-  title: 'Контакты | ОПора Дом',
-  description: 'Контактная информация, адрес и форма обратной связи агентства недвижимости «ОПора Дом»',
+  title: 'Контакты | Опора Дом',
+  description: 'Контактная информация, адрес и форма обратной связи агентства недвижимости «Опора Дом»',
 };
 
 const OFFICE_COORDINATES: [number, number] = [45.054169, 39.0294664]; // Краснодар, ул. Героя Сарабеева 5 к3
@@ -90,7 +90,7 @@ export default function ContactPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'RealEstateAgent',
-            name: 'ОПора Дом',
+            name: 'Опора Дом',
             url: 'https://www.oporadom.ru',
             telephone: '+7-962-444-15-79',
             address: 'Краснодар, ул. Героя Сарабеева д.5 к.3',
