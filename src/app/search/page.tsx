@@ -297,6 +297,8 @@ export default async function SearchPage({
                   ?.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
                   .map(img => img.path) ?? []}
                 listingCode={l.listingCode}
+                propertyType={l.propertyType || undefined}
+                category={l.category || undefined}
               />
             ))}
           </div>

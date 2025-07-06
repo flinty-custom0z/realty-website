@@ -191,7 +191,7 @@ export default function ListingCard({
             ? 'Новостройка' 
             : category?.slug === 'international'
               ? 'Недвижимость за рубежом'
-              : propertyType?.name ?? 'Квартира'}{area ? ` ${area} м²` : ''}
+              : propertyType?.name ?? category?.name ?? 'Недвижимость'}{area ? ` ${area} м²` : ''}
         </h3>
         {/* address */}
         <p className="text-xs text-gray-500 line-clamp-1">

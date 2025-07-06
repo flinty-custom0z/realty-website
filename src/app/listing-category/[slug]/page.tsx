@@ -321,6 +321,8 @@ export default async function CategoryPage({
                   ?.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
                   .map(img => img.path) ?? []}
                 listingCode={listing.listingCode}
+                propertyType={listing.propertyType || undefined}
+                category={listing.category || undefined}
               />
             ))}
           </div>
