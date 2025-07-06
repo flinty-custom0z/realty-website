@@ -51,7 +51,34 @@ export function buildListingMetadata(listing: ListingWithRelations, baseUrl: str
   const districtText = listing.districtRef?.name ? `, ${listing.districtRef.name}` : '';
 
   // -------- TITLE --------
-  const title = `${listing.title} — ${listing.price.toLocaleString('ru-RU')} ₽${areaText} | ОпораДом`;
+  // Build title with pattern: "propertyType + m² | Город | Район | ОпораДом"
+  // Only include parts that are available
+  let titleParts = [];
+  
+  // Property type and area
+  let propertyTypeText = listing.propertyType?.name || 'недвижимость';
+  if (listing.category?.slug === 'new-construction') {
+    propertyTypeText = 'Новостройка';
+  } else if (listing.category?.slug === 'international') {
+    propertyTypeText = 'Недвижимость за рубежом';
+  }
+  
+  titleParts.push(propertyTypeText + (listing.houseArea ? ` ${listing.houseArea} м²` : ''));
+  
+  // Add city if available
+  if (listing.city?.name) {
+    titleParts.push(listing.city.name);
+  }
+  
+  // Add district if available
+  if (listing.districtRef?.name) {
+    titleParts.push(listing.districtRef.name);
+  }
+  
+  // Always end with brand name
+  titleParts.push('ОпораДом');
+  
+  const title = titleParts.join(' | ');
 
   // -------- DESCRIPTION --------
   let description = listing.dealType === 'RENT'
