@@ -54,6 +54,9 @@ export default function ContactPage() {
               Телефон: <a href="tel:+7964441579" className="underline hover:text-sale-primary-600">+7 962 444-15-79</a>
             </p>
             <p className="text-lg leading-relaxed">
+              Телефон: <a href="tel:+79298510395" className="underline hover:text-sale-primary-600">+7 929 851-03-95</a>
+            </p>
+            <p className="text-lg leading-relaxed">
               E-mail: <a href="mailto:oporadom@gmail.com" className="underline hover:text-sale-primary-600">oporadom@gmail.com</a>
             </p>
             <p className="text-lg leading-relaxed">
@@ -92,7 +95,7 @@ export default function ContactPage() {
             '@type': 'RealEstateAgent',
             name: 'Опора Дом',
             url: 'https://www.oporadom.ru',
-            telephone: '+7-962-444-15-79',
+            telephone: ['+7-962-444-15-79', '+7-929-851-03-95'],
             address: 'Краснодар, ул. Героя Сарабеева д.5 к.3',
             geo: {
               '@type': 'GeoCoordinates',
