@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface PropertyImageProps {
@@ -60,25 +60,36 @@ export default function OptimizedPropertyImage({
   showLoadingIndicator = false,
   enableBlur = true,
 }: PropertyImageProps) {
-  const [imgSrc, setImgSrc] = useState<string>(() => {
-    // Process image source on mount - handle both /images/ and /uploads/ paths
+  // Helper to transform the incoming src based on provided props
+  const transformSrc = (): string => {
+    // Handle internal image paths (/images/ or /uploads/) so that they go through the image optimization API
     if (src.startsWith('/images/') || src.startsWith('/uploads/')) {
-      // Remove the leading directory prefix to get the relative path
-      const imagePath = src.startsWith('/images/') 
-        ? src.substring(8)  // Remove "/images/" prefix
-        : src.substring(9); // Remove "/uploads/" prefix
-      
+      // Strip the directory prefix to get a relative path
+      const imagePath = src.startsWith('/images/')
+        ? src.substring(8) // remove "/images/"
+        : src.substring(9); // remove "/uploads/"
+
+      // Select an appropriate maxWidth for the requested size variant
       if (sizeVariant !== 'original') {
-        // Use optimized variants for better performance
         const maxWidth = sizeVariant === 'thumb' ? 200 : sizeVariant === 'medium' ? 600 : 1200;
         return `/api/image/${imagePath}?width=${maxWidth}&quality=${quality}`;
       }
-      
+
       return `/api/image/${imagePath}`;
     }
-    
+
+    // External or already-optimized URLs are returned as-is
     return src;
-  });
+  };
+
+  // Store the resolved src in state so that we can update it on error, but also react to prop changes
+  const [imgSrc, setImgSrc] = useState<string>(transformSrc());
+
+  // Recompute imgSrc whenever the relevant props change (e.g. navigating to a different image)
+  useEffect(() => {
+    setImgSrc(transformSrc());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, sizeVariant, quality]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
