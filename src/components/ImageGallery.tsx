@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import OptimizedPropertyImage from '@/components/OptimizedPropertyImage';
-import { ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   detectUserContext, 
   getOptimizedImageSizes, 
@@ -25,7 +25,6 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [userConfig, setUserConfig] = useState(() => detectUserContext());
 
   // Update user context on resize and connection changes
@@ -91,7 +90,7 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
         )}
       
         {/* Main image */}
-        <div className="relative w-full flex justify-center items-center cursor-pointer" style={{ maxHeight: '70vh' }} onClick={() => setIsModalOpen(true)}>
+        <div className="relative w-full flex justify-center items-center" style={{ maxHeight: '70vh' }}>
           <OptimizedPropertyImage
             src={images[selectedImageIndex].path}
             alt={optimizeAltText(`${title} - фото ${selectedImageIndex + 1}`)}
@@ -104,11 +103,6 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
             enableBlur={true}
             showLoadingIndicator={true}
           />
-          
-          {/* Zoom icon overlay */}
-          <div className="absolute top-3 right-3 z-10 bg-white/80 p-2 rounded-full shadow-md">
-            <ZoomIn size={18} className="text-gray-700" />
-          </div>
         </div>
         
         {/* Image counter */}
@@ -145,61 +139,6 @@ export default function ImageGallery({ images, title }: ImageGalleryProps) {
               />
             </div>
           ))}
-        </div>
-      )}
-      
-      {/* Fullscreen Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
-          <button 
-            className="absolute top-4 right-4 z-10 bg-white/20 p-2 rounded-full text-white hover:bg-white/30 transition-colors"
-            onClick={() => setIsModalOpen(false)}
-          >
-            <X size={24} />
-          </button>
-          
-          {images.length > 1 && (
-            <>
-              <button 
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 p-3 rounded-full hover:bg-white/30 transition-colors"
-                aria-label="Previous image"
-              >
-                <ChevronLeft size={30} className="text-white" />
-              </button>
-              
-              <button 
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 p-3 rounded-full hover:bg-white/30 transition-colors"
-                aria-label="Next image"
-              >
-                <ChevronRight size={30} className="text-white" />
-              </button>
-            </>
-          )}
-          
-          <div className="relative max-h-[90vh] max-w-[90vw]">
-            <OptimizedPropertyImage
-              src={images[selectedImageIndex].path}
-              alt={optimizeAltText(`${title} - фото ${selectedImageIndex + 1}`)}
-              width={1200}
-              height={800}
-              className="object-contain max-h-[90vh]"
-              fallbackSrc="/images/placeholder.png"
-              sizeVariant="large"
-              priority={true}
-              quality={90}
-              enableBlur={false}
-              showLoadingIndicator={true}
-            />
-          </div>
-          
-          {/* Image counter in modal */}
-          {images.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1.5 text-sm rounded-full border border-white/20">
-              {selectedImageIndex + 1} / {images.length}
-            </div>
-          )}
         </div>
       )}
     </div>
