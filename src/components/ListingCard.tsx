@@ -125,7 +125,7 @@ export default function ListingCard({
     <Link href={`/listing/${id}`} className="block rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition">
       {/* --- image wrapper --- */}
       <div 
-        className="relative aspect-[4/3] overflow-hidden group"
+        className="relative aspect-[4/3] overflow-hidden rounded-t-xl group"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
