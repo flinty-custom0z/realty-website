@@ -13,6 +13,8 @@ import HomeDealTypeToggle from '@/components/HomeDealTypeToggle';
 import CategoryTiles from '@/components/CategoryTiles';
 import ContactForm from '@/components/ui/ContactForm';
 import { Metadata } from 'next';
+import { OptimizedListingService } from '@/lib/services/OptimizedListingService';
+import { DealType } from '@prisma/client';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -71,7 +73,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
 
 // Add interface for Listing type
 interface ListingWithDealType {
-  dealType: 'SALE' | 'RENT';
+  dealType: DealType;
 }
 
 // Add interface for Category with counts
@@ -112,8 +114,8 @@ async function getCategories() {
   
   // Add calculated counts for each deal type
   return (categories as unknown as CategoryWithCounts[]).map(category => {
-    const saleCount = category.listings.filter(l => l.dealType === 'SALE').length;
-    const rentCount = category.listings.filter(l => l.dealType === 'RENT').length;
+    const saleCount = category.listings.filter(l => l.dealType === DealType.SALE).length;
+    const rentCount = category.listings.filter(l => l.dealType === DealType.RENT).length;
     
     return {
       ...category,
@@ -124,83 +126,41 @@ async function getCategories() {
   });
 }
 
-// Fetch all listings with filters/sorting/pagination
+// Fetch all listings with filters/sorting/pagination using OptimizedListingService
 async function getListings(searchParams: Record<string, string | string[] | undefined>) {
-  // Build filter object (same as search page)
-  const filter: any = { 
-    status: 'active',
-  };
-
-  // Search query
-  if (searchParams.q) {
-    filter.OR = [
-      { title: { contains: searchParams.q as string, mode: 'insensitive' } },
-      { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
-    ];
-  }
-
-  // Deal type filter (unified approach - use only 'deal' parameter)
-  if (searchParams.deal === 'rent') {
-    filter.dealType = 'RENT';
-  } else {
-    filter.dealType = 'SALE';
-  }
-
-  // Numeric filters
-  if (searchParams.minPrice) {
-    filter.price = { ...(filter.price || {}), gte: parseFloat(searchParams.minPrice as string) };
-  }
-  if (searchParams.maxPrice) {
-    filter.price = { ...(filter.price || {}), lte: parseFloat(searchParams.maxPrice as string) };
-  }
-
-  // Multi-select filters
-  if (searchParams.district) {
-    const dists = Array.isArray(searchParams.district) ? searchParams.district : [searchParams.district];
-    filter.district = { in: dists };
-  }
-  if (searchParams.condition) {
-    const conds = Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition];
-    filter.condition = { in: conds };
-  }
-  if (searchParams.city) {
-    const cities = Array.isArray(searchParams.city) ? searchParams.city : [searchParams.city];
-    filter.cityId = { in: cities };
-  }
-
-  // Pagination
+  // Parse parameters
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 12;
+  const sort = (searchParams.sort as string) || 'dateAdded';
+  const order = (searchParams.order as string) === 'asc' ? 'asc' : 'desc';
+  
+  // Convert multi-select parameters to arrays
+  const districts = searchParams.district ? 
+    (Array.isArray(searchParams.district) ? searchParams.district : [searchParams.district]) : 
+    undefined;
+  const conditions = searchParams.condition ? 
+    (Array.isArray(searchParams.condition) ? searchParams.condition : [searchParams.condition]) : 
+    undefined;
+  const cityIds = searchParams.city ? 
+    (Array.isArray(searchParams.city) ? searchParams.city : [searchParams.city]) : 
+    undefined;
 
-  // Sorting
-  const sortField = (searchParams.sort as string) || 'dateAdded';
-  const sortOrder = (searchParams.order as string) === 'asc' ? 'asc' : 'desc';
+  // Use OptimizedListingService with caching
+  const result = await OptimizedListingService.getListingsOptimized({
+    page,
+    limit,
+    sort,
+    order,
+    dealType: searchParams.deal as string || undefined,
+    searchQuery: searchParams.q as string || undefined,
+    priceMin: searchParams.minPrice ? parseFloat(searchParams.minPrice as string) : undefined,
+    priceMax: searchParams.maxPrice ? parseFloat(searchParams.maxPrice as string) : undefined,
+    districts,
+    conditions,
+    cityIds,
+  });
 
-  const [total, listings] = await Promise.all([
-    prisma.listing.count({ where: filter }),
-    prisma.listing.findMany({
-      where: filter,
-      include: {
-        category: true,
-        images: { where: { isFeatured: true }, take: 1 },
-        city: true,
-        propertyType: true,
-      },
-      orderBy: { [sortField]: sortOrder },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-  ]);
-
-  return {
-    listings,
-    pagination: {
-      total,
-      pages: Math.ceil(total / limit),
-      page,
-      limit,
-    },
-  };
+  return result;
 }
 
 // Validate that all placeholder images exist

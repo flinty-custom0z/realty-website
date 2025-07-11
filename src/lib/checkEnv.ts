@@ -42,6 +42,19 @@ The contact form may not work without these variables.
 See CONTACT_FORM_SETUP.md for instructions on setting up email.
     `);
   }
+
+  // Check for Redis cache configuration (optional for better performance)
+  if (!process.env.REDIS_URL) {
+    console.warn(`
+⚠️  Info: Redis cache not configured. The app will work without caching.
+Missing Redis environment variable: REDIS_URL
+
+For better performance, set up Redis caching:
+- Install Redis on your VPS: sudo apt install redis-server
+- Add REDIS_URL=redis://localhost:6379 to your .env
+- This will enable caching for listings and filters, improving page load times
+    `);
+  }
   
   console.log('✅ Environment validation successful - all required variables are set');
 } 

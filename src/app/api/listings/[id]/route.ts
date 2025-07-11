@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '@/lib/env';
 import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
+import { OptimizedListingService } from '@/lib/services/OptimizedListingService';
 
 export async function GET(
   request: NextRequest,
@@ -20,14 +21,23 @@ export async function GET(
     // Check if user is admin (to show admin comments)
     const isAdmin = await checkIfUserIsAdmin();
 
-    const listing = await prisma.listing.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        user: { select: { id: true, name: true, phone: true, photo: true, createdAt: true } },
-        images: true,
-      },
-    });
+    // Use optimized service with caching for better performance
+    const listing = await OptimizedListingService.getListingById(id);
+
+    // For admin users, we need to get the full listing including admin comments and user info
+    if (isAdmin && listing) {
+      const fullListing = await prisma.listing.findUnique({
+        where: { id },
+        include: {
+          category: true,
+          user: { select: { id: true, name: true, phone: true, photo: true, createdAt: true } },
+          images: true,
+        },
+      });
+      if (fullListing) {
+        return NextResponse.json(fullListing);
+      }
+    }
 
     if (!listing) {
       throw new ApiError('Listing not found', 404);
