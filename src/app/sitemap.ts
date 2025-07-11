@@ -1,5 +1,9 @@
 import { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
+import { StaticCache } from '@/lib/cache/staticCache';
+
+// Revalidate sitemap every 5 minutes
+export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
@@ -33,8 +37,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   
   try {
-    // Get all active categories
-    const categories = await prisma.category.findMany();
+    // Get all active categories using cache
+    const categories = await StaticCache.getCategories();
     
     // Generate category URLs with both variants (sale and rent)
     const categoryUrls: MetadataRoute.Sitemap = categories.flatMap((category) => [
@@ -54,11 +58,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     ]);
     
-    // Get all active listings
+    // Get all active listings for sitemap
     const listings = await prisma.listing.findMany({
       where: { status: 'active' },
       select: { id: true, dateAdded: true },
       take: 1000, // Limit to a reasonable number
+      orderBy: { dateAdded: 'desc' }, // Most recent first
     });
     
     const listingUrls: MetadataRoute.Sitemap = listings.map((listing) => ({

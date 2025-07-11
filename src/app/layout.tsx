@@ -35,6 +35,9 @@ export default function RootLayout({
         {/* Yandex Webmaster verification */}
         <meta name="yandex-verification" content="251b6ab8ece55464" />
         
+        {/* Bing Webmaster verification */}
+        <meta name="msvalidate.01" content="5908F47109A9BD5DFB955435CEB2E6F4" />
+        
         {/* Yandex.Metrika counter */}
         <Script
           id="yandex-metrika"
