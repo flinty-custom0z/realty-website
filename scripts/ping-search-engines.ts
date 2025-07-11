@@ -1,5 +1,7 @@
 #!/usr/bin/env ts-node
-import 'dotenv/config';
+import { config } from 'dotenv';
+config();
+
 import prisma from '../src/lib/prisma';
 import { SearchEngineService } from '../src/lib/services/SearchEngineService';
 

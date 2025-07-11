@@ -1,11 +1,16 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   // Images configuration
   images: {
     unoptimized: false,
-    formats: ['image/webp', 'image/avif'],
+    formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 200, 256, 384],
+    minimumCacheTTL: 31536000, // 1 year
     remotePatterns: [
       {
         protocol: 'http',
@@ -16,20 +21,68 @@ const nextConfig = {
     ],
   },
     
-  // Add any additional configuration you need
-  env: {
-    // Add any environment variables you want available in client code
-  },
+
   
   // Handle paths more efficiently
   trailingSlash: false,
   
-  // Disable strict mode for now to avoid double rendering issues
-  reactStrictMode: false,
+  // Enable strict mode for better performance
+  reactStrictMode: true,
 
   // Optimize build performance
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Compression
+  compress: true,
+  
+  // Production optimizations
+  productionBrowserSourceMaps: false,
+  
+  // Performance headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+        ],
+      },
+      {
+        source: '/api/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+
+  // Redirects for SEO optimization
+  async redirects() {
+    return [
+      {
+        source: '/listing-category/:slug',
+        has: [{ type: 'query', key: 'page', value: '1' }],
+        destination: '/listing-category/:slug',
+        permanent: true,
+      },
+    ];
   },
 
   // Configure webpack to handle Sharp and its dependencies properly
@@ -56,41 +109,23 @@ const nextConfig = {
     };
   },
 
-  // Skip example and test pages in fast builds
-  ...(process.env.SKIP_EXAMPLE_PAGES === 'true' && {
-    pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-    experimental: { 
-      // Use a smaller subset of pages when in fast build mode
-      cpus: Math.max(1, Math.min(4, require('os').cpus().length - 1))
-    },
-    // Exclude sentry example pages and other non-essential pages
-    excludeRoutes: [
-      '/sentry-example-page',
-      '/api/sentry-example-api',
-      '/theme-demo'
-    ]
-  }),
-
-  // Optimization for faster builds (only in development)
-  ...(process.env.NODE_ENV !== 'production' && {
-    typescript: {
-      // Skip type checking during development builds for speed
-      ignoreBuildErrors: true
-    },
-    staticPageGenerationTimeout: 120,
-    experimental: {
-      // Enable these only in development for faster builds
-      cpus: Math.max(1, Math.min(4, require('os').cpus().length - 1))
-    }
-  })
+  // Experimental features for better performance
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@prisma/client'],
+    webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'TTFB'],
+  }
 };
+
+// Apply bundle analyzer wrapper
+const configWithAnalyzer = withBundleAnalyzer(nextConfig);
 
 // Only use Sentry in production
 if (process.env.NODE_ENV === 'production') {
   const { withSentryConfig } = require('@sentry/nextjs');
   
   module.exports = withSentryConfig(
-    nextConfig,
+    configWithAnalyzer,
     {
       // For all available options, see:
       // https://www.npmjs.com/package/@sentry/webpack-plugin#options
@@ -119,5 +154,5 @@ if (process.env.NODE_ENV === 'production') {
     }
   );
 } else {
-  module.exports = nextConfig;
+  module.exports = configWithAnalyzer;
 }
