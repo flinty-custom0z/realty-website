@@ -59,3 +59,5 @@ exports/
 temp/
 
 sql_backup/*
+
+backups/
