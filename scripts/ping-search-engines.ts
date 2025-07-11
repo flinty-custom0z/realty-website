@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 import 'dotenv/config';
-import { prisma } from '../src/lib/prisma';
+import prisma from '../src/lib/prisma';
 import { SearchEngineService } from '../src/lib/services/SearchEngineService';
 
 async function main() {

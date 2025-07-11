@@ -1,6 +1,6 @@
 // src/lib/services/FilterService.ts - Fixed version
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { createLogger } from '@/lib/logging';
 
 const logger = createLogger('FilterService');

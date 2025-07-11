@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { Home, Building2, MapPin, Store, ListFilter, PlusCircle } from 'lucide-react';
 import { JWT_SECRET } from '@/lib/env';
 import AdminNavMenu from '@/components/AdminNavMenu';

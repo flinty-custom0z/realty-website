@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { handleApiError, ApiError } from '@/lib/validators/errorHandler';
 
 // GET endpoint to fetch a specific property type

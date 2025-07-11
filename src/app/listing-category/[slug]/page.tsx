@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import ListingCard from '@/components/ListingCard';
 import { notFound } from 'next/navigation';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';

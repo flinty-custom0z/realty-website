@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ListingData } from '../services/ListingService';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 /**
  * Zod schema for validating listing data

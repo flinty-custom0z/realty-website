@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import ListingCard from '@/components/ListingCard';
 import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';

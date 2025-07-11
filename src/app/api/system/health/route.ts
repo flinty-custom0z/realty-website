@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from '@/lib/logging';
 import { systemMonitor } from '@/lib/logging';
 import { checkDatabaseSize, getUptimeStatus } from '@/lib/monitoring';
-import { PrismaClient } from '@prisma/client';
 import { handleApiError } from '@/lib/validators/errorHandler';
+import prisma from '@/lib/prisma';
 
 const logger = createLogger('HealthCheck');
-const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from '@/lib/logging';
-import { PrismaClient } from '@prisma/client';
 import { handleApiError } from '@/lib/validators/errorHandler';
 import { checkDatabaseSize, monitorResourceUsage } from '@/lib/monitoring';
+import prisma from '@/lib/prisma';
 
 const logger = createLogger('ResourceLimits');
-const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   try {

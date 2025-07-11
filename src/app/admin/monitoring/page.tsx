@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { JWT_SECRET } from '@/lib/env';
 import { SystemStatus } from '@/components/monitoring/SystemStatus';
 import { HealthMetrics } from '@/components/monitoring/HealthMetrics';
