@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import AdminLoginForm from '@/components/AdminLoginForm';
 
+// Admin login needs dynamic rendering for authentication
 export const dynamic = 'force-dynamic';
 
 export default function AdminLoginPage() {

@@ -9,6 +9,7 @@ import SortSelector from '@/components/SortSelector';
 import { Metadata } from 'next';
 import Script from 'next/script';
 import StructuredDataBreadcrumb from '@/components/StructuredDataBreadcrumb';
+import StaticCache from '@/lib/cache/staticCache';
 
 // Wrap the SortSelector in a client component to avoid hydration issues
 function SortSelectorWrapper() {
@@ -19,8 +20,19 @@ function SortSelectorWrapper() {
   );
 }
 
-// Force dynamic rendering to prevent caching
-export const dynamic = 'force-dynamic';
+// Enable ISR with 5 minute revalidation
+export const revalidate = 300;
+
+// Pre-generate all category pages at build time
+export async function generateStaticParams() {
+  const categories = await prisma.category.findMany({
+    select: { slug: true }
+  });
+  
+  return categories.map(category => ({
+    slug: category.slug
+  }));
+}
 
 // Generate metadata for the page with proper titles
 export async function generateMetadata(
@@ -59,29 +71,34 @@ export async function generateMetadata(
 }
 
 async function getCategory(slug: string) {
-  const category = await prisma.category.findUnique({
-    where: { slug },
-  });
-  
-  return category;
+  return StaticCache.getCategoryBySlug(slug);
 }
 
 async function getListings(
   categoryId: string,
   searchParams: Record<string, string | string[] | undefined>
 ) {
-  // Build filter object
+  // Check if this is a basic category request (no filters/pagination/search)
+  const hasFilters = searchParams.page || searchParams.sort || searchParams.order || 
+                     searchParams.categoryQuery || searchParams.q || 
+                     searchParams.minPrice || searchParams.maxPrice ||
+                     searchParams.district || searchParams.condition || 
+                     searchParams.city || searchParams.propertyType;
+  
+  const dealType = searchParams.deal === 'rent' ? 'RENT' : 'SALE';
+  const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
+  
+  // For basic category requests, use StaticCache for optimal performance
+  if (!hasFilters) {
+    return StaticCache.getCategoryListings(categoryId, dealType, page, 12);
+  }
+
+  // For requests with filters, use original logic
   const filter: Record<string, unknown> = { 
     categoryId,
     status: 'active',
+    dealType,
   };
-  
-  // Deal type filter (simplified to use only 'deal' parameter)
-  if (searchParams.deal === 'rent') {
-    filter.dealType = 'RENT';
-  } else {
-    filter.dealType = 'SALE';
-  }
   
   // Apply search filters - use categoryQuery, fallback to q for backward compatibility
   const searchTerm = searchParams.categoryQuery || searchParams.q;
@@ -133,7 +150,6 @@ async function getListings(
   }
   
   // Get page number
-  const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 12;
   
   // Determine sort order

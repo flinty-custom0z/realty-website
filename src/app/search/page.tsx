@@ -4,8 +4,8 @@ import FilterSidebarWrapper from '@/components/FilterSidebarWrapper';
 import Link from 'next/link';
 import SortSelector from '@/components/SortSelector';
 
-// Force dynamic rendering so every request is fresh
-export const dynamic = 'force-dynamic';
+// Enable ISR with 5 minute revalidation
+export const revalidate = 300;
 
 /**
  * Helper function to get proper grammatical case for back links
@@ -208,13 +208,12 @@ async function getAllCategories(searchParams: Record<string, string | string[] |
   }
   
   // Find categories that have matching listings
-  return prisma.category.findMany({
+  const categories = await prisma.category.findMany({
     where: {
       listings: {
         some: baseFilter
       }
     },
-    orderBy: { name: 'asc' },
     include: {
       _count: {
         select: { 
@@ -222,6 +221,26 @@ async function getAllCategories(searchParams: Record<string, string | string[] |
         }
       }
     }
+  });
+
+  // Custom ordering: Квартиры first, then Дома, then others alphabetically
+  const categoryOrder = ['apartments', 'houses', 'land', 'commercial', 'new-construction', 'international'];
+  
+  return categories.sort((a, b) => {
+    const aIndex = categoryOrder.indexOf(a.slug);
+    const bIndex = categoryOrder.indexOf(b.slug);
+    
+    // If both categories are in the predefined order, sort by that order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    
+    // If only one is in the predefined order, prioritize it
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    
+    // If neither is in the predefined order, sort alphabetically
+    return a.name.localeCompare(b.name, 'ru');
   });
 }
 

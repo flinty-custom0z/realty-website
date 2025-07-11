@@ -15,9 +15,18 @@ import ContactForm from '@/components/ui/ContactForm';
 import { Metadata } from 'next';
 import { OptimizedListingService } from '@/lib/services/OptimizedListingService';
 import { DealType } from '@prisma/client';
+import StaticCache from '@/lib/cache/staticCache';
 
-// Force dynamic rendering to prevent caching
-export const dynamic = 'force-dynamic';
+// Enable ISR with 5 minute revalidation
+export const revalidate = 300;
+
+// Pre-generate both sale and rent versions at build time
+export async function generateStaticParams() {
+  return [
+    { deal: undefined }, // Default (sale)
+    { deal: 'rent' },
+  ];
+}
 
 // Generate metadata based on deal type
 export async function generateMetadata({
@@ -91,44 +100,24 @@ interface CategoryWithCounts {
 }
 
 async function getCategories() {
-  const categories = await prisma.category.findMany({
-    include: {
-      _count: {
-        select: { 
-          listings: { 
-            where: { status: 'active' } 
-          },
-        },
-      },
-      // Get separate counts for SALE and RENT listings
-      listings: {
-        where: { 
-          status: 'active',
-        },
-        select: {
-          dealType: true,
-        } as any, // Type assertion to avoid TypeScript error
-      }
-    },
-  });
-  
-  // Add calculated counts for each deal type
-  return (categories as unknown as CategoryWithCounts[]).map(category => {
-    const saleCount = category.listings.filter(l => l.dealType === DealType.SALE).length;
-    const rentCount = category.listings.filter(l => l.dealType === DealType.RENT).length;
-    
-    return {
-      ...category,
-      saleCount,
-      rentCount,
-      listings: undefined, // Remove the listings array to keep the response clean
-    };
-  });
+  return StaticCache.getCategories();
 }
 
 // Fetch all listings with filters/sorting/pagination using OptimizedListingService
 async function getListings(searchParams: Record<string, string | string[] | undefined>) {
-  // Parse parameters
+  // Check if this is a basic homepage request (no filters/pagination/search)
+  const hasFilters = searchParams.page || searchParams.sort || searchParams.order || 
+                     searchParams.q || searchParams.minPrice || searchParams.maxPrice ||
+                     searchParams.district || searchParams.condition || searchParams.city;
+  
+  const dealType = searchParams.deal === 'rent' ? 'RENT' : 'SALE';
+  
+  // For basic homepage requests, use StaticCache for optimal performance
+  if (!hasFilters) {
+    return StaticCache.getStaticListings(dealType, 12);
+  }
+
+  // For requests with filters, use OptimizedListingService
   const page = searchParams.page ? parseInt(searchParams.page as string) : 1;
   const limit = 12;
   const sort = (searchParams.sort as string) || 'dateAdded';

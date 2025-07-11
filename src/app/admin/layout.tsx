@@ -1,4 +1,4 @@
-// Force dynamic rendering so cookies() can be used at runtime.
+// Admin pages need dynamic rendering for authentication
 export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';

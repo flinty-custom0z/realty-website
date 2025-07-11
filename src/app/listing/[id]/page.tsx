@@ -1,19 +1,28 @@
 import prisma from '@/lib/prisma';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import jwt from 'jsonwebtoken';
 import ListingDetail from './ListingDetail';
-import { JWT_SECRET } from '@/lib/env';
 import Script from 'next/script';
 import StructuredDataBreadcrumb from '@/components/StructuredDataBreadcrumb';
 import { Metadata } from 'next/types';
 import { buildListingMetadata, ListingWithRelations } from '@/lib/seo/buildListingMetadata';
+import StaticCache from '@/lib/cache/staticCache';
 
-// Remove the hardcoded fallback
-// const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Enable ISR with 10 minute revalidation
+export const revalidate = 600;
 
-// Force dynamic rendering so cookies() can be used
-export const dynamic = 'force-dynamic';
+// Pre-generate the 100 most recent listings at build time
+export async function generateStaticParams() {
+  const listings = await prisma.listing.findMany({
+    where: { status: 'active' },
+    select: { id: true },
+    orderBy: { dateAdded: 'desc' },
+    take: 100, // Pre-build top 100 listings
+  });
+  
+  return listings.map(listing => ({
+    id: listing.id,
+  }));
+}
 
 export async function generateMetadata({
   params,
@@ -22,16 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const { id } = await params;
-    const listing = await prisma.listing.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        images: true,
-        districtRef: true,
-        propertyType: { select: { name: true } },
-        city: { select: { name: true } },
-      },
-    });
+    const listing = await StaticCache.getListingById(id);
     if (!listing) return { title: 'Объявление не найдено' };
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
@@ -50,23 +50,8 @@ export default async function ListingDetailPage({
 }) {
   try {
     const { id } = await params;
-    // Check if user is admin (to show admin comments)
-    const isAdmin = await checkIfUserIsAdmin();
     
-    const listing = await prisma.listing.findUnique({
-      where: { id },
-      include: {
-        category: true,
-        images: true,
-        districtRef: true,
-        propertyType: {
-          select: { name: true }
-        },
-        city: {
-          select: { name: true }
-        }
-      },
-    });
+    const listing = await StaticCache.getListingById(id);
     
     if (!listing) {
       redirect('/404');
@@ -82,28 +67,7 @@ export default async function ListingDetailPage({
       { name: listing.title, url: `${baseUrl}/listing/${listing.id}` },
     ];
 
-    // If user is not admin, strip out adminComment
-    if (!isAdmin) {
-      // Use spread to create a new object without adminComment
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { adminComment, ...publicData } = listing;
-      return (
-        <>
-          <StructuredDataBreadcrumb items={breadcrumbItems} />
-          <Script
-            id="listing-structured-data"
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(structuredData)
-            }}
-          />
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <ListingDetail listing={publicData as any} isAdmin={isAdmin} />
-        </>
-      );
-    }
-    
-    // Admin sees everything
+    // Always pass the full listing data - the client component will handle admin checks
     return (
       <>
         <StructuredDataBreadcrumb items={breadcrumbItems} />
@@ -115,7 +79,7 @@ export default async function ListingDetailPage({
           }}
         />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <ListingDetail listing={listing as any} isAdmin={isAdmin} />
+        <ListingDetail listing={listing as any} isAdmin={false} />
       </>
     );
   } catch (error) {
@@ -124,19 +88,3 @@ export default async function ListingDetailPage({
   }
 }
 
-async function checkIfUserIsAdmin(): Promise<boolean> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return false;
-    
-    const { id } = jwt.verify(token, JWT_SECRET) as { id: string };
-    const user = await prisma.user.findUnique({ 
-      where: { id }
-    });
-    
-    return !!user;
-  } catch {
-    return false;
-  }
-}
