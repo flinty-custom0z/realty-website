@@ -39,6 +39,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const suggestionsRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const isClickingRef = useRef(false);
   
   return (
     <SearchParamsProvider>
@@ -180,16 +181,27 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     setHighlightedIndex(-1);
   };
 
-  // Handle suggestion click
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    setQuery(suggestion.title);
+  // Navigate directly to the listing details page when a suggestion is clicked
+  const handleSuggestionClick = (suggestion: Suggestion, event?: React.MouseEvent) => {
+    // Prevent any form submission or default behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Set flag to prevent blur timeout
+    isClickingRef.current = true;
+    
+    // Immediately hide suggestions and clear state to prevent flickering
     setShowSuggestions(false);
     setSuggestions([]);
-    setIsSearchActive(true);
-    // Submit search
-    handleSubmitInternal(suggestion.title);
-  };
+    setQuery('');
+    setIsSearchActive(false);
 
+    // Navigate to the listing details page
+    router.push(`/listing/${suggestion.id}`);
+  };
+  
   // Handle keyboard navigation
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || suggestions.length === 0) return;
@@ -211,7 +223,14 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
 
   // Hide suggestions on blur (with delay to allow click)
   const handleInputBlur = () => {
-    setTimeout(() => setShowSuggestions(false), 100);
+    setTimeout(() => {
+      // Don't hide suggestions if we're in the middle of clicking
+      if (!isClickingRef.current) {
+        setShowSuggestions(false);
+      }
+      // Reset the flag
+      isClickingRef.current = false;
+    }, 150);
   };
 
   // Submit handler (internal, can be called from suggestion click)
@@ -298,7 +317,7 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
                 className={`px-4 py-2 cursor-pointer hover:bg-gray-50 ${
                   highlightedIndex === idx ? 'bg-gray-50' : ''
                 }`}
-                onMouseDown={() => handleSuggestionClick(s)}
+                onMouseDown={(e) => handleSuggestionClick(s, e)}
                 onMouseEnter={() => setHighlightedIndex(idx)}
               >
                 <div className="font-medium text-gray-800">{s.title}</div>
