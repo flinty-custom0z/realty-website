@@ -5,7 +5,7 @@ config();
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://oporadom.ru';
 
 async function pingGoogle(): Promise<void> {
-  try {
+  /* try {
     const sitemapUrl = `${baseUrl}/sitemap.xml`;
     const pingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
     
@@ -19,7 +19,8 @@ async function pingGoogle(): Promise<void> {
     }
   } catch (error) {
     console.error('❌ Failed to ping Google:', error);
-  }
+  } */
+  console.log('⚠️ Google sitemap ping is deprecated. Please submit sitemap via Google Search Console manually.');
 }
 
 async function pingYandex(): Promise<void> {
@@ -43,7 +44,7 @@ async function pingYandex(): Promise<void> {
 async function pingBing(): Promise<void> {
   try {
     const sitemapUrl = `${baseUrl}/sitemap.xml`;
-    const pingUrl = `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
+    const pingUrl = `http://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
     
     console.log('🔍 Pinging Bing Webmaster...');
     const response = await fetch(pingUrl, { method: 'GET' });
@@ -66,7 +67,7 @@ async function main() {
   
   // Run all pings in parallel
   await Promise.allSettled([
-    pingGoogle(),
+    // pingGoogle(), // Commented out due to deprecation
     pingYandex(),
     pingBing(),
   ]);
