@@ -41,6 +41,12 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const isClickingRef = useRef(false);
   
+  // Clear suggestions when pathname changes (user navigates to different page)
+  useEffect(() => {
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }, [pathname]);
+  
   return (
     <SearchParamsProvider>
       {(searchParams) => {
@@ -158,14 +164,16 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
     if (!q || q.trim().length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
+      setIsLoadingSuggestions(false);
       return;
     }
     setIsLoadingSuggestions(true);
     try {
       const res = await fetch(`/api/listings/suggestions?q=${encodeURIComponent(q)}`);
       const data = await res.json();
-      setSuggestions(data.suggestions || []);
-      setShowSuggestions(true);
+      const newSuggestions = data.suggestions || [];
+      setSuggestions(newSuggestions);
+      setShowSuggestions(newSuggestions.length > 0);
     } catch (e) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -266,7 +274,15 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
           onBlur={handleInputBlur}
-          onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+          onFocus={() => { 
+            // Clear old suggestions when focusing
+            if (suggestions.length > 0) {
+              setShowSuggestions(true);
+            } else {
+              setSuggestions([]);
+              setShowSuggestions(false);
+            }
+          }}
           placeholder={categorySlug ? `Поиск в категории` : "Поиск по всему сайту"}
           className="w-full py-3 pl-11 pr-14 rounded-full bg-gray-50 border border-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent transition-colors"
           autoComplete="off"
