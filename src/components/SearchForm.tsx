@@ -41,10 +41,12 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const isClickingRef = useRef(false);
   
-  // Clear suggestions when pathname changes (user navigates to different page)
+  // Clear suggestions and query when pathname changes (user navigates to different page)
   useEffect(() => {
     setSuggestions([]);
     setShowSuggestions(false);
+    setQuery('');
+    setIsSearchActive(false);
   }, [pathname]);
   
   return (
