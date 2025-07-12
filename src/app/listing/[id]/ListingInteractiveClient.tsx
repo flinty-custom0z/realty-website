@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ListingInteractiveClientProps {
   listingId: string;
@@ -12,6 +13,17 @@ interface ListingInteractiveClientProps {
 export function DangerZone({ listingId }: ListingInteractiveClientProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Don't render anything while loading
+  if (isLoading) {
+    return null;
+  }
+
+  // Don't render danger zone if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const handleDeleteListing = async () => {
     if (!confirm('Вы уверены, что хотите удалить это объявление? Это действие невозможно отменить.')) {
@@ -60,6 +72,17 @@ export function DangerZone({ listingId }: ListingInteractiveClientProps) {
 // Main component for admin action buttons
 export default function ListingInteractiveClient({ listingId }: ListingInteractiveClientProps) {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Don't render anything while loading
+  if (isLoading) {
+    return null;
+  }
+
+  // Don't render admin buttons if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="flex space-x-3">

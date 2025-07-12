@@ -46,10 +46,9 @@ interface Listing {
 
 interface ListingDetailProps {
   listing: Listing;
-  isAdmin: boolean;
 }
 
-export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) {
+export default function ListingDetail({ listing }: ListingDetailProps) {
   const formattedDate = formatDate(listing.dateAdded);
   
   // Ensure main image is first and add id for ImageGallery
@@ -79,7 +78,7 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
         </Link>
         
         {/* Admin buttons rendered client-side */}
-        {isAdmin && <ListingInteractiveClient listingId={listing.id} />}
+        <ListingInteractiveClient listingId={listing.id} />
       </div>
       
       {/* title & gallery */}
@@ -161,7 +160,7 @@ export default function ListingDetail({ listing, isAdmin }: ListingDetailProps) 
           )}
           
           {/* Delete button section - only visible to admins */}
-          {isAdmin && DangerZone && (
+          {DangerZone && (
             <div id="admin-danger-zone">
               <DangerZone listingId={listing.id} />
             </div>

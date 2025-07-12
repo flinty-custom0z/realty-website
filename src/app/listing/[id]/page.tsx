@@ -67,7 +67,7 @@ export default async function ListingDetailPage({
       { name: listing.title, url: `${baseUrl}/listing/${listing.id}` },
     ];
 
-    // Always pass the full listing data - the client component will handle admin checks
+    // Always render the listing detail - admin check will be done client-side
     return (
       <>
         <StructuredDataBreadcrumb items={breadcrumbItems} />
@@ -79,7 +79,7 @@ export default async function ListingDetailPage({
           }}
         />
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <ListingDetail listing={listing as any} isAdmin={false} />
+        <ListingDetail listing={listing as any} />
       </>
     );
   } catch (error) {
