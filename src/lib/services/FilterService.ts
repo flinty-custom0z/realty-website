@@ -125,6 +125,9 @@ export class FilterService {
       baseFilterMinimal.OR = [
         { title: { contains: effectiveSearchQuery, mode: 'insensitive' } },
         { publicDescription: { contains: effectiveSearchQuery, mode: 'insensitive' } },
+        { address: { contains: effectiveSearchQuery, mode: 'insensitive' } },
+        { listingCode: { contains: effectiveSearchQuery, mode: 'insensitive' } },
+        { districtRef: { name: { contains: effectiveSearchQuery, mode: 'insensitive' } } },
       ];
     }
 

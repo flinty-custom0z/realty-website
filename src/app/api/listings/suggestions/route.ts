@@ -16,13 +16,24 @@ export async function GET(req: NextRequest) {
         where: {
           status: 'active',
           OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { publicDescription: { contains: q, mode: 'insensitive' } },
+            { address: { contains: q, mode: 'insensitive' } },
+            { listingCode: { contains: q, mode: 'insensitive' } },
+            { districtRef: { name: { contains: q, mode: 'insensitive' } } },
             { propertyType: { name: { contains: q, mode: 'insensitive' } } },
-            { address: { contains: q, mode: 'insensitive' } }
           ]
         },
         select: {
           id: true,
+          title: true,
           address: true,
+          listingCode: true,
+          districtRef: {
+            select: {
+              name: true
+            }
+          },
           propertyType: {
             select: {
               name: true
@@ -36,7 +47,10 @@ export async function GET(req: NextRequest) {
       // Format the response
       const formattedSuggestions = suggestions.map(suggestion => ({
         id: suggestion.id,
+        title: suggestion.title,
         address: suggestion.address,
+        listingCode: suggestion.listingCode,
+        districtName: suggestion.districtRef?.name || null,
         propertyTypeName: suggestion.propertyType?.name || 'Unknown'
       }));
       

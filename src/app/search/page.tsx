@@ -35,6 +35,9 @@ async function buildFilter(searchParams: Record<string, string | string[] | unde
     filter.OR = [
       { title: { contains: searchParams.q as string, mode: 'insensitive' } },
       { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { address: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { listingCode: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { districtRef: { name: { contains: searchParams.q as string, mode: 'insensitive' } } },
     ];
   }
 
@@ -204,6 +207,9 @@ async function getAllCategories(searchParams: Record<string, string | string[] |
     baseFilter.OR = [
       { title: { contains: searchParams.q as string, mode: 'insensitive' } },
       { publicDescription: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { address: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { listingCode: { contains: searchParams.q as string, mode: 'insensitive' } },
+      { districtRef: { name: { contains: searchParams.q as string, mode: 'insensitive' } } },
     ];
   }
   

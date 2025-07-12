@@ -82,6 +82,9 @@ export class OptimizedListingService {
           where.OR = [
             { title: { contains: filters.searchQuery, mode: 'insensitive' } },
             { publicDescription: { contains: filters.searchQuery, mode: 'insensitive' } },
+            { address: { contains: filters.searchQuery, mode: 'insensitive' } },
+            { listingCode: { contains: filters.searchQuery, mode: 'insensitive' } },
+            { districtRef: { name: { contains: filters.searchQuery, mode: 'insensitive' } } },
           ];
         }
 

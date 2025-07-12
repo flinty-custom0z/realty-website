@@ -106,6 +106,9 @@ async function getListings(
     filter.OR = [
       { title: { contains: searchTerm as string, mode: 'insensitive' } },
       { publicDescription: { contains: searchTerm as string, mode: 'insensitive' } },
+      { address: { contains: searchTerm as string, mode: 'insensitive' } },
+      { listingCode: { contains: searchTerm as string, mode: 'insensitive' } },
+      { districtRef: { name: { contains: searchTerm as string, mode: 'insensitive' } } },
     ];
   }
   

@@ -17,6 +17,9 @@ interface Suggestion {
   id: string;
   title: string;
   address?: string | null;
+  listingCode?: string | null;
+  districtName?: string | null;
+  propertyTypeName?: string | null;
 }
 
 interface SearchFormProps {
@@ -299,9 +302,17 @@ export default function SearchForm({ categorySlug, initialQuery = '' }: SearchFo
                 onMouseEnter={() => setHighlightedIndex(idx)}
               >
                 <div className="font-medium text-gray-800">{s.title}</div>
-                {s.address && (
-                  <div className="text-xs text-gray-500 truncate">{s.address}</div>
-                )}
+                <div className="text-xs text-gray-500 space-y-1">
+                  {s.address && (
+                    <div className="truncate">📍 {s.address}</div>
+                  )}
+                  {s.districtName && (
+                    <div className="truncate">🏘️ {s.districtName}</div>
+                  )}
+                  {s.listingCode && (
+                    <div className="truncate">🏷️ {s.listingCode}</div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

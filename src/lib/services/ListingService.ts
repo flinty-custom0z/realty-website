@@ -627,6 +627,7 @@ export class ListingService {
           category: true,
           propertyType: true,
           city: true,
+          districtRef: true,
           images: {
             where: { isFeatured: true },
             take: 1,
@@ -750,8 +751,12 @@ export class ListingService {
     // Add search query if provided
     if (searchQuery) {
       filter.OR = [
+        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { publicDescription: { contains: searchQuery, mode: 'insensitive' } },
+        { address: { contains: searchQuery, mode: 'insensitive' } },
+        { listingCode: { contains: searchQuery, mode: 'insensitive' } },
+        { districtRef: { name: { contains: searchQuery, mode: 'insensitive' } } },
         { propertyType: { name: { contains: searchQuery, mode: 'insensitive' } } },
-        { publicDescription: { contains: searchQuery, mode: 'insensitive' } }
       ];
     }
     
@@ -793,6 +798,8 @@ export class ListingService {
           category: true,
           propertyType: true,
           images: true,
+          districtRef: true,
+          city: true,
         },
         orderBy: { [sort]: order === 'asc' ? 'asc' : 'desc' },
         skip: (Number(page) - 1) * Number(limit),
